@@ -14,14 +14,16 @@
         </Grid>
       </ControlTemplate>
     </Button.Template>
-    <Grid ColumnSpacing="16">
+    <Grid ColumnSpacing="16" VerticalAlignment="Center">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="*" />
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
-      <Border Grid.Column="0" Background="{StaticResource DemarPrimaryMutedBrush}" CornerRadius="8" Padding="8">
-        <FontIcon x:Name="Icon" FontSize="24" Foreground="{StaticResource DemarPrimaryBrush}" />
+      <Border Grid.Column="0" Width="40" Height="40" VerticalAlignment="Center"
+              Background="{StaticResource DemarPrimaryMutedBrush}" CornerRadius="8">
+        <FontIcon x:Name="Icon" FontSize="24" Foreground="{StaticResource DemarPrimaryBrush}"
+                  HorizontalAlignment="Center" VerticalAlignment="Center" />
       </Border>
       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
         <TextBlock x:Name="TitleBlock" FontWeight="SemiBold" />

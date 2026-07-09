@@ -61,7 +61,7 @@ public class VpnPipelineTest
     public void HostnameServer_addsBootstrapDomains()
     {
         var profile = new NaiveProfile("host-test", "vpn.example.com", 443, "u", "p", "tls.example.com");
-        var plan = ServerProfile.FromNaive(profile).ConnectPlan;
+        var plan = ServerProfile.Naive(profile).ConnectPlan;
         Assert.Contains("vpn.example.com", plan.Tun.BootstrapDomains);
         Assert.Contains("tls.example.com", plan.Tun.BootstrapDomains);
         Assert.Empty(plan.DirectIPs);

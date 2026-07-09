@@ -26,6 +26,8 @@
   <x:Double x:Key="ToolbarHeight">64</x:Double>
   <x:Double x:Key="ToolbarVerticalGap">16</x:Double>
   <x:Double x:Key="AppMinWidth">400</x:Double>
+  <x:Double x:Key="AppDefaultWidth">480</x:Double>
+  <x:Double x:Key="AppDefaultHeight">700</x:Double>
   <x:Double x:Key="ToolbarWideBreakpoint">800</x:Double>
   <x:Double x:Key="ToolbarTabWidth">168</x:Double>
   <Thickness x:Key="ToolbarChromeMargin">16,16,16,16</Thickness>

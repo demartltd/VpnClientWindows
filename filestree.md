@@ -21,7 +21,8 @@ src/DemarVpn/
 ├── Controls/
 │   ├── FloatingToolbar.xaml
 │   ├── DemarSnackbarHost.xaml
-│   └── IconLinkChip.xaml
+│   ├── IconLinkChip.xaml
+│   └── ServerRow.xaml             # флаг + displayName + country
 ├── Services/
 │   ├── Vpn/                       # VpnController, SingBoxConfigBuilder, engines
 │   ├── Network/UplinkIpv4.cs
@@ -29,7 +30,7 @@ src/DemarVpn/
 │   └── SnackbarService.cs
 ├── Core/Servers/TestServer.cs
 ├── Models/
-├── Assets/                        # MSIX icons, BrandIcons.xaml, singbox/
+├── Assets/                        # MSIX icons, BrandIcons.xaml, Flags/, singbox/
 └── Native/
     ├── libbox/                    # sing-ffi C# (gitignore)
     ├── packages/                  # SagerNet.Libbox nupkg (gitignore)
@@ -54,6 +55,8 @@ scripts/
 │   ├── trust-dev-cert.ps1
 │   └── verify-msix-signing.ps1
 ├── port_brand_icons.py
+├── other/
+│   └── port_country_flags.py
 ├── generate_icons.py
 ├── singbox-cleaner.py
 ├── install_release.ps1

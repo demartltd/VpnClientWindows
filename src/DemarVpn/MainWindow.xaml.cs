@@ -1,6 +1,7 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Composition.SystemBackdrops;
+using Windows.Graphics;
 
 namespace DemarVpn;
 
@@ -15,7 +16,13 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         if (AppWindow.Presenter is OverlappedPresenter presenter)
-            presenter.PreferredMinimumWidth = (int)(double)Application.Current.Resources["AppMinWidth"];
+        {
+            var res = Application.Current.Resources;
+            presenter.PreferredMinimumWidth = (int)(double)res["AppMinWidth"];
+            AppWindow.Resize(new SizeInt32(
+                (int)(double)res["AppDefaultWidth"],
+                (int)(double)res["AppDefaultHeight"]));
+        }
         TryMicaBackdrop();
         Root.Navigate(typeof(Views.ShellPage));
         _throughputTimer.Tick += (_, _) => AppServices.Vpn.TickThroughput();

@@ -4,7 +4,7 @@
 
 **Min OS:** Windows 10 19041+ (WinUI 3 / Windows App SDK).
 
-Ядро: **sing-box 1.13.13** (MVP: **NaiveProxy**). Документация: https://sing-box.sagernet.org/
+Ядро: **sing-box latest** (MVP: **NaiveProxy**). Документация: https://sing-box.sagernet.org/
 
 **UI:** Fluent Design, **тёмная тема only**, seed `#3A6EA5` — MaterialColorUtilities `TonalSpot` (parity с Android / Flutter).
 
@@ -19,6 +19,7 @@
 ```powershell
 py -3 scripts/for_builds/libbox-build-windows.py   # sing-box.exe + wintun.dll
 python3 scripts/port_brand_icons.py       # при изменении Android brand icons
+python3 scripts/other/port_country_flags.py  # Twemoji флаги → Assets/Flags/
 python3 scripts/generate_icons.py         # Assets из scripts/logo_clear.png
 pwsh scripts/for_builds/build_windows.ps1            # MSIX (~3–8 мин первая сборка)
 pwsh scripts/install_release.ps1          # доверие сертификату + установка MSIX
@@ -72,7 +73,7 @@ pwsh scripts/install_release.ps1        # UAC для certutil
 | Экран | Статус |
 |-------|--------|
 | Home (VPN toggle) | Naive connect/disconnect через `VpnController` |
-| Servers | test server `backronym.ru` (`TestServer.cs`) |
+| Servers | FIN-DEV-1 + DE-FREE-1, флаги (`TestServer.cs`) |
 | Settings + social links | FA6 brand icons (`IconLinkChip`), реальные URL |
 | Account + login dialog | UI steps без API |
 | App settings (журнал) | `AppLog` — до 512 строк, tail-trim |

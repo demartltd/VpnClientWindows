@@ -4,14 +4,17 @@ namespace DemarVpn.Core.Servers;
 
 public static class TestServer
 {
-    private static readonly NaiveProfile TestNaive = new(
-        DisplayName: "backronym.ru",
-        Server: "193.35.17.5",
-        Port: 443,
-        Username: "u_e06786d0488ce48f",
-        Password: "REDACTED",
-        TlsServerName: "backronym.ru");
+    public static readonly IReadOnlyList<ServerProfile> All =
+    [
+        ServerProfile.Naive(
+            new("FIN-DEV-1", "193.35.17.5", 443,
+                "u_e06786d0488ce48f", "REDACTED", "backronym.ru"),
+            "FI", "Финляндия"),
+        ServerProfile.Naive(
+            new("DE-FREE-1", "de-f-1.backronym.ru", 443,
+                "u_5f0d9beeab98bf6c", "REDACTED", "de-f-1.backronym.ru"),
+            "DE", "Германия"),
+    ];
 
-    public static readonly ServerProfile Default = ServerProfile.FromNaive(TestNaive);
-    public static IReadOnlyList<ServerProfile> All { get; } = [Default];
+    public static ServerProfile Default => All[0];
 }

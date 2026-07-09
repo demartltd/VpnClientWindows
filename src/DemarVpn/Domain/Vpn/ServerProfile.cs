@@ -5,24 +5,17 @@ public abstract record ServerProfileKind
     public sealed record Naive(NaiveProfile Profile) : ServerProfileKind;
 }
 
-public sealed record ServerProfile(string Id, string DisplayName, ServerProfileKind Kind)
+public sealed record ServerProfile(
+    string Id,
+    string DisplayName,
+    ServerProfileKind Kind,
+    string? CountryCode = null,
+    string? CountryName = null)
 {
     public SingBoxConnectPlan ConnectPlan => Kind switch
     {
         ServerProfileKind.Naive n => SingBoxConnectPlan.Naive(n.Profile),
         _ => throw new InvalidOperationException("unknown profile kind"),
-    };
-
-    public string ListTitle => Kind switch
-    {
-        ServerProfileKind.Naive n => $"{n.Profile.Server}:{n.Profile.Port}",
-        _ => string.Empty,
-    };
-
-    public string ListSubtitle => Kind switch
-    {
-        ServerProfileKind.Naive => "Naive (test)",
-        _ => string.Empty,
     };
 
     public int? UplinkPort => Kind switch
@@ -31,8 +24,10 @@ public sealed record ServerProfile(string Id, string DisplayName, ServerProfileK
         _ => null,
     };
 
-    public static ServerProfile FromNaive(NaiveProfile profile) => new(
+    public static ServerProfile Naive(NaiveProfile profile, string? countryCode = null, string? countryName = null) => new(
         $"naive:{profile.DisplayName}",
         profile.DisplayName,
-        new ServerProfileKind.Naive(profile));
+        new ServerProfileKind.Naive(profile),
+        countryCode,
+        countryName);
 }

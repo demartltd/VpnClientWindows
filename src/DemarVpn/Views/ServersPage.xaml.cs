@@ -1,8 +1,7 @@
+using DemarVpn.Controls;
 using DemarVpn.Domain.Vpn;
 using DemarVpn.Models;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 
 namespace DemarVpn.Views;
 
@@ -25,41 +24,14 @@ public sealed partial class ServersPage : Page
         var selected = AppServices.Vpn.Selected;
         foreach (var profile in AppServices.Vpn.Servers)
         {
-            var isSelected = profile.Id == selected.Id;
-            var card = new Button
+            var row = new ServerRow { Profile = profile, IsSelected = profile.Id == selected.Id };
+            row.Click += (_, _) =>
             {
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                Background = (Brush)Application.Current.Resources[isSelected ? "DemarPrimaryContainerBrush" : "DemarSurfaceHighBrush"],
-                BorderThickness = new Thickness(0),
-                CornerRadius = new CornerRadius(14),
-                Tag = profile,
+                AppServices.Vpn.Select(profile);
+                AppServices.Snackbar.ShowSuccess(Strings.ServerSelected);
+                Rebuild();
             };
-            var grid = new Grid { Padding = new Thickness(16) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var texts = new StackPanel { Spacing = 4 };
-            texts.Children.Add(new TextBlock { Text = profile.ListTitle, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-            texts.Children.Add(new TextBlock { Text = profile.ListSubtitle, Opacity = 0.7 });
-            grid.Children.Add(texts);
-            var icon = new FontIcon
-            {
-                Glyph = isSelected ? "\uE73E" : "\uE739",
-                Foreground = (Brush)Application.Current.Resources[isSelected ? "DemarSeedBrush" : "DemarSurfaceHighBrush"],
-            };
-            Grid.SetColumn(icon, 1);
-            grid.Children.Add(icon);
-            card.Content = grid;
-            card.Click += OnSelect;
-            ListHost.Children.Add(card);
+            ListHost.Children.Add(row);
         }
-    }
-
-    private void OnSelect(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { Tag: ServerProfile profile }) return;
-        AppServices.Vpn.Select(profile);
-        AppServices.Snackbar.ShowSuccess(Strings.ServerSelected);
-        Rebuild();
     }
 }
