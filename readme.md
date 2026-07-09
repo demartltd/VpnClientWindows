@@ -85,7 +85,18 @@ VPN connect (Naive MVP) — **реализовано** (`SingBoxProcessEngine` +
 
 ## Отладка
 
-Журнал: `%LOCALAPPDATA%\DemarVpn\demar\demar_app.log`
+```powershell
+# Весь журнал в терминал (до 512 строк)
+pwsh scripts/journal.ps1
+
+# Сохранить в файл
+pwsh scripts/journal.ps1 -OutFile journal.txt
+
+# Последние 80 строк
+pwsh scripts/journal.ps1 -Tail 80
+```
+
+Журнал: `%LOCALAPPDATA%\DemarVpn\demar\demar_app.log` (tail-trim 512 строк, parity с Android `AppLog`).
 
 UI-журнал: «Настройки → Настройки приложения».
 

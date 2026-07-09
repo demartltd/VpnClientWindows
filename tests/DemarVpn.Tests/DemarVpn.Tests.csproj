@@ -22,5 +22,6 @@
     <Compile Include="..\..\src\DemarVpn\Services\Network\UplinkIpv4.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Network\UplinkProbe.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Vpn\VpnTunnelProbe.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\AppLog.cs" />
   </ItemGroup>
 </Project>

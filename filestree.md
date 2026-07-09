@@ -41,13 +41,16 @@ src/DemarVpn/
 ## Tests
 
 ```
-tests/DemarVpn.Tests/VpnPipelineTest.cs
+tests/DemarVpn.Tests/
+├── VpnPipelineTest.cs
+└── AppLogTest.cs
 ```
 
 ## Scripts
 
 ```
 scripts/
+├── journal.ps1                    # AppLog journal (parity adb/journal.sh)
 ├── for_builds/
 │   ├── libbox-build-windows.py
 │   ├── build_windows.ps1

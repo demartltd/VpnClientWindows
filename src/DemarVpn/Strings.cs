@@ -31,6 +31,7 @@ public static class Strings
     public const string JournalShare = "Поделиться";
     public const string JournalCleared = "Журнал очищен.";
     public const string JournalShareEmpty = "Журнал пуст — нечего отправить.";
+    public const string JournalShareCopied = "Журнал скопирован в буфер обмена.";
     public const string JournalShareFailed = "Не удалось поделиться журналом: {0}";
     public const string ShareAppPitch = "Demar VPN — клиент NaiveProxy / sing-box.\n\nПодробности в репозитории проекта.";
     public const string ServiceMenuTitle = "Service menu";

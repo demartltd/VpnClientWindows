@@ -29,13 +29,16 @@ public sealed partial class AppSettingsPage : OverlayPage
     private void UpdateExpandLabel()
     {
         var count = AppLog.Snapshot().Count;
-        ExpandBtn.Content = Strings.JournalExpand + (_expanded || count == 0 ? $" ({count})" : $" ({count})");
+        ExpandBtn.Content = count == 0 ? Strings.JournalExpand : $"{Strings.JournalExpand} ({count})";
     }
 
     private void RefreshJournal()
     {
         var lines = AppLog.Snapshot();
-        JournalText.Text = lines.Count == 0 ? Strings.JournalEmpty : string.Join(Environment.NewLine, lines.Reverse());
+        var empty = lines.Count == 0;
+        JournalEmpty.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+        JournalScroll.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
+        JournalText.Text = empty ? string.Empty : string.Join(Environment.NewLine, lines.Reverse());
         UpdateExpandLabel();
     }
 
@@ -57,6 +60,6 @@ public sealed partial class AppSettingsPage : OverlayPage
         var data = new DataPackage();
         data.SetText(body);
         Clipboard.SetContent(data);
-        AppServices.Snackbar.Show(Models.SnackKind.Success, "Journal copied to clipboard");
+        AppServices.Snackbar.Show(Models.SnackKind.Success, Strings.JournalShareCopied);
     }
 }

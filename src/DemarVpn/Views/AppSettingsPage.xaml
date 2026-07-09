@@ -25,9 +25,16 @@
             <Button x:Name="ExpandBtn" Click="OnExpand" HorizontalAlignment="Left" />
             <Border x:Name="JournalBox" Visibility="Collapsed" Height="260" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1" CornerRadius="8">
-              <ScrollViewer>
-                <TextBlock x:Name="JournalText" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" Padding="8" />
-              </ScrollViewer>
+              <Grid>
+                <TextBlock x:Name="JournalEmpty" Text="Пока пусто" Opacity="0.6"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <ScrollViewer x:Name="JournalScroll" Padding="8"
+                              VerticalScrollBarVisibility="Auto">
+                  <TextBlock x:Name="JournalText" FontFamily="Consolas" FontSize="12"
+                             IsTextSelectionEnabled="True" TextWrapping="Wrap"
+                             MaxWidth="{Binding ViewportWidth, ElementName=JournalScroll}" />
+                </ScrollViewer>
+              </Grid>
             </Border>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
               <Button Content="Очистить" Click="OnClear" />
