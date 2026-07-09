@@ -23,7 +23,12 @@
   <CornerRadius x:Key="DemarCornerSmall">12</CornerRadius>
   <CornerRadius x:Key="DemarCornerMedium">14</CornerRadius>
   <CornerRadius x:Key="DemarCornerLarge">16</CornerRadius>
-  <x:Double x:Key="ToolbarExtent">88</x:Double>
-  <Thickness x:Key="FloatingToolbarMargin">16,0,16,16</Thickness>
-  <Thickness x:Key="FloatingToolbarInset">0,0,0,88</Thickness>
+  <x:Double x:Key="ToolbarHeight">64</x:Double>
+  <x:Double x:Key="ToolbarVerticalGap">16</x:Double>
+  <x:Double x:Key="AppMinWidth">400</x:Double>
+  <x:Double x:Key="ToolbarWideBreakpoint">800</x:Double>
+  <x:Double x:Key="ToolbarTabWidth">168</x:Double>
+  <Thickness x:Key="ToolbarChromeMargin">16,16,16,16</Thickness>
+  <Thickness x:Key="ToolbarSnackbarMargin">0,0,0,80</Thickness>
+  <Thickness x:Key="TabScrollPadding">16,16,16,0</Thickness>
 </ResourceDictionary>

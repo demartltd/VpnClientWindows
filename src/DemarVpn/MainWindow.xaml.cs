@@ -1,3 +1,4 @@
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Composition.SystemBackdrops;
 
@@ -13,6 +14,8 @@ public sealed partial class MainWindow : Window
         Title = Strings.AppName;
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
+            presenter.PreferredMinimumWidth = (int)(double)Application.Current.Resources["AppMinWidth"];
         TryMicaBackdrop();
         Root.Navigate(typeof(Views.ShellPage));
         _throughputTimer.Tick += (_, _) => AppServices.Vpn.TickThroughput();

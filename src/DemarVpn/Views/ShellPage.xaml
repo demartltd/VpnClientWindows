@@ -5,21 +5,20 @@
     xmlns:views="using:DemarVpn.Views"
     xmlns:controls="using:DemarVpn.Controls">
   <Grid>
-    <Grid x:Name="MainLayer" Padding="{StaticResource FloatingToolbarInset}">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <Grid x:Name="MainLayer" Grid.Row="0">
       <views:HomePage x:Name="HomeTab" Visibility="Visible" />
       <views:ServersPage x:Name="ServersTab" Visibility="Collapsed" />
       <views:SettingsPage x:Name="SettingsTab" Visibility="Collapsed" />
       <views:AccountPage x:Name="AccountTab" Visibility="Collapsed" />
     </Grid>
-    <Frame x:Name="OverlayFrame" Visibility="Collapsed" x:FieldModifier="public" />
-    <Grid x:Name="BottomChrome" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
-          Margin="{StaticResource FloatingToolbarMargin}" Canvas.ZIndex="1000">
-      <Grid.RowDefinitions>
-        <RowDefinition Height="Auto" />
-        <RowDefinition Height="Auto" />
-      </Grid.RowDefinitions>
-      <controls:DemarSnackbarHost x:Name="Snackbar" Grid.Row="0" Margin="0,0,0,12" HorizontalAlignment="Stretch" />
-      <controls:FloatingToolbar x:Name="Toolbar" Grid.Row="1" HorizontalAlignment="Stretch" SelectionChanged="OnTabChanged" />
+    <Frame x:Name="OverlayFrame" Grid.RowSpan="2" Visibility="Collapsed" x:FieldModifier="public" Canvas.ZIndex="500" />
+    <Grid x:Name="BottomChrome" Grid.Row="1" Margin="{StaticResource ToolbarChromeMargin}" Canvas.ZIndex="1000">
+      <controls:FloatingToolbar x:Name="Toolbar" Height="64" VerticalAlignment="Bottom" SelectionChanged="OnTabChanged" />
+      <controls:DemarSnackbarHost x:Name="Snackbar" VerticalAlignment="Bottom" Margin="{StaticResource ToolbarSnackbarMargin}" HorizontalAlignment="Stretch" />
     </Grid>
   </Grid>
 </Page>
