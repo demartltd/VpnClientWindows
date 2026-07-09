@@ -5,8 +5,7 @@
   <Button x:Name="Root" Click="OnClick" Padding="8" MinWidth="42" MinHeight="42"
           Background="{StaticResource DemarPrimaryMutedBrush}" BorderThickness="0"
           CornerRadius="8">
-    <Viewbox Width="26" Height="26">
-      <PathIcon x:Name="Icon" Foreground="{StaticResource DemarPrimaryBrush}" />
-    </Viewbox>
+    <FontIcon x:Name="BrandGlyph" FontSize="26" Foreground="{StaticResource DemarPrimaryBrush}"
+              FontFamily="{StaticResource FaBrandsFont}" />
   </Button>
 </UserControl>

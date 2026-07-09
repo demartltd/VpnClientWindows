@@ -4,6 +4,7 @@ Thumbs.db
 Desktop.ini
 .history/
 .vs/
+.tmp/
 .vscode/
 *.user
 *.suo

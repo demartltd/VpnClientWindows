@@ -20,19 +20,38 @@ public sealed partial class SettingsPage : Page
         VersionLine.Text = $"Demar VPN - {Strings.VersionName} - {Strings.PlatformWindows}";
         SingBoxLine.Text = $"sing-box - {AppServices.SingBoxLabel}";
         BuildSocialLinks();
+        BuildMenu();
     }
 
     private void BuildSocialLinks()
     {
-        var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Center };
-        foreach (var (iconKey, url) in SocialLinks.All)
-            panel.Children.Add(new IconLinkChip { IconKey = iconKey, Url = url });
+        var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, HorizontalAlignment = HorizontalAlignment.Center };
+        foreach (var (icon, url) in SocialLinks.All)
+            panel.Children.Add(new IconLinkChip { Icon = icon, Url = url });
         SocialLinksHost.Content = panel;
     }
 
-    private void OnAppSettings(object sender, RoutedEventArgs e) => AppSettingsRequested?.Invoke();
-    private void OnSoon(object sender, RoutedEventArgs e) => AppServices.Snackbar.ShowSoon();
-    private void OnShare(object sender, RoutedEventArgs e)
+    private void BuildMenu()
+    {
+        AddRow("\uE713", "Настройки приложения", "Подключение, журнал диагностики и статус функций",
+            (_, _) => AppSettingsRequested?.Invoke());
+        AddRow("\uE939", "Обратная связь", "Отправить ошибку или предложение",
+            (_, _) => AppServices.Snackbar.ShowSoon());
+        AddRow("\uE72D", "Пригласите друзей по ссылке", "Получите бесплатный премиум", OnShare);
+        AddRow("\uE8A5", "Условия использования", "Правила использования сервиса",
+            (_, _) => AppServices.Snackbar.ShowSoon());
+        AddRow("\uF5B4", "Конфиденциальность", "Как обрабатываются данные",
+            (_, _) => AppServices.Snackbar.ShowSoon());
+    }
+
+    private void AddRow(string glyph, string title, string subtitle, EventHandler click)
+    {
+        var row = new SettingsActionButton { Glyph = glyph, Title = title, Subtitle = subtitle };
+        row.Click += click;
+        MenuHost.Children.Add(row);
+    }
+
+    private void OnShare(object? sender, EventArgs e)
     {
         var data = new DataPackage();
         data.SetText(Strings.ShareAppPitch);

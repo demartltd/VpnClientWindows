@@ -1,0 +1,33 @@
+<UserControl
+    x:Class="DemarVpn.Controls.SettingsActionButton"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Button x:Name="Root" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+          Background="{StaticResource DemarSurfaceHighBrush}" BorderThickness="0"
+          CornerRadius="12" Padding="16" Click="OnClick">
+    <Button.Template>
+      <ControlTemplate TargetType="Button">
+        <Grid Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+          <ContentPresenter Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+        </Grid>
+      </ControlTemplate>
+    </Button.Template>
+    <Grid ColumnSpacing="16">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <Border Grid.Column="0" Background="{StaticResource DemarPrimaryMutedBrush}" CornerRadius="8" Padding="8">
+        <FontIcon x:Name="Icon" FontSize="24" Foreground="{StaticResource DemarPrimaryBrush}" />
+      </Border>
+      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+        <TextBlock x:Name="TitleBlock" FontWeight="SemiBold" />
+        <TextBlock x:Name="SubtitleBlock" Opacity="0.7" TextWrapping="Wrap" />
+      </StackPanel>
+      <FontIcon Grid.Column="2" Glyph="&#xE76C;" FontSize="16" Opacity="0.7" VerticalAlignment="Center" />
+    </Grid>
+  </Button>
+</UserControl>

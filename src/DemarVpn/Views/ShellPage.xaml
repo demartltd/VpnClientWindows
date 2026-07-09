@@ -18,7 +18,9 @@
     <Frame x:Name="OverlayFrame" Grid.RowSpan="2" Visibility="Collapsed" x:FieldModifier="public" Canvas.ZIndex="500" />
     <Grid x:Name="BottomChrome" Grid.Row="1" Margin="{StaticResource ToolbarChromeMargin}" Canvas.ZIndex="1000">
       <controls:FloatingToolbar x:Name="Toolbar" Height="64" VerticalAlignment="Bottom" SelectionChanged="OnTabChanged" />
-      <controls:DemarSnackbarHost x:Name="Snackbar" VerticalAlignment="Bottom" Margin="{StaticResource ToolbarSnackbarMargin}" HorizontalAlignment="Stretch" />
     </Grid>
+    <controls:DemarSnackbarHost x:Name="Snackbar" Grid.RowSpan="2" Canvas.ZIndex="2000"
+                                VerticalAlignment="Bottom" Margin="{StaticResource ToolbarSnackbarMargin}"
+                                HorizontalAlignment="Stretch" />
   </Grid>
 </Page>

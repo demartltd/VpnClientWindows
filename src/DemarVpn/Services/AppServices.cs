@@ -1,3 +1,4 @@
+using DemarVpn.Models;
 using DemarVpn.Services.Vpn;
 
 namespace DemarVpn.Services;
@@ -41,13 +42,13 @@ public static class UiMocks
 
 public static class SocialLinks
 {
-    public static IReadOnlyList<(string IconKey, string Url)> All { get; } =
+    public static IReadOnlyList<(SocialIcon Icon, string Url)> All { get; } =
     [
-        ("BrandIcon_x", "https://x.com/demargames"),
-        ("BrandIcon_bluesky", "https://bsky.app/profile/demargames.bsky.social"),
-        ("BrandIcon_instagram", "https://www.instagram.com/demargames/"),
-        ("BrandIcon_facebook", "https://www.facebook.com/demargames/"),
-        ("BrandIcon_reddit", "https://reddit.com/r/demargames"),
-        ("BrandIcon_telegram", "https://t.me/demargames"),
+        (SocialIcon.X, "https://x.com/demargames"),
+        (SocialIcon.Bluesky, "https://bsky.app/profile/demargames.bsky.social"),
+        (SocialIcon.Instagram, "https://www.instagram.com/demargames/"),
+        (SocialIcon.Facebook, "https://www.facebook.com/demargames/"),
+        (SocialIcon.Reddit, "https://reddit.com/r/demargames"),
+        (SocialIcon.Telegram, "https://t.me/demargames"),
     ];
 }

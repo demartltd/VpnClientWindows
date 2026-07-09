@@ -36,8 +36,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="SagerNet.Libbox" Version="0.0.0-local"
-      Condition="'$(HasLibbox)' == 'true'">
+    <PackageReference Include="SagerNet.Libbox" Version="0.0.0-local" Condition="'$(HasLibbox)' == 'true'">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
@@ -50,6 +49,9 @@
 
   <ItemGroup>
     <Content Include="Assets\**\*" />
+    <Content Include="Assets\Fonts\fa-brands-400.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Native\bin\sing-box.exe" Condition="Exists('Native\bin\sing-box.exe')">
       <Link>sing-box.exe</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -29,6 +29,8 @@
   <x:Double x:Key="ToolbarWideBreakpoint">800</x:Double>
   <x:Double x:Key="ToolbarTabWidth">168</x:Double>
   <Thickness x:Key="ToolbarChromeMargin">16,16,16,16</Thickness>
-  <Thickness x:Key="ToolbarSnackbarMargin">0,0,0,80</Thickness>
+  <Thickness x:Key="ToolbarSnackbarMargin">16,0,16,104</Thickness>
+  <Thickness x:Key="SnackbarOverlayMargin">16,0,16,16</Thickness>
   <Thickness x:Key="TabScrollPadding">16,16,16,0</Thickness>
+  <FontFamily x:Key="FaBrandsFont">ms-appx:///Assets/Fonts/fa-brands-400.ttf#Font Awesome 6 Brands</FontFamily>
 </ResourceDictionary>

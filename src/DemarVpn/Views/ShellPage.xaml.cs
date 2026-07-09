@@ -38,6 +38,7 @@ public sealed partial class ShellPage : Page
     {
         MainLayer.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
         BottomChrome.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        Snackbar.Margin = (Thickness)Application.Current.Resources["SnackbarOverlayMargin"];
         OverlayFrame.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
         OverlayFrame.Navigate(pageType);
     }
@@ -48,6 +49,7 @@ public sealed partial class ShellPage : Page
         OverlayFrame.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
         MainLayer.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
         BottomChrome.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+        Snackbar.Margin = (Thickness)Application.Current.Resources["ToolbarSnackbarMargin"];
     }
 }
 

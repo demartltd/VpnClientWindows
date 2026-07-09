@@ -67,7 +67,7 @@ internal sealed class LoginDialog : ContentDialog
     {
         _title.TextWrapping = TextWrapping.Wrap;
         _title.Margin = new Thickness(0, 0, 0, 8);
-        var tg = new IconLinkChip { IconKey = "BrandIcon_telegram", Url = "https://t.me/demargames" };
+        var tg = new IconLinkChip { Icon = SocialIcon.Telegram, Url = "https://t.me/demargames" };
         return new StackPanel
         {
             Spacing = 12,

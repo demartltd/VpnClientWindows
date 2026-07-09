@@ -1,40 +1,23 @@
-<Page
-    x:Class="DemarVpn.Views.SettingsPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <ScrollViewer Padding="{StaticResource TabScrollPadding}">
-    <StackPanel Spacing="12">
-      <StackPanel HorizontalAlignment="Center" Spacing="8" Margin="0,0,0,20">
-        <FontIcon Glyph="&#xE708;" FontSize="48" Foreground="{StaticResource DemarSeedBrush}" HorizontalAlignment="Center" />
-        <TextBlock Text="Demar VPN" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" />
-        <TextBlock Text="Настройки подключения и приложения" TextAlignment="Center" Opacity="0.7" TextWrapping="Wrap" />
-      </StackPanel>
-      <ContentControl x:Name="SocialLinksHost" HorizontalAlignment="Center" />
-      <Button Style="{StaticResource SettingsRowStyle}" Click="OnAppSettings">
-        <StackPanel>
-          <TextBlock Text="Настройки приложения" FontWeight="SemiBold" />
-          <TextBlock Text="Подключение, журнал диагностики и статус функций" Opacity="0.7" TextWrapping="Wrap" />
-        </StackPanel>
-      </Button>
-      <Button Style="{StaticResource SettingsRowStyle}" Click="OnSoon"><StackPanel>
-        <TextBlock Text="Обратная связь" FontWeight="SemiBold" />
-        <TextBlock Text="Отправить ошибку или предложение" Opacity="0.7" /></StackPanel></Button>
-      <Button Style="{StaticResource SettingsRowStyle}" Click="OnShare"><StackPanel>
-        <TextBlock Text="Пригласите друзей по ссылке" FontWeight="SemiBold" />
-        <TextBlock Text="Получите бесплатный премиум" Opacity="0.7" /></StackPanel></Button>
-      <Button Style="{StaticResource SettingsRowStyle}" Click="OnSoon"><StackPanel>
-        <TextBlock Text="Условия использования" FontWeight="SemiBold" />
-        <TextBlock Text="Правила использования сервиса" Opacity="0.7" /></StackPanel></Button>
-      <Button Style="{StaticResource SettingsRowStyle}" Click="OnSoon"><StackPanel>
-        <TextBlock Text="Конфиденциальность" FontWeight="SemiBold" />
-        <TextBlock Text="Как обрабатываются данные" Opacity="0.7" /></StackPanel></Button>
-      <Button x:Name="VersionFooter" Background="Transparent" BorderThickness="0" Margin="0,24,0,0"
-              HorizontalAlignment="Center" Click="OnVersionTap">
-        <StackPanel Spacing="2">
-          <TextBlock x:Name="VersionLine" Opacity="0.5" FontSize="12" TextAlignment="Center" />
-          <TextBlock x:Name="SingBoxLine" Opacity="0.5" FontSize="12" TextAlignment="Center" />
-        </StackPanel>
-      </Button>
-    </StackPanel>
-  </ScrollViewer>
-</Page>
+<Page
+    x:Class="DemarVpn.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ScrollViewer Padding="{StaticResource TabScrollPadding}">
+    <StackPanel>
+      <StackPanel HorizontalAlignment="Center" Spacing="8">
+        <FontIcon Glyph="&#xE705;" FontSize="64" Foreground="{StaticResource DemarPrimaryBrush}" HorizontalAlignment="Center" />
+        <TextBlock Text="Demar VPN" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" />
+        <TextBlock Text="Настройки подключения и приложения" TextAlignment="Center" Opacity="0.7" TextWrapping="Wrap" />
+      </StackPanel>
+      <ContentControl x:Name="SocialLinksHost" HorizontalAlignment="Center" Margin="0,32,0,32" />
+      <StackPanel x:Name="MenuHost" Spacing="12" />
+      <Button x:Name="VersionFooter" Background="Transparent" BorderThickness="0" Margin="0,36,0,0"
+              HorizontalAlignment="Center" Click="OnVersionTap">
+        <StackPanel Spacing="2">
+          <TextBlock x:Name="VersionLine" Opacity="0.5" FontSize="12" TextAlignment="Center" />
+          <TextBlock x:Name="SingBoxLine" Opacity="0.5" FontSize="12" TextAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </StackPanel>
+  </ScrollViewer>
+</Page>
