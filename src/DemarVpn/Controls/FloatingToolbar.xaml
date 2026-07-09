@@ -1,0 +1,34 @@
+<UserControl
+    x:Class="DemarVpn.Controls.FloatingToolbar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid ColumnSpacing="12">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="64" />
+    </Grid.ColumnDefinitions>
+    <Border Background="{StaticResource DemarSurfaceHighBrush}" CornerRadius="28" Height="64" Padding="4">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <ToggleButton x:Name="Tab0" Grid.Column="0" Click="OnTabClick" Tag="0">
+          <FontIcon Glyph="&#xE72E;" />
+        </ToggleButton>
+        <ToggleButton x:Name="Tab1" Grid.Column="1" Click="OnTabClick" Tag="1">
+          <FontIcon Glyph="&#xE774;" />
+        </ToggleButton>
+        <ToggleButton x:Name="Tab2" Grid.Column="2" Click="OnTabClick" Tag="2">
+          <FontIcon Glyph="&#xE713;" />
+        </ToggleButton>
+      </Grid>
+    </Border>
+    <Border Grid.Column="1" Background="{StaticResource DemarSurfaceHighBrush}" CornerRadius="28" Height="64" Width="64">
+      <ToggleButton x:Name="Tab3" Click="OnTabClick" Tag="3">
+        <FontIcon Glyph="&#xE77B;" />
+      </ToggleButton>
+    </Border>
+  </Grid>
+</UserControl>

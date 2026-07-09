@@ -1,0 +1,29 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Fallback until DemarPalette.Apply(); replaced at startup from seed #3A6EA5 TonalSpot dark -->
+  <Color x:Key="DemarSeedColor">#FF3A6EA5</Color>
+  <SolidColorBrush x:Key="DemarSeedBrush" Color="{StaticResource DemarSeedColor}" />
+  <SolidColorBrush x:Key="DemarBackgroundBrush" Color="#FF121820" />
+  <SolidColorBrush x:Key="DemarSurfaceBrush" Color="#FF1A222C" />
+  <SolidColorBrush x:Key="DemarSurfaceHighBrush" Color="#FF252E3A" />
+  <SolidColorBrush x:Key="DemarPrimaryBrush" Color="#FFA5C8FF" />
+  <SolidColorBrush x:Key="DemarPrimaryContainerBrush" Color="#FF2A4A6E" />
+  <SolidColorBrush x:Key="DemarOnPrimaryContainerBrush" Color="#FFD8E8F8" />
+  <SolidColorBrush x:Key="DemarSecondaryBrush" Color="#FFB8C8DA" />
+  <SolidColorBrush x:Key="DemarTertiaryBrush" Color="#FFC8B8E8" />
+  <SolidColorBrush x:Key="DemarErrorBrush" Color="#FFFFB4AB" />
+  <SolidColorBrush x:Key="DemarSuccessBrush" Color="#FF81C784" />
+  <SolidColorBrush x:Key="DemarWarningBrush" Color="#FFFFB74D" />
+  <SolidColorBrush x:Key="DemarPrimaryMutedBrush" Color="#1A3A6EA5" />
+  <SolidColorBrush x:Key="DemarSuccessMutedBrush" Color="#33B8C8DA" />
+  <SolidColorBrush x:Key="DemarErrorMutedBrush" Color="#33FFB4AB" />
+  <SolidColorBrush x:Key="DemarWarningMutedBrush" Color="#33C8B8E8" />
+
+  <CornerRadius x:Key="DemarCornerSmall">12</CornerRadius>
+  <CornerRadius x:Key="DemarCornerMedium">14</CornerRadius>
+  <CornerRadius x:Key="DemarCornerLarge">16</CornerRadius>
+  <x:Double x:Key="ToolbarExtent">88</x:Double>
+  <Thickness x:Key="FloatingToolbarMargin">16,0,16,16</Thickness>
+  <Thickness x:Key="FloatingToolbarInset">0,0,0,88</Thickness>
+</ResourceDictionary>

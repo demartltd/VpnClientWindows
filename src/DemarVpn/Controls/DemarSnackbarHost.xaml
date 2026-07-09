@@ -1,0 +1,19 @@
+<UserControl
+    x:Class="DemarVpn.Controls.DemarSnackbarHost"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Visibility="Collapsed" HorizontalAlignment="Stretch" IsHitTestVisible="False">
+  <Border x:Name="Host" CornerRadius="{StaticResource DemarCornerSmall}" Padding="12,10" MinHeight="48"
+          PointerPressed="OnCopyTap" BorderThickness="1" BorderBrush="#33FFFFFF">
+    <Grid ColumnSpacing="8">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <FontIcon x:Name="Icon" FontSize="16" VerticalAlignment="Center" />
+      <TextBlock x:Name="Message" Grid.Column="1" TextWrapping="Wrap" VerticalAlignment="Center" />
+      <Button Grid.Column="2" Content="✕" Click="OnDismiss" Background="Transparent" BorderThickness="0" />
+    </Grid>
+  </Border>
+</UserControl>

@@ -1,0 +1,43 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+Desktop.ini
+.history/
+.vs/
+*.user
+*.suo
+
+# Build
+**/bin/
+**/obj/
+**/AppPackages/
+*.msix
+*.msixbundle
+*.appxupload
+*.binlog
+
+# Native (libbox-build-windows.py)
+src/DemarVpn/Native/libbox/*
+!src/DemarVpn/Native/libbox/README.txt
+src/DemarVpn/Native/packages/*
+!src/DemarVpn/Native/packages/README.txt
+src/DemarVpn/Native/runtimes/
+src/DemarVpn/Native/bin/
+
+# sing-box — bundled_version.txt + README only
+**/singbox/*
+!**/singbox/bundled_version.txt
+!**/singbox/README.txt
+
+# Dev MSIX signing (ensure-dev-signing.ps1)
+src/DemarVpn/DemarVpn_Dev.pfx
+scripts/build/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Local scratch
+logs.txt
+*.log

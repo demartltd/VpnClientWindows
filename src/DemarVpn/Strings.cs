@@ -1,0 +1,47 @@
+namespace DemarVpn;
+
+public static class Strings
+{
+    public const string AppName = "Demar VPN";
+    public const string HomeTitle = "Demar VPN";
+    public const string VpnConnected = "Подключено";
+    public const string ServerNotSelected = "Не выбран";
+    public const string AccountTitle = "Аккаунт";
+    public const string AccountSignInHint = "Войдите, чтобы управлять подпиской и профилем";
+    public const string SignIn = "Войти";
+    public const string SignOut = "Выйти";
+    public const string SettingsHeaderSubtitle = "Настройки подключения и приложения";
+    public const string SettingsApp = "Настройки приложения";
+    public const string SettingsAppSub = "Подключение, журнал диагностики и статус функций";
+    public const string SettingsFeedback = "Обратная связь";
+    public const string SettingsFeedbackSub = "Отправить ошибку или предложение";
+    public const string SettingsShare = "Пригласите друзей по ссылке";
+    public const string SettingsShareSub = "Получите бесплатный премиум";
+    public const string SettingsTerms = "Условия использования";
+    public const string SettingsTermsSub = "Правила использования сервиса";
+    public const string SettingsPrivacy = "Конфиденциальность";
+    public const string SettingsPrivacySub = "Как обрабатываются данные";
+    public const string AppSettingsTitle = "Настройки приложения";
+    public const string JournalTitle = "Журнал";
+    public const string JournalSubtitle = "Сообщения приложения и ядра VPN";
+    public const string JournalEmpty = "Пока пусто";
+    public const string JournalExpand = "Показать журнал";
+    public const string JournalClear = "Очистить";
+    public const string JournalShare = "Поделиться";
+    public const string JournalCleared = "Журнал очищен.";
+    public const string JournalShareEmpty = "Журнал пуст — нечего отправить.";
+    public const string JournalShareFailed = "Не удалось поделиться журналом: {0}";
+    public const string ShareAppPitch = "Demar VPN — клиент NaiveProxy / sing-box.\n\nПодробности в репозитории проекта.";
+    public const string ServiceMenuTitle = "Service menu";
+    public const string LoginSheetTitle = "Вход в аккаунт";
+    public const string LoginEmailHint = "Email";
+    public const string LoginContinue = "Продолжить";
+    public const string LoginMoreMethods = "More Login Methods";
+    public const string LoginOtpSent = "Отправлено на {0}";
+    public const string LoginResend = "Отправить код снова";
+    public const string LoginTotp = "Код из аутентификатора";
+    public const string Soon = "Скоро";
+    public const string ServerSelected = "Сервер выбран";
+    public const string PlatformWindows = "Windows";
+    public const string VersionName = "1.0.7";
+}
