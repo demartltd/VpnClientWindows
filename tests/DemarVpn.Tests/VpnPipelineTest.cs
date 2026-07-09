@@ -32,8 +32,12 @@ public class VpnPipelineTest
 
             var naive = outbounds[0]!.AsObject();
             Assert.Equal("naive", naive["type"]!.GetValue<string>());
+            Assert.Equal("5s", naive["connect_timeout"]!.GetValue<string>());
             Assert.False(naive["quic"]!.GetValue<bool>());
             Assert.True(naive["udp_over_tcp"]!.AsObject()["enabled"]!.GetValue<bool>());
+            Assert.Equal(2, naive["udp_over_tcp"]!.AsObject()["version"]!.GetValue<int>());
+
+            Assert.True(cfg["log"]!.AsObject()["timestamp"]!.GetValue<bool>());
 
             var route = cfg["route"]!.AsObject();
             Assert.Equal(SingBoxTags.Proxy, route["final"]!.GetValue<string>());
@@ -45,6 +49,13 @@ public class VpnPipelineTest
             {
                 Assert.True(dns["rules"]!.AsArray().Any(rule =>
                     rule!["domain"]?.AsArray().Any(d => d!.GetValue<string>() == domain) == true));
+            }
+            foreach (var host in VpnTunnelProbe.ProbeBootstrapDomains)
+            {
+                Assert.True(dns["rules"]!.AsArray().Any(rule =>
+                    rule!["domain"]?.AsArray().Any(d => d!.GetValue<string>() == host) == true));
+                Assert.True(route["rules"]!.AsArray().Any(rule =>
+                    rule!["domain"]?.AsArray().Any(d => d!.GetValue<string>() == host) == true));
             }
 
             var inbounds = cfg["inbounds"]!.AsArray();

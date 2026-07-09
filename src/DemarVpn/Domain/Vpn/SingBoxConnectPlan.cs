@@ -30,12 +30,13 @@ public sealed record SingBoxConnectPlan
                 ["server_port"] = profile.Port,
                 ["username"] = profile.Username,
                 ["password"] = profile.Password,
+                ["connect_timeout"] = "5s",
                 ["domain_resolver"] = new Dictionary<string, object?>
                 {
                     ["server"] = SingBoxTags.DnsDirect,
                     ["strategy"] = "ipv4_only",
                 },
-                ["udp_over_tcp"] = new Dictionary<string, object?> { ["enabled"] = true },
+                ["udp_over_tcp"] = new Dictionary<string, object?> { ["enabled"] = true, ["version"] = 2 },
                 ["quic"] = false,
                 ["tls"] = new Dictionary<string, object?>
                 {

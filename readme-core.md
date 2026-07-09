@@ -10,7 +10,25 @@
 
 Платформа: **Windows only** (WinUI 3 + sing-ffi C# bindings).
 
-**Итерация 2:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, process/Libbox engines).
+**Итерация 2:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine` primary).
+
+Connect pipeline: `UplinkIpv4` (retry) → `UplinkProbe.FirstReachableAsync` (TCP preflight, all IPs) → config → subprocess → `VpnTunnelProbe.WaitForTunnelReadyAsync`.
+
+### Таймауты (`ConnectTimeouts`)
+
+| Константа | Значение | Назначение |
+|-----------|----------|------------|
+| `PreflightMs` | 2 000 | TCP preflight на каждый resolved IP |
+| `StartupMs` | 3 000 | ожидание старта sing-box |
+| `ProbeMs` | 8 000 | diag TCP + HTTP egress probe |
+| `ConnectMs` | 15 000 | единый deadline pipeline |
+| `WatchdogMs` | 17 000 | аварийный стоп при зависании в Connecting |
+
+### Смена сервера (`VpnController.Select`)
+
+- **Disconnected**: только обновление `Selected`
+- **Connected / Connecting / Error**: `SwitchServerAsync` — cancel → stop → connect к новому `Selected`
+- Быстрые переключения: каждый `Select` отменяет предыдущую операцию через `_op.Cancel()`
 
 ---
 
@@ -47,7 +65,8 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 
 | Поле | Значение |
 |------|----------|
-| `udp_over_tcp` | `true` |
+| `udp_over_tcp` | `{ enabled: true, version: 2 }` |
+| `connect_timeout` | `5s` |
 | `quic` | `false` |
 | `tls` | enabled + `server_name` |
 | `domain_resolver` | `dns-direct`, `ipv4_only` |
@@ -61,7 +80,7 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 | `dns-direct` | UDP `1.1.1.1` | bootstrap, domain resolver |
 | `dns-remote` | HTTPS `1.1.1.1` | DoH через proxy |
 
-Rules: PTR → reject; bootstrap domains → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`.
+Rules: PTR → reject; bootstrap domains (uplink + probe hosts) → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`.
 
 ---
 
@@ -101,6 +120,8 @@ py -3 scripts/for_builds/libbox-build-windows.py
 pwsh scripts/for_builds/build_windows.ps1
 ```
 
+Runtime рядом с `sing-box.exe` (Naive): `wintun.dll`, `libcronet.dll` — скрипт кладёт в `Native/bin/` и MSIX копирует в output.
+
 Очистка: `python3 scripts/singbox-cleaner.py -y`
 
 ### Build (sing-ffi)
@@ -110,7 +131,7 @@ lib_windows:
     sing-ffi generate --config ./experimental/libbox/ffi.json --platform-type csharp
 ```
 
-Скрипт клонирует тег `v1.13.13`, генерирует C# в `src/DemarVpn/Native/libbox/`.
+Скрипт клонирует тег `v1.13.14`, генерирует C# в `src/DemarVpn/Native/libbox/` (опционально).
 
 TAGS (parity с Android):
 
@@ -129,8 +150,9 @@ with_gvisor,with_naive_outbound,with_clash_api,badlinkname,tfogo_checklinkname0
 | `Services/Vpn/VpnController.cs` | Connect pipeline, UI bridge |
 | `Services/Network/UplinkIpv4.cs` | uplink resolve |
 | `Native/libbox/` | sing-ffi generated bindings |
-| `Services/Vpn/LibboxVpnEngine.cs` | Libbox in-process (`HAS_LIBBOX`) |
-| `Services/Vpn/SingBoxProcessEngine.cs` | sing-box.exe subprocess fallback |
+| `Services/Vpn/SingBoxProcessEngine.cs` | sing-box.exe subprocess (**primary**) |
+| `Services/Vpn/LibboxVpnEngine.cs` | Libbox in-process (optional, `HAS_LIBBOX`) |
+| `Services/Network/UplinkProbe.cs` | TCP preflight uplink |
 | `Services/Vpn/WintunPlatform.cs` | PlatformInterface (`HAS_LIBBOX`) |
 
 Синхронизировать TAGS / pipeline с [demar_vpn_android/readme-core.md](../demar_vpn_android/readme-core.md).

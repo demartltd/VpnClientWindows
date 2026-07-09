@@ -9,10 +9,5 @@ public interface IVpnEngine
 
 public static class VpnEngineFactory
 {
-    public static IVpnEngine Create() =>
-#if HAS_LIBBOX
-        new LibboxVpnEngine();
-#else
-        new SingBoxProcessEngine();
-#endif
+    public static IVpnEngine Create() => new SingBoxProcessEngine();
 }

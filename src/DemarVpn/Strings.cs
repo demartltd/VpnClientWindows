@@ -43,6 +43,10 @@ public static class Strings
     public const string LoginTotp = "Код из аутентификатора";
     public const string Soon = "Скоро";
     public const string ServerSelected = "Сервер выбран";
+    public const string VpnConnectFailed = "Не удалось подключиться";
+    public const string VpnServerUnreachable = "Сервер недоступен";
+    public const string VpnUacCancelled = "Подключение отменено (UAC)";
+    public const string VpnTunAccessDenied = "Нет прав для TUN. Подтвердите запрос UAC при подключении.";
     public const string PlatformWindows = "Windows";
     public const string VersionName = "1.0.7";
 }

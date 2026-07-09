@@ -20,5 +20,7 @@
     <Compile Include="..\..\src\DemarVpn\Core\**\*.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Vpn\SingBoxConfigBuilder.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Network\UplinkIpv4.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Network\UplinkProbe.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Vpn\VpnTunnelProbe.cs" />
   </ItemGroup>
 </Project>

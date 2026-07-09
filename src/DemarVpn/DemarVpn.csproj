@@ -60,6 +60,10 @@
       <Link>wintun.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Native\bin\libcronet.dll" Condition="Exists('Native\bin\libcronet.dll')">
+      <Link>libcronet.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Assets\singbox\bundled_version.txt" Condition="Exists('Assets\singbox\bundled_version.txt')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

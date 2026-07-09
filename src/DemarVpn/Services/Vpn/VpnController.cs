@@ -10,7 +10,6 @@ public sealed class VpnController : NotifyBase
     private readonly IVpnEngine _engine = VpnEngineFactory.Create();
     private CancellationTokenSource? _op;
     private CancellationTokenSource? _watchdog;
-    private readonly List<IDisposable> _subs = [];
 
     public VpnState State { get; private set; } = VpnState.Disconnected;
     public ServerProfile Selected { get; private set; } = TestServer.Default;
@@ -19,16 +18,14 @@ public sealed class VpnController : NotifyBase
 
     public event Action<string>? ErrorRaised;
 
-    public VpnController()
-    {
-        _subs.Add(VpnEventStream.AddListener(ApplyEvent));
-    }
-
     public void Select(ServerProfile profile)
     {
+        if (profile.Id == Selected.Id) return;
         Selected = profile;
         Raise(nameof(Selected));
         AppLog.Append($"[ui] server selected: {profile.DisplayName}");
+        if (State.Kind is VpnStateKind.Connected or VpnStateKind.Connecting or VpnStateKind.Error)
+            _ = SwitchServerAsync();
     }
 
     public async Task ConnectAsync()
@@ -38,6 +35,9 @@ public sealed class VpnController : NotifyBase
         _watchdog?.Cancel();
         _op = new CancellationTokenSource();
         var token = _op.Token;
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+        deadline.CancelAfter(ConnectTimeouts.ConnectMs);
+        var ct = deadline.Token;
         SetState(VpnState.Connecting);
         AppLog.Append("[ui] windows home: connect");
         try
@@ -45,24 +45,36 @@ public sealed class VpnController : NotifyBase
             var plan = Selected.ConnectPlan;
             var resolved = await UplinkIpv4.ResolveAsync(plan.UplinkHost);
             if (resolved.Count > 0) plan = plan.WithExtraDirectIps(resolved);
+
+            var port = Selected.UplinkPort ?? 443;
+            var target = await UplinkProbe.FirstReachableAsync(plan, resolved, port, ct);
+            if (target is null)
+            {
+                AppLog.Append($"[vpn] uplink preflight failed for {plan.UplinkHost}:{port}");
+                throw new InvalidOperationException(Strings.VpnServerUnreachable);
+            }
+
             var configJson = SingBoxConfigBuilder.BuildTunConfigJson(plan);
-            AppLog.Append($"connect uplinkHost={plan.UplinkHost} uplinkPort={Selected.UplinkPort}");
+            AppLog.Append($"connect uplinkHost={plan.UplinkHost} uplinkPort={port} target={target} resolved={string.Join(",", resolved)}");
 
             _watchdog = CancellationTokenSource.CreateLinkedTokenSource(token);
             _ = WatchdogAsync(_watchdog.Token);
 
-            await _engine.StartAsync(configJson, token);
-            var budget = ConnectTimeouts.ConnectMs;
-            var probe = await Task.Run(() => VpnTunnelProbe.WaitForTunnelReady(budget), token);
+            await _engine.StartAsync(configJson, ct);
+            var probe = await VpnTunnelProbe.WaitForTunnelReadyAsync(ConnectTimeouts.ProbeMs, ct);
             if (probe != TunnelReadyResult.Ok)
             {
                 var reason = probe == TunnelReadyResult.TcpFail ? "diag proxy unreachable" : "upstream http fail";
-                throw new InvalidOperationException($"Tunnel probe failed: {reason}");
+                throw new InvalidOperationException($"{Strings.VpnConnectFailed}: {reason}");
             }
             SetState(VpnState.Connected);
             AppLog.Append("[vpn] connected");
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            if (State.Kind == VpnStateKind.Connecting)
+                SetState(VpnState.Disconnected);
+        }
         catch (Exception ex)
         {
             await _engine.StopAsync();
@@ -107,7 +119,6 @@ public sealed class VpnController : NotifyBase
             }
             return;
         }
-        // Real stats via clash API — roadmap; show zeros instead of mock random.
         if (Throughput.DownloadBps != 0 || Throughput.UploadBps != 0)
         {
             Throughput = new(0, 0);
@@ -115,34 +126,36 @@ public sealed class VpnController : NotifyBase
         }
     }
 
+    private async Task SwitchServerAsync()
+    {
+        _op?.Cancel();
+        _watchdog?.Cancel();
+        var kind = State.Kind;
+        if (kind == VpnStateKind.Connected)
+            await DisconnectAsync();
+        else if (kind is VpnStateKind.Connecting or VpnStateKind.Error)
+        {
+            await _engine.StopAsync();
+            SetState(VpnState.Disconnected);
+        }
+        await ConnectAsync();
+    }
+
     private async Task WatchdogAsync(CancellationToken token)
     {
         try
         {
-            await Task.Delay(ConnectTimeouts.ConnectMs, token);
+            await Task.Delay(ConnectTimeouts.WatchdogMs, token);
             if (State.Kind == VpnStateKind.Connecting)
             {
+                _op?.Cancel();
                 await _engine.StopAsync();
-                SetState(VpnState.Error("Connect timeout"));
-                ErrorRaised?.Invoke("Connect timeout");
-                AppServices.Snackbar.ShowError("Connect timeout");
+                SetState(VpnState.Error(Strings.VpnConnectFailed));
+                ErrorRaised?.Invoke(Strings.VpnConnectFailed);
+                AppServices.Snackbar.ShowError(Strings.VpnConnectFailed);
             }
         }
         catch (OperationCanceledException) { }
-    }
-
-    private void ApplyEvent(VpnStateEvent evt)
-    {
-        var mapped = evt.State switch
-        {
-            "connecting" => VpnState.Connecting,
-            "connected" => VpnState.Connected,
-            "disconnecting" => VpnState.Disconnecting,
-            "disconnected" => VpnState.Disconnected,
-            "error" => VpnState.Error(evt.Message),
-            _ => (VpnState?)null,
-        };
-        if (mapped is not null) SetState(mapped);
     }
 
     private void SetState(VpnState state)

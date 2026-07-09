@@ -17,7 +17,7 @@
 Требуется **Windows** + VS 2022 / .NET 10 SDK + Windows App SDK + Go (для Libbox).
 
 ```powershell
-py -3 scripts/for_builds/libbox-build-windows.py   # sing-box.exe + wintun.dll
+py -3 scripts/for_builds/libbox-build-windows.py   # sing-box.exe + wintun.dll + libcronet.dll
 python3 scripts/port_brand_icons.py       # при изменении Android brand icons
 python3 scripts/other/port_country_flags.py  # Twemoji флаги → Assets/Flags/
 python3 scripts/generate_icons.py         # Assets из scripts/logo_clear.png
@@ -79,7 +79,7 @@ pwsh scripts/install_release.ps1        # UAC для certutil
 | App settings (журнал) | `AppLog` — до 512 строк, tail-trim |
 | Service menu (3× tap version) | mock diagnostics |
 
-VPN connect (Naive MVP) — **реализовано** (sing-box process или in-process Libbox при `HAS_LIBBOX`). Auth, share, egress diagnostics — **следующий этап**. Throughput (Home KB/s) — **0 до clash API**.
+VPN connect (Naive MVP) — **реализовано** (`SingBoxProcessEngine` + Wintun). MSIX не может запускаться от администратора — при Connect появится **UAC для sing-box.exe** (TUN).
 
 ---
 
@@ -117,6 +117,6 @@ pwsh scripts/install_release.ps1
 |---------|--------|
 | WinUI 3 UI (4 tabs + overlay + login) | реализовано |
 | Тема / snackbar / соц. иконки | parity с Android |
-| Libbox VPN layer | `Native/libbox/` + `SingBoxProcessEngine` fallback |
-| Domain / data / Naive pipeline | `Domain/Vpn/*`, `SingBoxConfigBuilder` |
+| Libbox VPN layer | `Native/libbox/` optional; **primary:** `SingBoxProcessEngine` |
+| Domain / data / Naive pipeline | `Domain/Vpn/*`, `SingBoxConfigBuilder`, `UplinkProbe` |
 | Home connect/disconnect | `VpnController` + tunnel probe |

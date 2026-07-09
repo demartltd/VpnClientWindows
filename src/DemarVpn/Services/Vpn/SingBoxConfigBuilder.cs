@@ -13,11 +13,16 @@ public static class SingBoxConfigBuilder
         string logLevel = "warning") =>
         BuildTunConfig(plan, tunName, mtu, logLevel).ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 
-    private static JsonObject BuildTunConfig(SingBoxConnectPlan plan, string tunName, int mtu, string logLevel) =>
-        new()
+    private static JsonObject BuildTunConfig(SingBoxConnectPlan plan, string tunName, int mtu, string logLevel)
+    {
+        var bootstrap = plan.Tun.BootstrapDomains
+            .Concat(VpnTunnelProbe.ProbeBootstrapDomains)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return new JsonObject
         {
-            ["log"] = new JsonObject { ["level"] = logLevel },
-            ["dns"] = MakeDns(plan.Tun.DnsFinal, plan.Tun.BootstrapDomains),
+            ["log"] = new JsonObject { ["level"] = logLevel, ["timestamp"] = true },
+            ["dns"] = MakeDns(plan.Tun.DnsFinal, bootstrap),
             ["inbounds"] = new JsonArray(MakeTunInbound(tunName, mtu, plan.DirectIPs, plan.Tun.StrictRoute), new JsonObject
             {
                 ["type"] = "mixed",
@@ -25,13 +30,14 @@ public static class SingBoxConfigBuilder
                 ["listen"] = SingBoxTags.DiagListenHost,
                 ["listen_port"] = SingBoxTags.DiagListenPort,
             }),
-            ["route"] = MakeRoute(SingBoxTags.TunInbound, plan.DirectIPs, plan.Tun.BootstrapDomains),
+            ["route"] = MakeRoute(SingBoxTags.TunInbound, plan.DirectIPs, bootstrap),
             ["outbounds"] = new JsonArray(ToJson(plan.ProxyOutbound), new JsonObject
             {
                 ["type"] = "direct",
                 ["tag"] = SingBoxTags.Direct,
             }),
         };
+    }
 
     private static JsonObject MakeDns(string dnsFinal, IReadOnlyList<string> bootstrapDomains)
     {
