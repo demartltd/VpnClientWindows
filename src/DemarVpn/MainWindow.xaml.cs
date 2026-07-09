@@ -19,9 +19,11 @@ public sealed partial class MainWindow : Window
         {
             var res = Application.Current.Resources;
             presenter.PreferredMinimumWidth = (int)(double)res["AppMinWidth"];
-            AppWindow.Resize(new SizeInt32(
+            var size = new SizeInt32(
                 (int)(double)res["AppDefaultWidth"],
-                (int)(double)res["AppDefaultHeight"]));
+                (int)(double)res["AppDefaultHeight"]);
+            AppWindow.Resize(size);
+            CenterOnScreen(size);
         }
         TryMicaBackdrop();
         Root.Navigate(typeof(Views.ShellPage));
@@ -34,5 +36,13 @@ public sealed partial class MainWindow : Window
     {
         if (MicaController.IsSupported())
             SystemBackdrop = new MicaBackdrop { Kind = MicaKind.BaseAlt };
+    }
+
+    private void CenterOnScreen(SizeInt32 size)
+    {
+        var work = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
+        AppWindow.Move(new PointInt32(
+            work.X + (work.Width - size.Width) / 2,
+            work.Y + (work.Height - size.Height) / 2));
     }
 }

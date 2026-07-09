@@ -3,6 +3,7 @@ namespace DemarVpn;
 public static class Strings
 {
     public const string AppName = "Demar VPN";
+    public const string AlreadyRunningMessage = "Приложение уже запущено.";
     public const string HomeTitle = "Demar VPN";
     public const string VpnConnected = "Подключено";
     public const string ServerNotSelected = "Не выбран";
