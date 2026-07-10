@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
@@ -12,9 +12,9 @@
     <WindowsPackageType>MSIX</WindowsPackageType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.0.7</Version>
-    <AssemblyVersion>1.0.7.8</AssemblyVersion>
-    <FileVersion>1.0.7.8</FileVersion>
+    <Version>1.0.9</Version>
+    <AssemblyVersion>1.0.9.10</AssemblyVersion>
+    <FileVersion>1.0.9.10</FileVersion>
     <ApplicationTitle>Demar VPN</ApplicationTitle>
     <ApplicationDescription>Demar VPN — NaiveProxy / sing-box client</ApplicationDescription>
   </PropertyGroup>

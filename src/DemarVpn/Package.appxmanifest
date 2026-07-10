@@ -5,12 +5,12 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
   <Identity
-    Name="DemarVpn"
-    Publisher="CN=DemarVpn Dev"
-    Version="1.0.7.8" />
+    Name="Remader.DemarVPN"
+    Publisher="CN=19460482-FBEB-4CE2-9A2D-39FAD1537693"
+    Version="1.0.9.0" />
   <Properties>
     <DisplayName>Demar VPN</DisplayName>
-    <PublisherDisplayName>Demar Ltd</PublisherDisplayName>
+    <PublisherDisplayName>Remader</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   <Dependencies>

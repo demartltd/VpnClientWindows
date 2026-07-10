@@ -1,4 +1,5 @@
 using DemarVpn.Controls;
+using DemarVpn.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -7,6 +8,7 @@ namespace DemarVpn.Views;
 public sealed partial class ShellPage : Page
 {
     private readonly Page[] _tabs;
+    private int _tab;
 
     public ShellPage()
     {
@@ -14,6 +16,8 @@ public sealed partial class ShellPage : Page
         _tabs = [HomeTab, ServersTab, SettingsTab, AccountTab];
         SettingsTab.AppSettingsRequested += () => ShowOverlay(typeof(AppSettingsPage));
         SettingsTab.ServiceMenuRequested += () => ShowOverlay(typeof(ServiceMenuPage));
+        AccountTab.SignOutRequested += OnSignOutRequested;
+        LoginSheet.SignedIn += OnLoginSuccess;
         Loaded += (_, _) => UpdateToolbarLayout();
         SizeChanged += (_, _) => UpdateToolbarLayout();
     }
@@ -24,14 +28,41 @@ public sealed partial class ShellPage : Page
         Toolbar.SetWideLayout(ActualWidth >= breakpoint);
     }
 
-    private void OnTabChanged(object sender, SelectionChangedEventArgs e) =>
-        SelectTab(Toolbar.SelectedIndex);
+    private void OnTabChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var index = Toolbar.SelectedIndex;
+        if (index == 3 && !AppServices.Auth.SignedIn)
+        {
+            Toolbar.Select(_tab);
+            LoginSheet.Show();
+            return;
+        }
+        _tab = index;
+        SelectTab(index);
+    }
+
+    private void OnLoginSuccess(object? sender, EventArgs e)
+    {
+        AppServices.Auth.SignIn();
+        _tab = 3;
+        Toolbar.Select(3);
+        SelectTab(3);
+        AccountTab.Refresh();
+    }
+
+    private void OnSignOutRequested()
+    {
+        _tab = 0;
+        Toolbar.Select(0);
+        SelectTab(0);
+    }
 
     private void SelectTab(int index)
     {
         for (var i = 0; i < _tabs.Length; i++)
             _tabs[i].Visibility = i == index ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
         if (index == 0) AppServices.Vpn.TickThroughput();
+        if (index == 3) AccountTab.Refresh();
     }
 
     private void ShowOverlay(Type pageType)

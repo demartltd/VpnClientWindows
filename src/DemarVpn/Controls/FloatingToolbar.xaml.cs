@@ -68,7 +68,7 @@ public sealed partial class FloatingToolbar : UserControl
     }
   }
 
-  private void Select(int index)
+  public void Select(int index)
   {
     _selectedIndex = index;
     for (var i = 0; i < _tabs.Length; i++)

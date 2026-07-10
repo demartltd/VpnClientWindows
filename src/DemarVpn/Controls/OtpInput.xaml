@@ -1,0 +1,12 @@
+<UserControl
+    x:Class="DemarVpn.Controls.OtpInput"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid>
+    <StackPanel x:Name="Cells" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8"
+                PointerPressed="OnCellsPressed" />
+    <TextBox x:Name="Input" Opacity="0" MaxLength="6"
+             HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+             GotFocus="OnInputFocus" LostFocus="OnInputBlur" />
+  </Grid>
+</UserControl>

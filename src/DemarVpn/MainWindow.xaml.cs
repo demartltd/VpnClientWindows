@@ -19,6 +19,7 @@ public sealed partial class MainWindow : Window
         {
             var res = Application.Current.Resources;
             presenter.PreferredMinimumWidth = (int)(double)res["AppMinWidth"];
+            presenter.PreferredMinimumHeight = (int)(double)res["AppMinHeight"];
             var size = new SizeInt32(
                 (int)(double)res["AppDefaultWidth"],
                 (int)(double)res["AppDefaultHeight"]);

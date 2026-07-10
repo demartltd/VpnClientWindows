@@ -4,22 +4,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <ScrollViewer Padding="{StaticResource TabScrollPadding}">
     <StackPanel Spacing="16">
-      <TextBlock Text="Аккаунт" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" />
-      <StackPanel x:Name="SignedOutPanel" Spacing="20">
-        <TextBlock Text="Войдите, чтобы управлять подпиской и профилем" TextAlignment="Center" Opacity="0.7" TextWrapping="Wrap" />
-        <Button Content="Войти" HorizontalAlignment="Center" Click="OnSignIn" />
-      </StackPanel>
-      <StackPanel x:Name="SignedInPanel" Visibility="Collapsed" Spacing="12">
-        <Border Style="{StaticResource DemarCard}">
-          <StackPanel Spacing="6">
-            <TextBlock x:Name="UserName" FontWeight="SemiBold" FontSize="18" />
-            <TextBlock x:Name="UserId" Opacity="0.7" />
-            <TextBlock x:Name="UserVpn" />
-            <TextBlock x:Name="UserExpires" Opacity="0.7" />
-          </StackPanel>
-        </Border>
-        <Button Content="Выйти" Click="OnSignOut" HorizontalAlignment="Stretch" />
-      </StackPanel>
+      <TextBlock Text="{x:Bind Title, Mode=OneTime}" Style="{StaticResource DemarTabTitleStyle}" />
+      <Border Style="{StaticResource DemarCard}">
+        <StackPanel Spacing="6">
+          <TextBlock x:Name="UserName" FontWeight="SemiBold" FontSize="18" />
+          <TextBlock x:Name="UserId" Opacity="0.7" />
+          <TextBlock x:Name="UserVpn" />
+          <TextBlock x:Name="UserExpires" Opacity="0.7" />
+        </StackPanel>
+      </Border>
+      <Button Content="{x:Bind SignOutLabel, Mode=OneTime}" Click="OnSignOut" HorizontalAlignment="Stretch" />
     </StackPanel>
   </ScrollViewer>
 </Page>

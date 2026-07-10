@@ -22,5 +22,6 @@
     <controls:DemarSnackbarHost x:Name="Snackbar" Grid.RowSpan="2" Canvas.ZIndex="2000"
                                 VerticalAlignment="Bottom" Margin="{StaticResource ToolbarSnackbarMargin}"
                                 HorizontalAlignment="Stretch" />
+    <controls:LoginBottomSheet x:Name="LoginSheet" Grid.RowSpan="2" Canvas.ZIndex="1500" />
   </Grid>
 </Page>

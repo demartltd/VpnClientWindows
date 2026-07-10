@@ -59,7 +59,12 @@ pwsh scripts/install_release.ps1        # UAC для certutil
 
 1. [Microsoft Partner Center](https://partner.microsoft.com/dashboard) — регистрация аккаунта разработчика (Individual ~$19 one-time).
 2. Создать приложение → загрузить MSIX, подписанный Store certificate.
-3. Пользователям не нужно доверять сертификату вручную.
+3. Store-сборка: `pwsh scripts/for_builds/build_windows.ps1 -Store` (unsigned MSIX с identity из Partner Center).
+4. Identity в `Package.appxmanifest`: `Remader.DemarVPN` / `CN=19460482-FBEB-4CE2-9A2D-39FAD1537693` / `PublisherDisplayName: Remader`.
+5. Версия MSIX — `Major.Minor.Build.0` (четвёртый сегмент всегда `0`; `VERSION_CODE` — только для `AssemblyVersion`).
+6. `runFullTrust` — restricted capability; запросить одобрение в Partner Center (нужен для desktop/VPN).
+7. Локальная dev-установка: `pwsh scripts/install_release.ps1` (подменяет identity на dev-сертификат при сборке).
+8. Пользователям не нужно доверять сертификату вручную.
 
 ### Распространение вне Store (production)
 

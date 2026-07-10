@@ -12,7 +12,7 @@ public static class AppPackageInfo
                 if (!string.IsNullOrEmpty(pkg?.Id.Name)) return pkg.Id.Name;
             }
             catch { /* unpackaged dev */ }
-            return "DemarVpn";
+            return "Remader.DemarVPN";
         }
     }
 

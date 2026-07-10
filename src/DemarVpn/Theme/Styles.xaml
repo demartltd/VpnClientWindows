@@ -16,6 +16,173 @@
     <Setter Property="TextAlignment" Value="Center" />
   </Style>
 
+  <Style x:Key="DemarTabTitleStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="28" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+
+  <Style x:Key="DemarTextBoxStyle" TargetType="TextBox">
+    <Setter Property="Background" Value="{StaticResource DemarSurfaceHighBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource DemarOutlineVariantBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource DemarCornerSmall}" />
+    <Setter Property="Padding" Value="16,14" />
+    <Setter Property="MinHeight" Value="52" />
+    <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+    <Setter Property="PlaceholderForeground" Value="{StaticResource DemarSecondaryBrush}" />
+    <Setter Property="SelectionHighlightColor" Value="{StaticResource DemarPrimaryContainerBrush}" />
+    <Setter Property="UseSystemFocusVisuals" Value="False" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="TextBox">
+          <Grid>
+            <Border x:Name="BorderElement"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{TemplateBinding CornerRadius}">
+              <Grid>
+                <ScrollViewer x:Name="ContentElement"
+                              Background="Transparent"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalScrollMode="{TemplateBinding ScrollViewer.HorizontalScrollMode}"
+                              VerticalScrollMode="{TemplateBinding ScrollViewer.VerticalScrollMode}"
+                              HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                              VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                              ZoomMode="Disabled" />
+                <TextBlock x:Name="PlaceholderTextContentPresenter"
+                           Text="{TemplateBinding PlaceholderText}"
+                           Foreground="{TemplateBinding PlaceholderForeground}"
+                           Padding="{TemplateBinding Padding}"
+                           VerticalAlignment="Center"
+                           IsHitTestVisible="False"
+                           Visibility="Collapsed" />
+              </Grid>
+            </Border>
+            <VisualStateManager.VisualStateGroups>
+              <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal" />
+                <VisualState x:Name="PointerOver" />
+                <VisualState x:Name="Focused" />
+                <VisualState x:Name="Disabled" />
+              </VisualStateGroup>
+              <VisualStateGroup x:Name="TextStates">
+                <VisualState x:Name="HasText">
+                  <Storyboard>
+                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PlaceholderTextContentPresenter" Storyboard.TargetProperty="Visibility">
+                      <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed" />
+                    </ObjectAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
+                <VisualState x:Name="NotHasText">
+                  <Storyboard>
+                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PlaceholderTextContentPresenter" Storyboard.TargetProperty="Visibility">
+                      <DiscreteObjectKeyFrame KeyTime="0" Value="Visible" />
+                    </ObjectAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
+              </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="DemarPlainTextBoxStyle" TargetType="TextBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="16,14" />
+    <Setter Property="MinHeight" Value="52" />
+    <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+    <Setter Property="PlaceholderForeground" Value="{StaticResource DemarSecondaryBrush}" />
+    <Setter Property="SelectionHighlightColor" Value="{StaticResource DemarPrimaryContainerBrush}" />
+    <Setter Property="UseSystemFocusVisuals" Value="False" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="TextBox">
+          <Grid Background="Transparent">
+            <ScrollViewer x:Name="ContentElement"
+                          Background="Transparent"
+                          Padding="{TemplateBinding Padding}"
+                          HorizontalScrollMode="{TemplateBinding ScrollViewer.HorizontalScrollMode}"
+                          VerticalScrollMode="{TemplateBinding ScrollViewer.VerticalScrollMode}"
+                          HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                          VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                          ZoomMode="Disabled" />
+            <TextBlock x:Name="PlaceholderTextContentPresenter"
+                       Text="{TemplateBinding PlaceholderText}"
+                       Foreground="{TemplateBinding PlaceholderForeground}"
+                       Padding="{TemplateBinding Padding}"
+                       VerticalAlignment="Center"
+                       IsHitTestVisible="False"
+                       Visibility="Collapsed" />
+            <VisualStateManager.VisualStateGroups>
+              <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal" />
+                <VisualState x:Name="PointerOver" />
+                <VisualState x:Name="Focused" />
+                <VisualState x:Name="Disabled" />
+              </VisualStateGroup>
+              <VisualStateGroup x:Name="TextStates">
+                <VisualState x:Name="HasText">
+                  <Storyboard>
+                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PlaceholderTextContentPresenter" Storyboard.TargetProperty="Visibility">
+                      <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed" />
+                    </ObjectAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
+                <VisualState x:Name="NotHasText">
+                  <Storyboard>
+                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PlaceholderTextContentPresenter" Storyboard.TargetProperty="Visibility">
+                      <DiscreteObjectKeyFrame KeyTime="0" Value="Visible" />
+                    </ObjectAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
+              </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="DemarAccentButtonStyle" TargetType="Button">
+    <Setter Property="Background" Value="{StaticResource DemarPrimaryContainerBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource DemarOnPrimaryContainerBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="{StaticResource DemarCornerSmall}" />
+    <Setter Property="Padding" Value="16,14" />
+    <Setter Property="MinHeight" Value="52" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="UseSystemFocusVisuals" Value="False" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Root"
+                  Background="{TemplateBinding Background}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}"
+                  MinHeight="{TemplateBinding MinHeight}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Content="{TemplateBinding Content}"
+                              Foreground="{TemplateBinding Foreground}" />
+            <VisualStateManager.VisualStateGroups>
+              <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal" />
+                <VisualState x:Name="PointerOver" />
+                <VisualState x:Name="Pressed" />
+                <VisualState x:Name="Disabled" />
+              </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <Style x:Key="DemarCard" TargetType="Border">
     <Setter Property="Background" Value="{StaticResource DemarSurfaceHighBrush}" />
     <Setter Property="CornerRadius" Value="{StaticResource DemarCornerMedium}" />

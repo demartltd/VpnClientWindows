@@ -2,7 +2,7 @@
     x:Class="DemarVpn.Views.HomePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <Grid Padding="16,16,16,0">
+  <Grid Padding="{StaticResource TabScrollPadding}">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
