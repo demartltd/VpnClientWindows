@@ -27,9 +27,9 @@ public class UplinkProbeTest
     }
 
     [Fact]
-    public void ConnectTarget_unresolvedHostname_returnsNull()
+    public void ConnectTarget_unresolvedHostname_fallsBackToHost()
     {
         var plan = TestServer.All[1].ConnectPlan;
-        Assert.Null(UplinkProbe.ConnectTarget(plan, []));
+        Assert.Equal(plan.UplinkHost, UplinkProbe.ConnectTarget(plan, []));
     }
 }

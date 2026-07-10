@@ -10,6 +10,7 @@ public sealed class VpnController : NotifyBase
     private readonly IVpnEngine _engine = VpnEngineFactory.Create();
     private CancellationTokenSource? _op;
     private CancellationTokenSource? _watchdog;
+    private CancellationTokenSource? _health;
 
     public VpnState State { get; private set; } = VpnState.Disconnected;
     public ServerProfile Selected { get; private set; } = TestServer.Default;
@@ -33,6 +34,7 @@ public sealed class VpnController : NotifyBase
         if (State.IsBusy || State.Kind == VpnStateKind.Connected) return;
         _op?.Cancel();
         _watchdog?.Cancel();
+        _health?.Cancel();
         _op = new CancellationTokenSource();
         var token = _op.Token;
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -64,7 +66,13 @@ public sealed class VpnController : NotifyBase
             var probe = await VpnTunnelProbe.WaitForTunnelReadyAsync(ConnectTimeouts.ProbeMs, ct);
             if (probe != TunnelReadyResult.Ok)
             {
-                var reason = probe == TunnelReadyResult.TcpFail ? "diag proxy unreachable" : "upstream http fail";
+                var reason = probe switch
+                {
+                    TunnelReadyResult.TcpFail => "diag proxy unreachable",
+                    TunnelReadyResult.ProxyFail => "proxy path fail",
+                    TunnelReadyResult.TunFail => "tun/dns path fail",
+                    _ => "upstream fail",
+                };
                 throw new InvalidOperationException($"{Strings.VpnConnectFailed}: {reason}");
             }
             SetState(VpnState.Connected);
@@ -91,6 +99,7 @@ public sealed class VpnController : NotifyBase
         if (State.Kind is VpnStateKind.Disconnected or VpnStateKind.Disconnecting) return;
         _op?.Cancel();
         _watchdog?.Cancel();
+        _health?.Cancel();
         SetState(VpnState.Disconnecting);
         AppLog.Append("[ui] windows home: disconnect");
         try
@@ -106,6 +115,14 @@ public sealed class VpnController : NotifyBase
             AppLog.Append($"[vpn] disconnect error: {ex.Message}");
             SetState(VpnState.Disconnected);
         }
+    }
+
+    public async Task HardRestartCoreAsync()
+    {
+        if (State.Kind != VpnStateKind.Connected)
+            throw new InvalidOperationException(Strings.ServiceRestartFail);
+        await DisconnectAsync();
+        await ConnectAsync();
     }
 
     public void TickThroughput()
@@ -130,6 +147,7 @@ public sealed class VpnController : NotifyBase
     {
         _op?.Cancel();
         _watchdog?.Cancel();
+        _health?.Cancel();
         var kind = State.Kind;
         if (kind == VpnStateKind.Connected)
             await DisconnectAsync();
@@ -138,6 +156,7 @@ public sealed class VpnController : NotifyBase
             await _engine.StopAsync();
             SetState(VpnState.Disconnected);
         }
+        await Task.Delay(ConnectTimeouts.SwitchSettleMs);
         await ConnectAsync();
     }
 
@@ -158,11 +177,55 @@ public sealed class VpnController : NotifyBase
         catch (OperationCanceledException) { }
     }
 
+    private async Task HealthLoopAsync(CancellationToken token)
+    {
+        var fails = 0;
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(ConnectTimeouts.HealthIntervalMs, token);
+                if (State.Kind != VpnStateKind.Connected) return;
+
+                var ok = _engine.IsRunning && await TunnelPathProbe.TraceOkAsync(
+                    TunnelPathProbe.TunClient, TunnelPathProbe.TraceHostUrl, token);
+                if (ok)
+                {
+                    fails = 0;
+                    continue;
+                }
+
+                if (++fails < ConnectTimeouts.HealthFailLimit) continue;
+
+                _health?.Cancel();
+                await _engine.StopAsync();
+                var msg = Strings.VpnTunnelLost;
+                SetState(VpnState.Error(msg));
+                ErrorRaised?.Invoke(msg);
+                AppServices.Snackbar.ShowError(msg);
+                AppLog.Append($"[vpn] health fail: {msg}");
+                return;
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
     private void SetState(VpnState state)
     {
         State = state;
         Raise(nameof(State));
         if (state.Kind is VpnStateKind.Connected or VpnStateKind.Disconnected or VpnStateKind.Error)
             _watchdog?.Cancel();
+
+        if (state.Kind == VpnStateKind.Connected)
+        {
+            _health?.Cancel();
+            _health = new CancellationTokenSource();
+            _ = HealthLoopAsync(_health.Token);
+        }
+        else
+        {
+            _health?.Cancel();
+        }
     }
 }

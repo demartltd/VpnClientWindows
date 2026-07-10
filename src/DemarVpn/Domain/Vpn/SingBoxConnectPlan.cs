@@ -30,7 +30,7 @@ public sealed record SingBoxConnectPlan
                 ["server_port"] = profile.Port,
                 ["username"] = profile.Username,
                 ["password"] = profile.Password,
-                ["connect_timeout"] = "5s",
+                ["connect_timeout"] = "10s",
                 ["domain_resolver"] = new Dictionary<string, object?>
                 {
                     ["server"] = SingBoxTags.DnsDirect,

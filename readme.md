@@ -77,7 +77,7 @@ pwsh scripts/install_release.ps1        # UAC для certutil
 | Settings + social links | FA6 brand icons (`IconLinkChip`), реальные URL |
 | Account + login dialog | UI steps без API |
 | App settings (журнал) | `AppLog` — до 512 строк, tail-trim |
-| Service menu (3× tap version) | mock diagnostics |
+| Service menu (3× tap version) | О приложении, Route, egress probes, device identity |
 
 VPN connect (Naive MVP) — **реализовано** (`SingBoxProcessEngine` + Wintun). MSIX не может запускаться от администратора — при Connect появится **UAC для sing-box.exe** (TUN).
 

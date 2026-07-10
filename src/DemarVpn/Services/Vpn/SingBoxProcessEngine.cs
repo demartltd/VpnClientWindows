@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DemarVpn.Domain.Vpn;
+using DemarVpn.Services.Network;
 
 namespace DemarVpn.Services.Vpn;
 
@@ -55,14 +56,15 @@ public sealed class SingBoxProcessEngine : IVpnEngine
             _ownedPid = _process.Id;
 
         AppLog.Append($"[vpn] sing-box pid={_ownedPid?.ToString() ?? "elevated"}");
-        if (_process is not null)
+        if (_process?.StartInfo.RedirectStandardError == true)
             _ = ReadStderrAsync(_process, cancellationToken);
 
         await WaitForStartupAsync(cancellationToken);
     }
 
-    public Task StopAsync()
+    public async Task StopAsync()
     {
+        TryAssignOwnedProcess();
         if (_ownedPid is int pid)
         {
             try
@@ -78,7 +80,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         _process?.Dispose();
         _process = null;
         _ownedPid = null;
-        return Task.CompletedTask;
+        await UplinkProbe.WaitForDiagPortClosedAsync();
     }
 
     private static Process StartDirect(string exe, string args, string workDir)
@@ -170,20 +172,20 @@ public sealed class SingBoxProcessEngine : IVpnEngine
             cancellationToken.ThrowIfCancellationRequested();
             TryAssignOwnedProcess();
             var proc = TryGetProcess();
-            if (proc is null && !IsAdmin())
-            {
-                await Task.Delay(StartupPollMs, cancellationToken);
-                continue;
-            }
             if (proc is { HasExited: true })
                 throw new InvalidOperationException(FormatStartupError());
+
             var err = _stderr.Length > 0 ? _stderr.ToString() : ReadLogTail();
             if (ContainsFatal(err))
                 throw new InvalidOperationException(FormatStartupError(err));
-            if (proc is not null && !proc.HasExited && string.IsNullOrEmpty(err))
+
+            if (await UplinkProbe.TcpReachableAsync(
+                    SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 500, cancellationToken))
                 return;
+
             await Task.Delay(StartupPollMs, cancellationToken);
         }
+        throw new InvalidOperationException(FormatStartupError());
     }
 
     private async Task ReadStderrAsync(Process process, CancellationToken cancellationToken)

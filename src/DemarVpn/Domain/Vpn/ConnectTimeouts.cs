@@ -2,9 +2,15 @@ namespace DemarVpn.Domain.Vpn;
 
 public static class ConnectTimeouts
 {
-    public const int PreflightMs = 2_000;
-    public const int StartupMs = 3_000;
-    public const int ProbeMs = 8_000;
-    public const int ConnectMs = 15_000;
+    public const int PreflightMs = 3_000;
+    public const int PreflightRaceMs = 6_000;
+    public const int StartupMs = 4_000;
+    public const int ProxyWarmupMs = 2_000;
+    public const int ProbeMs = 15_000;
+    public const int ConnectMs = 40_000;
     public const int WatchdogMs = ConnectMs + 2_000;
+    public const int HealthIntervalMs = 25_000;
+    public const int HealthFailLimit = 2;
+    public const int SwitchSettleMs = 300;
+    public const int DiagPortCloseMs = 2_000;
 }

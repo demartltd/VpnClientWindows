@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using DemarVpn.Core.Servers;
 using DemarVpn.Domain.Vpn;
+using DemarVpn.Services.Network;
 using DemarVpn.Services.Vpn;
 
 namespace DemarVpn.Tests;
@@ -32,7 +33,7 @@ public class VpnPipelineTest
 
             var naive = outbounds[0]!.AsObject();
             Assert.Equal("naive", naive["type"]!.GetValue<string>());
-            Assert.Equal("5s", naive["connect_timeout"]!.GetValue<string>());
+            Assert.Equal("10s", naive["connect_timeout"]!.GetValue<string>());
             Assert.False(naive["quic"]!.GetValue<bool>());
             Assert.True(naive["udp_over_tcp"]!.AsObject()["enabled"]!.GetValue<bool>());
             Assert.Equal(2, naive["udp_over_tcp"]!.AsObject()["version"]!.GetValue<int>());
@@ -45,16 +46,18 @@ public class VpnPipelineTest
 
             var dns = cfg["dns"]!.AsObject();
             Assert.Equal(SingBoxTags.DnsRemote, dns["final"]!.GetValue<string>());
+            var dnsRemote = dns["servers"]!.AsArray()
+                .First(s => s!["tag"]!.GetValue<string>() == SingBoxTags.DnsRemote)!.AsObject();
+            Assert.Equal("8s", dnsRemote["connect_timeout"]!.GetValue<string>());
+
             foreach (var domain in plan.Tun.BootstrapDomains)
             {
                 Assert.True(dns["rules"]!.AsArray().Any(rule =>
                     rule!["domain"]?.AsArray().Any(d => d!.GetValue<string>() == domain) == true));
             }
-            foreach (var host in VpnTunnelProbe.ProbeBootstrapDomains)
+            foreach (var host in new[] { "www.google.com", "www.cloudflare.com" })
             {
-                Assert.True(dns["rules"]!.AsArray().Any(rule =>
-                    rule!["domain"]?.AsArray().Any(d => d!.GetValue<string>() == host) == true));
-                Assert.True(route["rules"]!.AsArray().Any(rule =>
+                Assert.False(route["rules"]!.AsArray().Any(rule =>
                     rule!["domain"]?.AsArray().Any(d => d!.GetValue<string>() == host) == true));
             }
 
@@ -102,6 +105,28 @@ public class VpnPipelineTest
         var plan = ServerProfile.Naive(new NaiveProfile("ipv4-test", "193.35.17.5", 443, "u", "p", "example.com")).ConnectPlan;
         Assert.Equal(["193.35.17.5"], plan.DirectIPs);
         Assert.True(HostUtils.IsLiteralIpv4("193.35.17.5"));
+    }
+
+    [Fact]
+    public void ConnectTimeouts_healthBudget()
+    {
+        Assert.Equal(42_000, ConnectTimeouts.WatchdogMs);
+        Assert.Equal(ConnectTimeouts.ConnectMs + 2_000, ConnectTimeouts.WatchdogMs);
+        Assert.Equal(25_000, ConnectTimeouts.HealthIntervalMs);
+        Assert.Equal(2, ConnectTimeouts.HealthFailLimit);
+        Assert.Equal(3_000, ConnectTimeouts.PreflightMs);
+        Assert.Equal(6_000, ConnectTimeouts.PreflightRaceMs);
+        Assert.Equal(2_000, ConnectTimeouts.ProxyWarmupMs);
+    }
+
+    [Fact]
+    public void ParseCloudflareTrace_acceptsValidBody()
+    {
+        const string body = "fl=abc\nh=1.1.1.1\nip=203.0.113.1\nloc=US\n";
+        var info = PublicEgressDiagnostics.ParseCloudflareTrace(body);
+        Assert.NotNull(info);
+        Assert.Equal("203.0.113.1", info!.Ip);
+        Assert.Equal("United States", info.Country);
     }
 
     [Theory]

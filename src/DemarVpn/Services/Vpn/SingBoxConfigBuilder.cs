@@ -15,10 +15,7 @@ public static class SingBoxConfigBuilder
 
     private static JsonObject BuildTunConfig(SingBoxConnectPlan plan, string tunName, int mtu, string logLevel)
     {
-        var bootstrap = plan.Tun.BootstrapDomains
-            .Concat(VpnTunnelProbe.ProbeBootstrapDomains)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var bootstrap = plan.Tun.BootstrapDomains.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         return new JsonObject
         {
             ["log"] = new JsonObject { ["level"] = logLevel, ["timestamp"] = true },
@@ -67,6 +64,7 @@ public static class SingBoxConfigBuilder
                     ["tag"] = SingBoxTags.DnsRemote,
                     ["server"] = "1.1.1.1",
                     ["detour"] = SingBoxTags.Proxy,
+                    ["connect_timeout"] = "8s",
                 }),
             ["rules"] = rules,
             ["final"] = dnsFinal,

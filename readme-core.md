@@ -12,17 +12,21 @@
 
 **Итерация 2:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine` primary).
 
-Connect pipeline: `UplinkIpv4` (retry) → `UplinkProbe.FirstReachableAsync` (TCP preflight, all IPs) → config → subprocess → `VpnTunnelProbe.WaitForTunnelReadyAsync`.
+Connect pipeline: `UplinkIpv4` (retry) → `UplinkProbe.FirstReachableAsync` (parallel TCP race) → config → subprocess → `VpnTunnelProbe.WaitForTunnelReadyAsync` (diag IP ×2 + TUN hostname ×1).
 
 ### Таймауты (`ConnectTimeouts`)
 
 | Константа | Значение | Назначение |
 |-----------|----------|------------|
-| `PreflightMs` | 2 000 | TCP preflight на каждый resolved IP |
-| `StartupMs` | 3 000 | ожидание старта sing-box |
-| `ProbeMs` | 8 000 | diag TCP + HTTP egress probe |
-| `ConnectMs` | 15 000 | единый deadline pipeline |
-| `WatchdogMs` | 17 000 | аварийный стоп при зависании в Connecting |
+| `PreflightMs` | 3 000 | TCP timeout per uplink target |
+| `PreflightRaceMs` | 6 000 | parallel race budget |
+| `StartupMs` | 4 000 | старт sing-box + diag-port 10808 |
+| `ProxyWarmupMs` | 2 000 | Naive handshake before proxy probe |
+| `ProbeMs` | 15 000 | двухфазный probe (proxy + TUN/DNS) |
+| `ConnectMs` | 40 000 | единый deadline pipeline |
+| `WatchdogMs` | 42 000 | аварийный стоп при зависании в Connecting |
+| `HealthIntervalMs` | 25 000 | post-connect health check |
+| `HealthFailLimit` | 2 | подряд fail → auto Error |
 
 ### Смена сервера (`VpnController.Select`)
 
@@ -66,7 +70,8 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 | Поле | Значение |
 |------|----------|
 | `udp_over_tcp` | `{ enabled: true, version: 2 }` |
-| `connect_timeout` | `5s` |
+| `connect_timeout` | `10s` |
+| `dns-remote connect_timeout` | `8s` (DoH via proxy) |
 | `quic` | `false` |
 | `tls` | enabled + `server_name` |
 | `domain_resolver` | `dns-direct`, `ipv4_only` |
@@ -107,9 +112,9 @@ Rules: PTR → reject; bootstrap domains (uplink + probe hosts) → `dns-direct`
 
 Mixed `127.0.0.1:10808` (`SingBoxTags.diagInbound`):
 
-- Post-connect: `VpnTunnelProbe`
-- Egress: `NetworkDiagnostics` (roadmap)
-- Native snapshot: `getEgressRouteSnapshot`
+- Post-connect: `VpnTunnelProbe` — Phase 1: diag-proxy IP trace ×2; Phase 2: TUN hostname trace ×1
+- Post-connect health: `VpnController.HealthLoopAsync` (TUN trace каждые 25с)
+- Egress: `PublicEgressDiagnostics` (Service Menu)
 
 ---
 

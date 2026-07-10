@@ -21,6 +21,12 @@
     <Compile Include="..\..\src\DemarVpn\Services\Vpn\SingBoxConfigBuilder.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Network\UplinkIpv4.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Network\UplinkProbe.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Network\PublicEgressDiagnostics.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Network\WindowsEgressRouteSnapshot.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Device\DeviceIdentity.cs" />
+    <Compile Include="..\..\src\DemarVpn\Models\AppModels.cs" />
+    <Compile Include="..\..\src\DemarVpn\Strings.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Vpn\TunnelPathProbe.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Vpn\VpnTunnelProbe.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\AppLog.cs" />
   </ItemGroup>

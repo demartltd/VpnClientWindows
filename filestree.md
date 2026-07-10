@@ -22,10 +22,16 @@ src/DemarVpn/
 │   ├── FloatingToolbar.xaml
 │   ├── DemarSnackbarHost.xaml
 │   ├── IconLinkChip.xaml
+│   ├── DemarKvRow.xaml             # key/value row (service menu)
 │   └── ServerRow.xaml             # флаг + displayName + country
 ├── Services/
+│   ├── AppPackageInfo.cs
 │   ├── Vpn/                       # VpnController, SingBoxConfigBuilder, engines
-│   ├── Network/UplinkIpv4.cs
+│   ├── Device/DeviceIdentity.cs
+│   ├── Network/
+│   │   ├── UplinkIpv4.cs
+│   │   ├── PublicEgressDiagnostics.cs
+│   │   └── WindowsEgressRouteSnapshot.cs
 │   ├── AppLog.cs
 │   └── SnackbarService.cs
 ├── Core/Servers/TestServer.cs

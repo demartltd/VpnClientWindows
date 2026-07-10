@@ -2,7 +2,10 @@
     x:Class="DemarVpn.Views.ServiceMenuPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:DemarVpn.Views">
+    xmlns:local="using:DemarVpn.Views"
+    xmlns:controls="using:DemarVpn.Controls"
+    Loaded="OnLoaded"
+    Unloaded="OnUnloaded">
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
@@ -14,25 +17,44 @@
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
       <Button Click="OnBack" Content="←" />
-      <TextBlock Grid.Column="1" Text="Service menu" VerticalAlignment="Center" FontSize="20" FontWeight="SemiBold" />
+      <TextBlock x:Name="TitleBlock" Grid.Column="1"
+                 VerticalAlignment="Center" FontSize="20" FontWeight="SemiBold" />
     </Grid>
     <ScrollViewer Grid.Row="1" Padding="16">
       <StackPanel Spacing="12">
         <Border Style="{StaticResource DemarCard}">
-          <StackPanel x:Name="AboutPanel" Spacing="6" />
-        </Border>
-        <Border Style="{StaticResource DemarCard}">
           <StackPanel Spacing="8">
-            <TextBlock Text="Egress (mock)" FontWeight="SemiBold" />
-            <TextBlock x:Name="EgressStatus" Opacity="0.7" />
-            <Button Content="Refresh" Click="OnEgressRefresh" HorizontalAlignment="Left" />
+            <TextBlock x:Name="AboutHeader" FontWeight="SemiBold" />
+            <controls:DemarKvRow x:Name="NameRow" Key="Имя" />
+            <controls:DemarKvRow x:Name="PackageRow" Key="Пакет" />
+            <controls:DemarKvRow x:Name="VersionRow" Key="Версия" />
+            <controls:DemarKvRow x:Name="PlatformRow" Key="Платформа" />
+            <controls:DemarKvRow x:Name="CoreRow" Key="Core" />
           </StackPanel>
         </Border>
         <Border Style="{StaticResource DemarCard}">
-          <StackPanel Spacing="6">
-            <TextBlock Text="Device identity (mock)" FontWeight="SemiBold" />
-            <TextBlock Text="device_id: win-demo-001" FontFamily="Consolas" />
-            <TextBlock Text="install_id: mock-install" FontFamily="Consolas" />
+          <StackPanel Spacing="8">
+            <Grid>
+              <TextBlock x:Name="InternetHeader" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <Button HorizontalAlignment="Right" Click="OnEgressRefresh" ToolTipService.ToolTip="Обновить">
+                <FontIcon x:Name="RefreshIcon" Glyph="&#xE72C;" RenderTransformOrigin="0.5,0.5">
+                  <FontIcon.RenderTransform>
+                    <RotateTransform x:Name="RefreshSpin" Angle="0" />
+                  </FontIcon.RenderTransform>
+                </FontIcon>
+              </Button>
+            </Grid>
+            <controls:DemarKvRow x:Name="RouteRow" Value="…" />
+            <controls:DemarKvRow x:Name="IpRow" Value="…" />
+            <controls:DemarKvRow x:Name="CountryRow" Value="…" />
+            <StackPanel x:Name="HostRowsPanel" Spacing="8" />
+          </StackPanel>
+        </Border>
+        <Border Style="{StaticResource DemarCard}">
+          <StackPanel Spacing="8">
+            <TextBlock x:Name="DeviceHeader" FontWeight="SemiBold" />
+            <ProgressRing x:Name="DeviceBusy" Width="24" Height="24" HorizontalAlignment="Center" IsActive="True" />
+            <StackPanel x:Name="DevicePanel" Spacing="8" Visibility="Collapsed" />
           </StackPanel>
         </Border>
         <Border Style="{StaticResource DemarCard}">
@@ -40,10 +62,17 @@
             <TextBlock Text="Snack bar" FontWeight="SemiBold" />
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button Content="Info" Click="OnSnackInfo" />
-              <Button Content="Success" Click="OnSnackSuccess" />
-              <Button Content="Error" Click="OnSnackError" />
-              <Button Content="Warning" Click="OnSnackWarning" />
+              <Button Content="OK" Click="OnSnackSuccess" />
+              <Button Content="Err" Click="OnSnackError" />
+              <Button Content="Warn" Click="OnSnackWarning" />
             </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Style="{StaticResource DemarCard}">
+          <StackPanel Spacing="8">
+            <TextBlock x:Name="DebugHeader" FontWeight="SemiBold" />
+            <Button x:Name="RestartBtn" Click="OnRestartCore" HorizontalAlignment="Stretch" />
+            <Button x:Name="CrashBtn" Click="OnCrash" HorizontalAlignment="Stretch" />
           </StackPanel>
         </Border>
       </StackPanel>
