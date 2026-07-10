@@ -73,7 +73,7 @@ pwsh scripts/install_release.ps1        # UAC для certutil
 | Экран | Статус |
 |-------|--------|
 | Home (VPN toggle) | Naive connect/disconnect через `VpnController` |
-| Servers | FIN-DEV-1 + DE-FREE-1, флаги (`TestServer.cs`) |
+| Servers | FI-DEV-99, SE-FREE-71, GR-FREE-22, DE-FREE-1, флаги из тега (`TestServer.cs`) |
 | Settings + social links | FA6 brand icons (`IconLinkChip`), реальные URL |
 | Account + login dialog | UI steps без API |
 | App settings (журнал) | `AppLog` — до 512 строк, tail-trim |

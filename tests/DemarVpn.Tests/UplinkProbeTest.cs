@@ -15,7 +15,7 @@ public class UplinkProbeTest
     [Fact]
     public void ConnectTarget_literalIpv4_returnsHost()
     {
-        var plan = TestServer.All[0].ConnectPlan;
+        var plan = ServerProfile.Naive(new NaiveProfile("ipv4-test", "193.35.17.5", 443, "u", "p", "example.com")).ConnectPlan;
         Assert.Equal("193.35.17.5", UplinkProbe.ConnectTarget(plan, []));
     }
 

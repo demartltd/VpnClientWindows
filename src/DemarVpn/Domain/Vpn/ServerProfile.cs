@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace DemarVpn.Domain.Vpn;
 
 public abstract record ServerProfileKind
@@ -30,4 +32,31 @@ public sealed record ServerProfile(
         new ServerProfileKind.Naive(profile),
         countryCode,
         countryName);
+
+    public static ServerProfile NaiveFromTag(NaiveProfile profile)
+    {
+        var countryCode = CountryCodeFromTag(profile.DisplayName);
+        return Naive(profile, countryCode, CountryNameFromCode(countryCode));
+    }
+
+    public static string? CountryCodeFromTag(string tag)
+    {
+        var dash = tag.IndexOf('-');
+        if (dash <= 0) return null;
+        var code = tag[..dash];
+        return code.Length == 2 && code.All(char.IsAsciiLetter) ? code.ToUpperInvariant() : null;
+    }
+
+    public static string? CountryNameFromCode(string? countryCode)
+    {
+        if (string.IsNullOrWhiteSpace(countryCode)) return null;
+        try
+        {
+            return new RegionInfo(countryCode).NativeName;
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+    }
 }

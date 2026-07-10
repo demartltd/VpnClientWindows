@@ -81,7 +81,7 @@ public class VpnPipelineTest
     [Fact]
     public void LiteralIpv4Server_hasRouteExclude()
     {
-        var plan = TestServer.All[0].ConnectPlan;
+        var plan = ServerProfile.Naive(new NaiveProfile("ipv4-test", "193.35.17.5", 443, "u", "p", "example.com")).ConnectPlan;
         var json = SingBoxConfigBuilder.BuildTunConfigJson(plan);
         Assert.Contains("route_exclude_address", json);
         Assert.NotEmpty(plan.DirectIPs);
@@ -90,7 +90,8 @@ public class VpnPipelineTest
     [Fact]
     public void WithExtraDirectIps_mergesBypass()
     {
-        var plan = TestServer.All[0].ConnectPlan.WithExtraDirectIps(["10.0.0.1"]);
+        var plan = ServerProfile.Naive(new NaiveProfile("ipv4-test", "193.35.17.5", 443, "u", "p", "example.com")).ConnectPlan
+            .WithExtraDirectIps(["10.0.0.1"]);
         Assert.Contains(plan.UplinkHost, plan.DirectIPs);
         Assert.Contains("10.0.0.1", plan.DirectIPs);
     }
@@ -98,7 +99,20 @@ public class VpnPipelineTest
     [Fact]
     public void IsLiteralIpv4_matchesConnectPlan()
     {
-        Assert.Equal(["193.35.17.5"], TestServer.All[0].ConnectPlan.DirectIPs);
+        var plan = ServerProfile.Naive(new NaiveProfile("ipv4-test", "193.35.17.5", 443, "u", "p", "example.com")).ConnectPlan;
+        Assert.Equal(["193.35.17.5"], plan.DirectIPs);
         Assert.True(HostUtils.IsLiteralIpv4("193.35.17.5"));
+    }
+
+    [Theory]
+    [InlineData("FI-DEV-99", "FI")]
+    [InlineData("SE-FREE-71", "SE")]
+    [InlineData("GR-FREE-22", "GR")]
+    [InlineData("DE-FREE-1", "DE")]
+    public void NaiveFromTag_parsesCountryCode(string tag, string expectedCode)
+    {
+        var profile = ServerProfile.NaiveFromTag(new NaiveProfile(tag, "host", 443, "u", "p", "host"));
+        Assert.Equal(expectedCode, profile.CountryCode);
+        Assert.False(string.IsNullOrEmpty(profile.CountryName));
     }
 }
