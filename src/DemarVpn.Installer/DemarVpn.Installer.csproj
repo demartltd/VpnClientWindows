@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>DemarVpn.Installer</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <Version>1.0.9</Version>
+    <ApplicationTitle>Demar VPN</ApplicationTitle>
+    <EmbedPayload Condition="'$(EmbedPayload)' == ''">true</EmbedPayload>
+  </PropertyGroup>
+
+  <!-- Updater: WPF + payload + embedded Uninstall -->
+  <PropertyGroup Condition="'$(EmbedPayload)' == 'true'">
+    <DefineConstants>$(DefineConstants);EMBED_PAYLOAD</DefineConstants>
+    <AssemblyName>Updater</AssemblyName>
+    <UseWPF>true</UseWPF>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+  <!-- Uninstall: Native AOT + Win32 Demar UI -->
+  <PropertyGroup Condition="'$(EmbedPayload)' != 'true'">
+    <AssemblyName>Uninstall</AssemblyName>
+    <PublishAot>true</PublishAot>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StackTraceSupport>false</StackTraceSupport>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(EmbedPayload)' == 'true'">
+    <Compile Remove="UninstallProgram.cs" />
+    <EmbeddedResource Include="Resources\payload.zip" LogicalName="payload.zip"
+                      Condition="Exists('Resources\payload.zip')" />
+    <EmbeddedResource Include="Resources\uninstall.exe" LogicalName="uninstall.exe"
+                      Condition="Exists('Resources\uninstall.exe')" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EmbedPayload)' != 'true'">
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Remove="MainWindow.xaml" />
+    <Compile Remove="App.xaml.cs;MainWindow.xaml.cs" />
+  </ItemGroup>
+</Project>

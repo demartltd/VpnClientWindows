@@ -1,0 +1,68 @@
+<Application x:Class="DemarVpn.Installer.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnMainWindowClose">
+  <Application.Resources>
+    <SolidColorBrush x:Key="DemarBg" Color="#FF121820" />
+    <SolidColorBrush x:Key="DemarPrimary" Color="#FFA5C8FF" />
+    <SolidColorBrush x:Key="DemarPrimaryContainer" Color="#FF2A4A6E" />
+    <SolidColorBrush x:Key="DemarPrimaryHover" Color="#FF3A5A7E" />
+    <SolidColorBrush x:Key="DemarPrimaryPressed" Color="#FF1E3855" />
+    <SolidColorBrush x:Key="DemarOnPrimaryContainer" Color="#FFD8E8F8" />
+    <SolidColorBrush x:Key="DemarSecondary" Color="#FFB8C8DA" />
+    <SolidColorBrush x:Key="DemarSurface" Color="#FF1A222C" />
+    <SolidColorBrush x:Key="DemarSurfaceHover" Color="#FF2A3440" />
+    <SolidColorBrush x:Key="DemarOutline" Color="#FF4A5564" />
+
+    <Style x:Key="DemarButton" TargetType="Button">
+      <Setter Property="Background" Value="{StaticResource DemarPrimaryContainer}" />
+      <Setter Property="Foreground" Value="{StaticResource DemarOnPrimaryContainer}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                    Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{StaticResource DemarPrimaryHover}" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{StaticResource DemarPrimaryPressed}" />
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.45" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="DemarCloseButton" TargetType="Button">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bd" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{StaticResource DemarSurfaceHover}" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{StaticResource DemarPrimaryPressed}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Application.Resources>
+</Application>

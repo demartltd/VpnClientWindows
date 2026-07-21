@@ -4,12 +4,15 @@
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>DemarVpn</RootNamespace>
+    <AssemblyName>Demar VPN</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
-    <WindowsPackageType>MSIX</WindowsPackageType>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Version>1.0.9</Version>
@@ -17,6 +20,7 @@
     <FileVersion>1.0.9.10</FileVersion>
     <ApplicationTitle>Demar VPN</ApplicationTitle>
     <ApplicationDescription>Demar VPN — NaiveProxy / sing-box client</ApplicationDescription>
+    <SatelliteResourceLanguages>en-US;ru-RU</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -32,10 +36,6 @@
     <PackageReference Include="MaterialColorUtilities" Version="0.3.0" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260529003" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="1.7.260610101">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="SagerNet.Libbox" Version="0.0.0-local" Condition="'$(HasLibbox)' == 'true'">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -48,8 +48,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\**\*" />
-    <Content Include="Assets\Fonts\fa-brands-400.ttf">
+    <Content Include="Assets\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Native\bin\sing-box.exe" Condition="Exists('Native\bin\sing-box.exe')">
@@ -64,9 +63,5 @@
       <Link>libcronet.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\singbox\bundled_version.txt" Condition="Exists('Assets\singbox\bundled_version.txt')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Manifest Include="Package.appxmanifest" />
   </ItemGroup>
 </Project>

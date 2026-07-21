@@ -8,8 +8,15 @@ public static class CountryFlags
     {
         var code = countryCode?.Trim().ToLowerInvariant() ?? "";
         var file = code.Length == 2 && code.All(char.IsAsciiLetter) ? code : Unknown;
-        return new Uri($"ms-appx:///Assets/Flags/{file}.png");
+        return Resolve(file);
     }
 
-    public static Uri UnknownUri() => new($"ms-appx:///Assets/Flags/{Unknown}.png");
+    public static Uri UnknownUri() => Resolve(Unknown);
+
+    static Uri Resolve(string file)
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Flags", $"{file}.png");
+        if (File.Exists(path)) return new Uri(path, UriKind.Absolute);
+        return new Uri($"ms-appx:///Assets/Flags/{file}.png");
+    }
 }

@@ -85,25 +85,41 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 | `dns-direct` | UDP `1.1.1.1` | bootstrap, domain resolver |
 | `dns-remote` | HTTPS `1.1.1.1` | DoH через proxy |
 
-Rules: PTR → reject; bootstrap domains (uplink + probe hosts) → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`.
+Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); bootstrap domains (uplink hostname + TLS name) → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`.
 
 ---
 
 ## Route и TUN
 
-- TUN: **Wintun** (Windows), `strict_route`, `172.19.0.1/30`, split `0.0.0.0/1` + `128.0.0.0/1`
-- Route: sniff → hijack-dns → QUIC reject → private direct → IPv6 reject → proxy
+- TUN: **Wintun** (Windows), `strict_route`, `172.19.0.1/30`
+- Split `0.0.0.0/1` + `128.0.0.0/1` — только при literal IPv4 uplink
+- `route_exclude_address` **всегда**: `127.0.0.0/8`, RFC1918 (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`) + uplink IPs
+- Route: sniff → hijack-dns → QUIC reject → `127.0.0.0/8` direct → private direct → IPv6 reject → proxy
 - `default_domain_resolver`: `dns-direct`, `ipv4_only`
 
 (Android использует gVisor TUN + `override_android_vpn`; на Windows — Wintun adapter.)
 
 ---
 
-## Uplink bypass
+## Bypass
+
+### Local bypass (всегда)
+
+Loopback и LAN не проходят через TUN — напрямую на физический интерфейс. Use-case: Epic Games / Unreal Engine local servers (`127.0.0.1`).
+
+| CIDR | Назначение |
+|------|------------|
+| `127.0.0.0/8` | loopback |
+| `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` | RFC1918 LAN |
+| `169.254.0.0/16` | link-local |
+
+Дополнительно: route `127.0.0.0/8 → direct`, DNS `localhost → 127.0.0.1`.
+
+### Uplink bypass (per-server)
 
 | Uplink `server` | Механизм |
 |-----------------|----------|
-| Literal IPv4 | `route_exclude_address` в TUN |
+| Literal IPv4 | split routes + `{ip}/32` в `route_exclude_address` |
 | Hostname | `resolveUplinkIpv4s` → `withExtraDirectIps` перед build |
 
 ---
@@ -125,7 +141,7 @@ py -3 scripts/for_builds/libbox-build-windows.py
 pwsh scripts/for_builds/build_windows.ps1
 ```
 
-Runtime рядом с `sing-box.exe` (Naive): `wintun.dll`, `libcronet.dll` — скрипт кладёт в `Native/bin/` и MSIX копирует в output.
+Runtime рядом с `sing-box.exe` (Naive): `wintun.dll`, `libcronet.dll` — скрипт кладёт в `Native/bin/` и publish копирует в output.
 
 Очистка: `python3 scripts/singbox-cleaner.py -y`
 

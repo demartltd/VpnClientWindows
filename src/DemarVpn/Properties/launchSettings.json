@@ -1,10 +1,7 @@
 {
   "profiles": {
-    "DemarVpn (Unpackaged)": {
+    "DemarVpn": {
       "commandName": "Project"
-    },
-    "DemarVpn (Package)": {
-      "commandName": "MsixPackage"
     }
   }
 }

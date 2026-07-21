@@ -6,6 +6,9 @@ namespace DemarVpn.Services.Vpn;
 
 public static class SingBoxConfigBuilder
 {
+    private static readonly string[] TunExcludeCidrs =
+        ["127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16"];
+
     public static string BuildTunConfigJson(
         SingBoxConnectPlan plan,
         string tunName = "DemarVPN",
@@ -38,12 +41,14 @@ public static class SingBoxConfigBuilder
 
     private static JsonObject MakeDns(string dnsFinal, IReadOnlyList<string> bootstrapDomains)
     {
-        var rules = new JsonArray(new JsonObject
-        {
-            ["query_type"] = Arr("PTR"),
-            ["action"] = "reject",
-            ["method"] = "drop",
-        });
+        var rules = new JsonArray(
+            new JsonObject { ["query_type"] = Arr("PTR"), ["action"] = "reject", ["method"] = "drop" },
+            new JsonObject
+            {
+                ["domain"] = Arr("localhost"),
+                ["action"] = "predefined",
+                ["answer"] = Arr("localhost. IN A 127.0.0.1"),
+            });
         foreach (var domain in bootstrapDomains)
         {
             if (CleanedDomain(domain) is not { } clean) continue;
@@ -78,6 +83,7 @@ public static class SingBoxConfigBuilder
             new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "sniff" },
             new JsonObject { ["protocol"] = "dns", ["action"] = "hijack-dns" },
             new JsonObject { ["network"] = Arr("udp"), ["port"] = Arr(443), ["action"] = "reject" },
+            new JsonObject { ["ip_cidr"] = Arr("127.0.0.0/8"), ["action"] = "route", ["outbound"] = SingBoxTags.Direct },
             new JsonObject { ["ip_is_private"] = true, ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
 
         foreach (var ip in directIPs)
@@ -118,12 +124,12 @@ public static class SingBoxConfigBuilder
             ["endpoint_independent_nat"] = false,
         };
         if (directIPs.Count > 0)
-        {
             tun["route_address"] = Arr("0.0.0.0/1", "128.0.0.0/1");
-            var exclude = new JsonArray();
-            foreach (var ip in directIPs) exclude.Add($"{ip}/32");
-            tun["route_exclude_address"] = exclude;
-        }
+
+        var exclude = new JsonArray();
+        foreach (var cidr in TunExcludeCidrs) exclude.Add(cidr);
+        foreach (var ip in directIPs) exclude.Add($"{ip}/32");
+        tun["route_exclude_address"] = exclude;
         return tun;
     }
 

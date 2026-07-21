@@ -72,6 +72,29 @@ public class VpnPipelineTest
     }
 
     [Fact]
+    public void LocalBypass_rulesPresent()
+    {
+        var plan = TestServer.Default.ConnectPlan;
+        var cfg = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan))!.AsObject();
+
+        var exclude = cfg["inbounds"]!.AsArray()
+            .First(i => i!["type"]!.GetValue<string>() == "tun")!["route_exclude_address"]!.AsArray()
+            .Select(x => x!.GetValue<string>()).ToList();
+        Assert.Contains("127.0.0.0/8", exclude);
+        Assert.Contains("192.168.0.0/16", exclude);
+
+        var routeRules = cfg["route"]!["rules"]!.AsArray();
+        Assert.Contains(routeRules, r =>
+            r!["ip_cidr"]?.AsArray().Any(c => c!.GetValue<string>() == "127.0.0.0/8") == true &&
+            r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
+
+        var dnsRules = cfg["dns"]!["rules"]!.AsArray();
+        Assert.Contains(dnsRules, r =>
+            r!["action"]?.GetValue<string>() == "predefined" &&
+            r!["domain"]?.AsArray().Any(d => d!.GetValue<string>() == "localhost") == true);
+    }
+
+    [Fact]
     public void HostnameServer_addsBootstrapDomains()
     {
         var profile = new NaiveProfile("host-test", "vpn.example.com", 443, "u", "p", "tls.example.com");

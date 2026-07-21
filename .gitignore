@@ -13,10 +13,21 @@ Desktop.ini
 **/bin/
 **/obj/
 **/AppPackages/
+artifacts/
 *.msix
 *.msixbundle
 *.appxupload
 *.binlog
+src/DemarVpn.Installer/Resources/*
+!src/DemarVpn.Installer/Resources/.gitkeep
+
+# Certificates / keys
+*.pfx
+*.cer
+*.pem
+*.key
+*.p12
+scripts/build/
 
 # Native (libbox-build-windows.py)
 src/DemarVpn/Native/libbox/*
@@ -30,10 +41,6 @@ src/DemarVpn/Native/bin/
 **/singbox/*
 !**/singbox/bundled_version.txt
 !**/singbox/README.txt
-
-# Dev MSIX signing (ensure-dev-signing.ps1)
-src/DemarVpn/DemarVpn_Dev.pfx
-scripts/build/
 
 # Python
 .venv/
