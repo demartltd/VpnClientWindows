@@ -27,14 +27,14 @@ public static class DemarHttp
 
     private static readonly HttpClient Http = CreateClient();
 
-    /// <summary>e.g. DESKTOP-ABC (user) — DemarVPN (1.0.9) (Windows)</summary>
+    /// <summary>e.g. DESKTOP-ABC (user) - DemarVPN (1.0.9) (Windows). ASCII only — HttpClient rejects non-ASCII UA.</summary>
     public static string UserAgent
     {
         get
         {
             var pc = SanitizeToken(Environment.MachineName, "PC");
             var user = SanitizeToken(Environment.UserName, "user");
-            var s = $"{pc} ({user}) — DemarVPN ({Strings.VersionName}) (Windows)";
+            var s = $"{pc} ({user}) - DemarVPN ({Strings.VersionName}) (Windows)";
             return s.Length <= 120 ? s : s[..120];
         }
     }
