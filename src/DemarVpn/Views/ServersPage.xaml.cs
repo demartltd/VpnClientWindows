@@ -1,37 +1,236 @@
 using DemarVpn.Controls;
 using DemarVpn.Domain.Vpn;
-using DemarVpn.Models;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace DemarVpn.Views;
 
 public sealed partial class ServersPage : Page
 {
+    private ServerProtocol _protocol = ServerProtocol.Hysteria2;
+    private ServerTier? _tierFilter;
+    private bool _wired;
+    private int _tierBarServersHash;
+    private bool _refreshing;
+    private Storyboard? _spin;
+
     public ServersPage()
     {
         InitializeComponent();
-        Loaded += (_, _) => Rebuild();
-        AppServices.Vpn.PropertyChanged += (_, e) =>
+        ProtocolBar.SelectionChanged += (_, id) =>
         {
-            if (e.PropertyName == nameof(Services.Vpn.VpnController.Selected))
-                DispatcherQueue.TryEnqueue(Rebuild);
+            if (!TryParseProtocol(id, out var next) || next == _protocol) return;
+            _protocol = next;
+            RebuildList();
         };
+        TierBar.SelectionChanged += (_, id) =>
+        {
+            var next = id == "ALL" ? null : ParseTier(id);
+            if (next == _tierFilter) return;
+            _tierFilter = next;
+            RebuildList();
+        };
+        Loaded += (_, _) =>
+        {
+            if (!_wired)
+            {
+                _wired = true;
+                RefreshShadow.Receivers.Add(ShadowCast);
+                AppServices.Vpn.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName is nameof(Services.Vpn.VpnController.Selected)
+                        or nameof(Services.Vpn.VpnController.Servers)
+                        or nameof(Services.Vpn.VpnController.ServersLoading)
+                        or nameof(Services.Vpn.VpnController.ServersError)
+                        or nameof(Services.Vpn.VpnController.ServerReachability))
+                        DispatcherQueue.TryEnqueue(Rebuild);
+                };
+            }
+            Rebuild();
+        };
+    }
+
+    public void OnTabVisible()
+    {
+        if (!AppServices.Auth.SignedIn) return;
+        var vpn = AppServices.Vpn;
+        if (vpn.Servers.Count == 0 && !vpn.ServersLoading)
+            _ = vpn.RefreshServersAsync();
+        else if (vpn.Servers.Count > 0 && vpn.ServerReachability.Count == 0)
+            _ = vpn.RefreshServerReachabilityAsync();
+        Rebuild();
+    }
+
+    private async void OnRefreshClick(object sender, RoutedEventArgs e)
+    {
+        if (_refreshing || !AppServices.Auth.SignedIn) return;
+        _refreshing = true;
+        RefreshButton.IsEnabled = false;
+        StartSpin();
+        try
+        {
+            await AppServices.Vpn.RefreshServersAsync();
+            if (AppServices.Vpn.ServersError is { } err)
+                AppServices.Snackbar.ShowError(string.IsNullOrWhiteSpace(err) ? Strings.ServersRefreshFail : err);
+            else
+                AppServices.Snackbar.ShowSuccess(Strings.ServersRefreshOk);
+        }
+        catch (Exception ex)
+        {
+            AppServices.Snackbar.ShowError(
+                string.IsNullOrWhiteSpace(ex.Message) ? Strings.ServersRefreshFail : ex.Message);
+        }
+        finally
+        {
+            StopSpin();
+            _refreshing = false;
+            RefreshButton.IsEnabled = true;
+        }
+    }
+
+    private void StartSpin()
+    {
+        _spin ??= CreateSpin();
+        _spin.Begin();
+    }
+
+    private void StopSpin()
+    {
+        _spin?.Stop();
+        RefreshIconRotate.Angle = 0;
+    }
+
+    private Storyboard CreateSpin()
+    {
+        var anim = new DoubleAnimation
+        {
+            From = 0,
+            To = 360,
+            Duration = TimeSpan.FromMilliseconds(700),
+            RepeatBehavior = RepeatBehavior.Forever,
+        };
+        Storyboard.SetTarget(anim, RefreshIconRotate);
+        Storyboard.SetTargetProperty(anim, "Angle");
+        var sb = new Storyboard();
+        sb.Children.Add(anim);
+        return sb;
+    }
+
+    private void RebuildFilters()
+    {
+        ProtocolBar.SetOptions(
+            Enum.GetValues<ServerProtocol>()
+                .Select(p => new SegmentOption(p.ToString().ToUpperInvariant(), p.Label()))
+                .ToList(),
+            _protocol.ToString().ToUpperInvariant());
+
+        var servers = AppServices.Vpn.Servers;
+        var hash = servers.Count;
+        foreach (var s in servers) hash = HashCode.Combine(hash, s.Id, s.Tier);
+        if (hash == _tierBarServersHash && TierBar.SelectedId.Length > 0) return;
+        _tierBarServersHash = hash;
+
+        var opts = new List<SegmentOption> { new("ALL", "All") };
+        foreach (var t in ServerProfile.VisibleTiers(servers))
+            opts.Add(new(t.Label(), TitleCase(t.Label())));
+        var selected = _tierFilter?.Label() ?? "ALL";
+        if (opts.All(o => o.Id != selected))
+        {
+            _tierFilter = null;
+            selected = "ALL";
+        }
+        TierBar.SetOptions(opts, selected);
     }
 
     private void Rebuild()
     {
+        RebuildFilters();
+        RefreshFab.Visibility = AppServices.Auth.SignedIn ? Visibility.Visible : Visibility.Collapsed;
+        RebuildList();
+    }
+
+    private void RebuildList()
+    {
         ListHost.Children.Clear();
-        var selected = AppServices.Vpn.Selected;
-        foreach (var profile in AppServices.Vpn.Servers)
+        if (!AppServices.Auth.SignedIn) return;
+
+        var vpn = AppServices.Vpn;
+        if (vpn.ServersLoading && vpn.Servers.Count == 0)
         {
-            var row = new ServerRow { Profile = profile, IsSelected = profile.Id == selected.Id };
+            ListHost.Children.Add(new ProgressRing
+            {
+                IsActive = true,
+                Width = 36,
+                Height = 36,
+                HorizontalAlignment = HorizontalAlignment.Center,
+            });
+            return;
+        }
+
+        if (vpn.ServersError is { } err && vpn.Servers.Count == 0)
+        {
+            ListHost.Children.Add(new TextBlock
+            {
+                Text = err,
+                Foreground = (Brush)Application.Current.Resources["DemarErrorBrush"],
+                TextWrapping = TextWrapping.Wrap,
+            });
+            var retry = new Button { Content = Strings.ServersRetry, HorizontalAlignment = HorizontalAlignment.Stretch };
+            retry.Click += async (_, _) => await vpn.RefreshServersAsync();
+            ListHost.Children.Add(retry);
+            return;
+        }
+
+        var list = ServerProfile.Filter(vpn.Servers, _protocol, _tierFilter);
+        if (list.Count == 0)
+        {
+            ListHost.Children.Add(new TextBlock { Text = Strings.ServersEmpty, Opacity = 0.7 });
+            return;
+        }
+
+        var selected = vpn.Selected;
+        foreach (var profile in list)
+        {
+            vpn.ServerReachability.TryGetValue(profile.Id, out var reach);
+            var row = new ServerRow
+            {
+                Profile = profile,
+                IsSelected = profile.Id == selected?.Id,
+                ReachState = reach ?? new ServerReachState(ServerReachStatus.Checking),
+            };
             row.Click += (_, _) =>
             {
-                AppServices.Vpn.Select(profile);
+                vpn.Select(profile);
                 AppServices.Snackbar.ShowSuccess(Strings.ServerSelected);
-                Rebuild();
+                RebuildList();
             };
             ListHost.Children.Add(row);
         }
     }
+
+    private static bool TryParseProtocol(string id, out ServerProtocol protocol)
+    {
+        foreach (var p in Enum.GetValues<ServerProtocol>())
+        {
+            if (p.ToString().Equals(id, StringComparison.OrdinalIgnoreCase))
+            {
+                protocol = p;
+                return true;
+            }
+        }
+        protocol = default;
+        return false;
+    }
+
+    private static ServerTier? ParseTier(string id)
+    {
+        foreach (var t in Enum.GetValues<ServerTier>())
+            if (t.Label() == id) return t;
+        return null;
+    }
+
+    private static string TitleCase(string label) =>
+        label.Length == 0 ? label : char.ToUpperInvariant(label[0]) + label[1..].ToLowerInvariant();
 }

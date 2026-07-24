@@ -16,44 +16,51 @@ public sealed record SingBoxConnectPlan
         return this with { DirectIPs = merged };
     }
 
-    public static SingBoxConnectPlan Naive(NaiveProfile profile)
+    public static SingBoxConnectPlan Hysteria2(Hysteria2Profile profile)
     {
-        var bootstrap = BootstrapDomains(profile);
+        var tls = new Dictionary<string, object?>
+        {
+            ["enabled"] = true,
+            ["server_name"] = profile.TlsServerName,
+            ["alpn"] = profile.ResolvedAlpn.ToList(),
+        };
+        var outbound = new Dictionary<string, object?>
+        {
+            ["type"] = "hysteria2",
+            ["tag"] = SingBoxTags.Proxy,
+            ["server"] = profile.Server,
+            ["server_port"] = profile.Port,
+            ["password"] = profile.Password,
+            ["tls"] = tls,
+            ["domain_resolver"] = new Dictionary<string, object?>
+            {
+                ["server"] = SingBoxTags.DnsDirect,
+                ["strategy"] = "ipv4_only",
+            },
+        };
+        if (!string.IsNullOrEmpty(profile.ObfsPassword))
+        {
+            outbound["obfs"] = new Dictionary<string, object?>
+            {
+                ["type"] = "salamander",
+                ["password"] = profile.ObfsPassword,
+            };
+        }
+
         return new SingBoxConnectPlan
         {
             UplinkHost = profile.Server,
-            ProxyOutbound = new Dictionary<string, object?>
-            {
-                ["type"] = "naive",
-                ["tag"] = SingBoxTags.Proxy,
-                ["server"] = profile.Server,
-                ["server_port"] = profile.Port,
-                ["username"] = profile.Username,
-                ["password"] = profile.Password,
-                ["connect_timeout"] = "10s",
-                ["domain_resolver"] = new Dictionary<string, object?>
-                {
-                    ["server"] = SingBoxTags.DnsDirect,
-                    ["strategy"] = "ipv4_only",
-                },
-                ["udp_over_tcp"] = new Dictionary<string, object?> { ["enabled"] = true, ["version"] = 2 },
-                ["quic"] = false,
-                ["tls"] = new Dictionary<string, object?>
-                {
-                    ["enabled"] = true,
-                    ["server_name"] = profile.TlsServerName,
-                },
-            },
+            ProxyOutbound = outbound,
             DirectIPs = DirectIps(profile.Server),
-            Tun = new SingBoxTunOptions(SingBoxTags.DnsRemote, bootstrap, true),
+            Tun = new SingBoxTunOptions(SingBoxTags.DnsRemote, BootstrapDomains(profile.Server, profile.TlsServerName), true),
         };
     }
 
-    private static List<string> BootstrapDomains(NaiveProfile profile)
+    private static List<string> BootstrapDomains(string server, string tlsServerName)
     {
-        var domains = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { profile.TlsServerName };
-        if (HostUtils.IsHostname(profile.Server))
-            domains.Add(profile.Server.Trim());
+        var domains = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { tlsServerName };
+        if (HostUtils.IsHostname(server))
+            domains.Add(server.Trim());
         return domains.ToList();
     }
 

@@ -9,6 +9,7 @@ public sealed partial class ShellPage : Page
 {
     private readonly Page[] _tabs;
     private int _tab;
+    private int _loginReturnTab = 3;
 
     public ShellPage()
     {
@@ -22,6 +23,21 @@ public sealed partial class ShellPage : Page
         SizeChanged += (_, _) => UpdateToolbarLayout();
     }
 
+    public void OnExternalSignIn()
+    {
+        LoginSheet.Dismiss();
+        GoToTab(_loginReturnTab);
+        AccountTab.Refresh();
+    }
+
+    public void ShowLogin(int returnTab = 3)
+    {
+        _loginReturnTab = returnTab;
+        LoginSheet.Show();
+    }
+
+    public void GoToServers() => GoToTab(1);
+
     private void UpdateToolbarLayout()
     {
         var breakpoint = (double)Application.Current.Resources["ToolbarWideBreakpoint"];
@@ -31,55 +47,59 @@ public sealed partial class ShellPage : Page
     private void OnTabChanged(object sender, SelectionChangedEventArgs e)
     {
         var index = Toolbar.SelectedIndex;
-        if (index == 3 && !AppServices.Auth.SignedIn)
+        // Servers (1) and Account (3) require sign-in — open login sheet, do not switch tab.
+        if ((index is 1 or 3) && !AppServices.Auth.SignedIn)
         {
             Toolbar.Select(_tab);
-            LoginSheet.Show();
+            ShowLogin(index);
             return;
         }
-        _tab = index;
-        SelectTab(index);
+        GoToTab(index);
     }
 
-    private void OnLoginSuccess(object? sender, EventArgs e)
+    private async void OnLoginSuccess(object? sender, EventArgs e)
     {
-        AppServices.Auth.SignIn();
-        _tab = 3;
-        Toolbar.Select(3);
-        SelectTab(3);
+        var target = _loginReturnTab is 1 or 3 ? _loginReturnTab : 3;
+        GoToTab(target);
         AccountTab.Refresh();
+        await AppServices.Vpn.RefreshServersAsync();
+        if (target == 1) ServersTab.OnTabVisible();
     }
 
-    private void OnSignOutRequested()
+    private async void OnSignOutRequested()
     {
-        _tab = 0;
-        Toolbar.Select(0);
-        SelectTab(0);
+        if (AppServices.Vpn.State.Kind is VpnStateKind.Connected or VpnStateKind.Connecting)
+            await AppServices.Vpn.DisconnectAsync();
+        AppServices.Vpn.ClearServers();
+        GoToTab(0);
     }
 
-    private void SelectTab(int index)
+    private void GoToTab(int index)
     {
+        _tab = index;
+        Toolbar.Select(index);
         for (var i = 0; i < _tabs.Length; i++)
-            _tabs[i].Visibility = i == index ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+            _tabs[i].Visibility = i == index ? Visibility.Visible : Visibility.Collapsed;
         if (index == 0) AppServices.Vpn.TickThroughput();
+        if (index == 1) ServersTab.OnTabVisible();
         if (index == 3) AccountTab.Refresh();
     }
 
     private void ShowOverlay(Type pageType)
     {
-        MainLayer.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-        BottomChrome.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        MainLayer.Visibility = Visibility.Collapsed;
+        BottomChrome.Visibility = Visibility.Collapsed;
         Snackbar.Margin = (Thickness)Application.Current.Resources["SnackbarOverlayMargin"];
-        OverlayFrame.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+        OverlayFrame.Visibility = Visibility.Visible;
         OverlayFrame.Navigate(pageType);
     }
 
     public void CloseOverlay()
     {
         OverlayFrame.Content = null;
-        OverlayFrame.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-        MainLayer.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
-        BottomChrome.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+        OverlayFrame.Visibility = Visibility.Collapsed;
+        MainLayer.Visibility = Visibility.Visible;
+        BottomChrome.Visibility = Visibility.Visible;
         Snackbar.Margin = (Thickness)Application.Current.Resources["ToolbarSnackbarMargin"];
     }
 }
@@ -88,7 +108,7 @@ public abstract class OverlayPage : Page
 {
     protected void GoBack()
     {
-        if (Frame?.Parent is Microsoft.UI.Xaml.FrameworkElement grid &&
+        if (Frame?.Parent is FrameworkElement grid &&
             grid.Parent is ShellPage shell)
             shell.CloseOverlay();
         else if (Frame is not null)

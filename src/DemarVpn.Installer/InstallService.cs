@@ -125,6 +125,7 @@ public static class InstallService
         CreateShortcut(StartMenuLnk, appExe, installDir);
         WriteArp(installDir, appExe, uninstallExe);
         WriteMarker(installDir);
+        RegisterProtocol(appExe);
         progress?.Report("Готово");
     }
 
@@ -211,7 +212,27 @@ public static class InstallService
         if (!File.Exists(lnkPath))
             throw new InvalidOperationException("Start Menu shortcut failed");
     }
+
+    static void RegisterProtocol(string appExe)
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\demar");
+            if (key is null) return;
+            key.SetValue(null, "URL:Demar VPN");
+            key.SetValue("URL Protocol", "");
+            using var cmd = key.CreateSubKey(@"shell\open\command");
+            cmd?.SetValue(null, $"\"{appExe}\" \"%1\"");
+        }
+        catch { /* ignore */ }
+    }
 #endif
+
+    static void UnregisterProtocol()
+    {
+        try { Registry.CurrentUser.DeleteSubKeyTree(@"Software\Classes\demar", throwOnMissingSubKey: false); }
+        catch { /* ignore */ }
+    }
 
     public static void Uninstall(IProgress<string>? progress)
     {
@@ -224,6 +245,7 @@ public static class InstallService
         TryDelete(StartMenuLnk);
         DeleteArp();
         ClearMarker();
+        UnregisterProtocol();
 
         var self = Environment.ProcessPath;
         if (Directory.Exists(dir))

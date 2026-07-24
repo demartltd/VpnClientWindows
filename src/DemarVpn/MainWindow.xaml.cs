@@ -9,6 +9,8 @@ public sealed partial class MainWindow : Window
 {
     private readonly DispatcherTimer _throughputTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
+    public Views.ShellPage? Shell => Root.Content as Views.ShellPage;
+
     public MainWindow()
     {
         InitializeComponent();

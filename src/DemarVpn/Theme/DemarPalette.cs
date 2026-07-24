@@ -24,6 +24,7 @@ public static class DemarPalette
         Set(resources, "DemarOnPrimaryContainerBrush", s.OnPrimaryContainer);
         Set(resources, "DemarSecondaryBrush", s.Secondary);
         Set(resources, "DemarTertiaryBrush", s.Tertiary);
+        Set(resources, "DemarOnTertiaryBrush", s.OnTertiary);
         Set(resources, "DemarErrorBrush", s.Error);
         Set(resources, "DemarPrimaryMutedBrush", WithAlpha(s.Primary, 0.10));
         Set(resources, "DemarSuccessMutedBrush", WithAlpha(s.Secondary, 0.20));

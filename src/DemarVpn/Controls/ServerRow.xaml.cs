@@ -1,6 +1,7 @@
 using DemarVpn.Core;
 using DemarVpn.Domain.Vpn;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -17,6 +18,10 @@ public sealed partial class ServerRow : UserControl
         DependencyProperty.Register(nameof(IsSelected), typeof(bool), typeof(ServerRow),
             new PropertyMetadata(false, OnVisualChanged));
 
+    public static readonly DependencyProperty ReachStateProperty =
+        DependencyProperty.Register(nameof(ReachState), typeof(ServerReachState), typeof(ServerRow),
+            new PropertyMetadata(new ServerReachState(ServerReachStatus.Checking), OnVisualChanged));
+
     public ServerProfile? Profile
     {
         get => (ServerProfile?)GetValue(ProfileProperty);
@@ -27,6 +32,12 @@ public sealed partial class ServerRow : UserControl
     {
         get => (bool)GetValue(IsSelectedProperty);
         set => SetValue(IsSelectedProperty, value);
+    }
+
+    public ServerReachState ReachState
+    {
+        get => (ServerReachState)GetValue(ReachStateProperty);
+        set => SetValue(ReachStateProperty, value);
     }
 
     public event EventHandler? Click;
@@ -47,10 +58,12 @@ public sealed partial class ServerRow : UserControl
         var p = Profile;
         if (p is null) return;
 
-        TitleBlock.Text = p.DisplayName;
-        CountryBlock.Text = p.CountryName ?? "";
-        CountryBlock.Visibility = string.IsNullOrEmpty(p.CountryName) ? Visibility.Collapsed : Visibility.Visible;
+        TitleBlock.Text = p.ListTitle;
+        var sub = p.ListSubtitle;
+        SubtitleBlock.Text = sub;
+        SubtitleBlock.Visibility = string.IsNullOrEmpty(sub) ? Visibility.Collapsed : Visibility.Visible;
         FlagImage.Source = new BitmapImage(CountryFlags.AssetUri(p.CountryCode));
+        AutomationProperties.SetName(Root, p.DisplayName);
 
         var res = Application.Current.Resources;
         var onSel = (Brush)res["DemarOnPrimaryContainerBrush"];
@@ -58,10 +71,26 @@ public sealed partial class ServerRow : UserControl
         Root.Background = (Brush)res[IsSelected ? "DemarPrimaryContainerBrush" : "DemarSurfaceHighBrush"];
         Root.BorderBrush = IsSelected
             ? new SolidColorBrush(((SolidColorBrush)res["DemarSeedBrush"]).Color) { Opacity = 0.35 }
-            : new SolidColorBrush(((SolidColorBrush)res["DemarSurfaceHighBrush"]).Color) { Opacity = 0.2 };
+            : new SolidColorBrush(((SolidColorBrush)res["DemarOutlineBrush"]).Color) { Opacity = 0.2 };
         TitleBlock.Foreground = IsSelected ? onSel : onNorm;
-        CountryBlock.Foreground = IsSelected ? onSel : onNorm;
+        SubtitleBlock.Foreground = IsSelected ? onSel : onNorm;
+        StatusDot.Fill = DotBrush(ReachState.Status, res);
+        ToolTipService.SetToolTip(StatusDot, ReachState.Status switch
+        {
+            ServerReachStatus.Online => Strings.ServerStatusOnline,
+            ServerReachStatus.Offline => Strings.ServerStatusOffline,
+            ServerReachStatus.Degraded => Strings.ServerStatusDegraded,
+            _ => Strings.ServerStatusChecking,
+        });
     }
+
+    private static Brush DotBrush(ServerReachStatus status, ResourceDictionary res) => status switch
+    {
+        ServerReachStatus.Online => (Brush)res["DemarSecondaryBrush"],
+        ServerReachStatus.Offline => (Brush)res["DemarErrorBrush"],
+        ServerReachStatus.Degraded => (Brush)res["DemarTertiaryBrush"],
+        _ => new SolidColorBrush(((SolidColorBrush)res["DemarSecondaryBrush"]).Color) { Opacity = 0.45 },
+    };
 
     private void OnClick(object sender, RoutedEventArgs e) => Click?.Invoke(this, EventArgs.Empty);
 }

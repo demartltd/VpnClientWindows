@@ -1,6 +1,7 @@
 using DemarVpn.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace DemarVpn.Views;
 
@@ -19,16 +20,33 @@ public sealed partial class HomePage : Page
     {
         var vpn = AppServices.Vpn;
         if (vpn.State.Kind == VpnStateKind.Connected)
+        {
             await vpn.DisconnectAsync();
-        else if (!vpn.State.IsBusy)
-            await vpn.ConnectAsync();
+            return;
+        }
+        if (vpn.State.IsBusy) return;
+
+        if (Frame?.Parent is not FrameworkElement { Parent: ShellPage shell })
+            return;
+
+        if (!AppServices.Auth.SignedIn)
+        {
+            shell.ShowLogin(returnTab: 0);
+            return;
+        }
+        if (vpn.Selected is null)
+        {
+            shell.GoToServers();
+            return;
+        }
+        await vpn.ConnectAsync();
     }
 
     private void Refresh()
     {
         var vpn = AppServices.Vpn;
         var state = vpn.State;
-        ServerName.Text = string.IsNullOrEmpty(vpn.Selected.DisplayName) ? Strings.ServerNotSelected : vpn.Selected.DisplayName;
+        ServerName.Text = vpn.Selected is null ? Strings.ServerNotSelected : vpn.Selected.ListTitle;
         Throughput.Text = FormatThroughput(vpn.Throughput);
         var connected = state.Kind == VpnStateKind.Connected;
         var busy = state.IsBusy;

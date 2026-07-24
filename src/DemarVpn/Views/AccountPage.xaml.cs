@@ -20,6 +20,14 @@ public sealed partial class AccountPage : Page
     public void Refresh()
     {
         var u = AppServices.Auth.User;
+        if (u is null)
+        {
+            UserName.Text = Strings.AccountSignInHint;
+            UserId.Text = string.Empty;
+            UserVpn.Text = string.Empty;
+            UserExpires.Text = string.Empty;
+            return;
+        }
         UserName.Text = u.Username;
         UserId.Text = u.Id;
         UserVpn.Text = $"VPN: {u.VpnSubscription}";

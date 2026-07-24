@@ -1,4 +1,5 @@
 using DemarVpn.Models;
+using DemarVpn.Services.Auth;
 using DemarVpn.Services.Vpn;
 
 namespace DemarVpn.Services;
@@ -14,7 +15,25 @@ public static class AppServices
     public static void Init()
     {
         AppLog.Init();
+        AuthSessionStore.Load();
+        Auth.NotifyChanged();
         SingBoxLabel = ReadBundledVersion();
+    }
+
+    public static async Task BootstrapSessionAsync()
+    {
+        try
+        {
+            if (!AuthRepository.IsSignedIn) return;
+            var ok = await AuthRepository.RefreshSessionAsync();
+            Auth.NotifyChanged();
+            if (ok) await Vpn.RefreshServersAsync();
+            else Vpn.ClearServers();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Append($"auth: bootstrap failed — {ex.Message}");
+        }
     }
 
     private static string ReadBundledVersion()
@@ -33,12 +52,6 @@ public static class AppServices
         catch { /* fallback */ }
         return "1.13.13";
     }
-}
-
-public static class UiMocks
-{
-    public static Models.SignedInUser SignedInUser { get; } = new(
-        "demo_user", "usr_demo", "active", "2026-12-31");
 }
 
 public static class SocialLinks

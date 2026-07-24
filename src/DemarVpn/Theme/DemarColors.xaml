@@ -12,6 +12,7 @@
   <SolidColorBrush x:Key="DemarOnPrimaryContainerBrush" Color="#FFD8E8F8" />
   <SolidColorBrush x:Key="DemarSecondaryBrush" Color="#FFB8C8DA" />
   <SolidColorBrush x:Key="DemarTertiaryBrush" Color="#FFC8B8E8" />
+  <SolidColorBrush x:Key="DemarOnTertiaryBrush" Color="#FF3D2A5C" />
   <SolidColorBrush x:Key="DemarErrorBrush" Color="#FFFFB4AB" />
   <SolidColorBrush x:Key="DemarSuccessBrush" Color="#FF81C784" />
   <SolidColorBrush x:Key="DemarWarningBrush" Color="#FFFFB74D" />

@@ -9,6 +9,8 @@ public sealed partial class OtpInput : UserControl
 {
     public event EventHandler? Completed;
 
+    public string Code => Input.Text;
+
     private const int Length = 6;
     private readonly Border[] _cells = new Border[Length];
     private readonly TextBlock[] _digits = new TextBlock[Length];

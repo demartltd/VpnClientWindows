@@ -1,0 +1,15 @@
+<UserControl
+    x:Class="DemarVpn.Controls.DemarSegmentBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Border x:Name="Root"
+          Height="48"
+          CornerRadius="10"
+          Background="{StaticResource DemarSurfaceHighBrush}"
+          BorderBrush="{StaticResource DemarOutlineVariantBrush}"
+          BorderThickness="1"
+          PointerPressed="OnPointer"
+          PointerMoved="OnPointer">
+    <Grid x:Name="Segments" />
+  </Border>
+</UserControl>

@@ -17,20 +17,29 @@
       <ScrollViewer MaxHeight="520" VerticalScrollBarVisibility="Auto">
         <StackPanel Padding="24,0,24,28" Spacing="16">
           <TextBlock x:Name="StepTitle" Style="{StaticResource DemarTabTitleStyle}"
-                     FontSize="22" Margin="0,24,0,24" TextWrapping="Wrap" TextAlignment="Center" />
+                     FontSize="22" Margin="0,24,0,8" TextWrapping="Wrap" TextAlignment="Center" />
+          <TextBlock x:Name="StepSubtitle" Opacity="0.7" FontSize="14" TextAlignment="Center"
+                     TextWrapping="Wrap" Visibility="Collapsed" />
+          <TextBlock x:Name="ErrorText" Foreground="{StaticResource DemarErrorBrush}"
+                     FontSize="13" TextAlignment="Center" TextWrapping="Wrap"
+                     Visibility="Collapsed" Margin="0,0,0,4" />
+          <ProgressRing x:Name="BusyRing" Width="28" Height="28" IsActive="False"
+                        Visibility="Collapsed" HorizontalAlignment="Center" />
           <StackPanel x:Name="EmailStep" Spacing="12">
             <Border Background="{StaticResource DemarSurfaceHighBrush}"
                     BorderBrush="{StaticResource DemarOutlineVariantBrush}"
                     BorderThickness="1" CornerRadius="8" MinHeight="52">
               <TextBox x:Name="EmailBox" Style="{StaticResource DemarPlainTextBoxStyle}"
-                       PlaceholderText="{x:Bind EmailHint, Mode=OneTime}" />
+                       PlaceholderText="{x:Bind EmailHint, Mode=OneTime}"
+                       TextChanged="OnEmailTextChanged" />
             </Border>
-            <Button Style="{StaticResource DemarAccentButtonStyle}"
+            <Button x:Name="ContinueBtn" Style="{StaticResource DemarAccentButtonStyle}"
                     Content="{x:Bind ContinueText, Mode=OneTime}" Click="OnEmailContinue" />
           </StackPanel>
           <StackPanel x:Name="VerifyStep" Visibility="Collapsed" Spacing="16">
             <controls:OtpInput x:Name="VerifyOtp" Completed="OnVerifyComplete" HorizontalAlignment="Center" />
-            <HyperlinkButton Content="{x:Bind ResendText, Mode=OneTime}" Click="OnResend" HorizontalAlignment="Center" />
+            <HyperlinkButton x:Name="ResendBtn" Content="{x:Bind ResendText, Mode=OneTime}"
+                             Click="OnResend" HorizontalAlignment="Center" />
           </StackPanel>
           <StackPanel x:Name="TotpStep" Visibility="Collapsed" Spacing="16">
             <controls:OtpInput x:Name="TotpOtp" Completed="OnTotpComplete" HorizontalAlignment="Center" />

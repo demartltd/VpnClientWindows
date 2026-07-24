@@ -1,21 +1,35 @@
-using DemarVpn.Models;
+using DemarVpn.Services.Auth;
 
 namespace DemarVpn.Services;
 
 public sealed class AuthSession : NotifyBase
 {
-    public bool SignedIn { get; private set; }
-    public SignedInUser User => UiMocks.SignedInUser;
+    public bool SignedIn => AuthRepository.IsSignedIn;
 
-    public void SignIn()
+    public SignedInUser? User
     {
-        SignedIn = true;
+        get
+        {
+            var s = AuthRepository.Session;
+            return s is null
+                ? null
+                : new SignedInUser(
+                    s.Username,
+                    s.UserId,
+                    s.VpnSubscription ?? "—",
+                    s.VpnExpiresAt);
+        }
+    }
+
+    public void NotifyChanged()
+    {
         Raise(nameof(SignedIn));
+        Raise(nameof(User));
     }
 
     public void SignOut()
     {
-        SignedIn = false;
-        Raise(nameof(SignedIn));
+        AuthRepository.SignOut();
+        NotifyChanged();
     }
 }

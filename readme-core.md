@@ -1,27 +1,27 @@
-# Ядро VPN: Sing-box (NaiveProxy) — Demar VPN Windows
+# Ядро VPN: Sing-box (Hysteria2) — Demar VPN Windows
 
 Целевая версия core: **sing-box latest**. Фактическая — в `src/DemarVpn/Assets/singbox/bundled_version.txt` после `scripts/for_builds/libbox-build-windows.py`.
 
 Документация: https://sing-box.sagernet.org/
 
-- [Naive outbound](https://sing-box.sagernet.org/configuration/outbound/naive/) (since 1.13.0)
+- [Hysteria2 outbound](https://sing-box.sagernet.org/configuration/outbound/hysteria2/)
 - [DNS rule action](https://sing-box.sagernet.org/configuration/dns/rule_action/) (since 1.11.0)
 - [Dial Fields](https://sing-box.sagernet.org/configuration/shared/dial/) — `domain_resolver`
 
 Платформа: **Windows only** (WinUI 3 + sing-ffi C# bindings).
 
-**Итерация 2:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine` primary).
+**Итерация:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine` primary). Auth/servers — `auth.example.invalid` (parity Android).
 
-Connect pipeline: `UplinkIpv4` (retry) → `UplinkProbe.FirstReachableAsync` (parallel TCP race) → config → subprocess → `VpnTunnelProbe.WaitForTunnelReadyAsync` (diag IP ×2 + TUN hostname ×1).
+Connect pipeline: `UplinkIpv4` (retry) → DNS resolve success → config → subprocess → `VpnTunnelProbe.WaitForTunnelReadyAsync` (diag IP ×2 + TUN hostname ×1). Hysteria2 = QUIC/UDP — **без TCP preflight**.
 
 ### Таймауты (`ConnectTimeouts`)
 
 | Константа | Значение | Назначение |
 |-----------|----------|------------|
-| `PreflightMs` | 3 000 | TCP timeout per uplink target |
+| `PreflightMs` | 3 000 | TCP timeout (diag helpers) |
 | `PreflightRaceMs` | 6 000 | parallel race budget |
 | `StartupMs` | 4 000 | старт sing-box + diag-port 10808 |
-| `ProxyWarmupMs` | 2 000 | Naive handshake before proxy probe |
+| `ProxyWarmupMs` | 2 000 | handshake before proxy probe |
 | `ProbeMs` | 15 000 | двухфазный probe (proxy + TUN/DNS) |
 | `ConnectMs` | 40 000 | единый deadline pipeline |
 | `WatchdogMs` | 42 000 | аварийный стоп при зависании в Connecting |
@@ -42,39 +42,36 @@ Connect pipeline: `UplinkIpv4` (retry) → `UplinkProbe.FirstReachableAsync` (pa
 ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigBuilder → config.json
 ```
 
-`resolveUplinkIpv4s` — перед connect на Windows. Расширяемость: новый profile + `SingBoxConnectPlan.foo()` + `ServerProfileKind.foo`.
+`resolveUplinkIpv4s` — перед connect на Windows. Список серверов: `POST /auth/mobile/servers` → только `protocol=hysteria2`.
 
 ### Добавление протокола
 
 1. Profile struct (`FooProfile`) в `Domain/Vpn/`
-2. `SingBoxConnectPlan.foo(profile)` — outbound + tun overrides
-3. `ServerProfileKind.foo` + switch в `connectPlan`
-4. Test server seed
-5. При новом outbound — обновить TAGS в `scripts/for_builds/libbox-build-windows.py`
+2. `SingBoxConnectPlan.Foo(profile)` — outbound + tun overrides
+3. Parser в `ServersApi`
+4. При новом outbound — обновить TAGS в `scripts/for_builds/libbox-build-windows.py` (если self-build)
 
 ---
 
-## NaiveProxy
+## Hysteria2
 
 | App field | sing-box key |
 |-----------|--------------|
 | `server` | `server` |
 | `port` | `server_port` |
-| `username` | `username` |
 | `password` | `password` |
 | `tlsServerName` | `tls.server_name` |
+| `alpn` | `tls.alpn` (default `["h3"]`) |
+| `obfsPassword` | `obfs.type=salamander` + `obfs.password` |
 | `displayName` | UI only |
 
-### Outbound defaults (`SingBoxConnectPlan.naive`)
+### Outbound defaults (`SingBoxConnectPlan.Hysteria2`)
 
 | Поле | Значение |
 |------|----------|
-| `udp_over_tcp` | `{ enabled: true, version: 2 }` |
-| `connect_timeout` | `10s` |
-| `dns-remote connect_timeout` | `8s` (DoH via proxy) |
-| `quic` | `false` |
-| `tls` | enabled + `server_name` |
+| `tls` | enabled + `server_name` + `alpn` |
 | `domain_resolver` | `dns-direct`, `ipv4_only` |
+| `obfs` | optional salamander |
 
 ---
 
@@ -134,6 +131,20 @@ Mixed `127.0.0.1:10808` (`SingBoxTags.diagInbound`):
 
 ---
 
+## Auth / Servers
+
+| Endpoint | Назначение |
+|----------|------------|
+| `POST /auth/mobile/email/send\|confirm` | Email OTP |
+| `POST /auth/mobile/totp/verify` | TOTP |
+| `POST /auth/mobile/session/exchange\|check` | сессия |
+| `POST /auth/mobile/servers` | список hy2 по подписке; UI: SegmentBar + listTitle/`City #N` + DNS reachability |
+| `GET account.example.invalid/api/auth/client/me` | Telegram OAuth token |
+
+Headers: `X-Demar-Client: demar-vpn`, `User-Agent: DemarVPN/{ver} (windows)`. Protocol: `demar://auth/callback`.
+
+---
+
 ## Сборка Libbox (Windows)
 
 ```powershell
@@ -141,7 +152,7 @@ py -3 scripts/for_builds/libbox-build-windows.py
 pwsh scripts/for_builds/build_windows.ps1
 ```
 
-Runtime рядом с `sing-box.exe` (Naive): `wintun.dll`, `libcronet.dll` — скрипт кладёт в `Native/bin/` и publish копирует в output.
+Runtime рядом с `sing-box.exe`: `wintun.dll`, `libcronet.dll` — скрипт кладёт в `Native/bin/` и publish копирует в output. Official release zip уже включает Hysteria2.
 
 Очистка: `python3 scripts/singbox-cleaner.py -y`
 
@@ -154,12 +165,6 @@ lib_windows:
 
 Скрипт клонирует тег `v1.13.14`, генерирует C# в `src/DemarVpn/Native/libbox/` (опционально).
 
-TAGS (parity с Android):
-
-```
-with_gvisor,with_naive_outbound,with_clash_api,badlinkname,tfogo_checklinkname0
-```
-
 ---
 
 ## C# layout
@@ -167,13 +172,12 @@ with_gvisor,with_naive_outbound,with_clash_api,badlinkname,tfogo_checklinkname0
 | Путь | Роль |
 |------|------|
 | `Domain/Vpn/*` | Profiles, `SingBoxConnectPlan` |
+| `Services/Auth/*` | API + session store |
+| `Services/Servers/*` | servers fetch/parse |
 | `Services/Vpn/SingBoxConfigBuilder.cs` | TUN + DNS + route JSON (`stack: system`) |
 | `Services/Vpn/VpnController.cs` | Connect pipeline, UI bridge |
 | `Services/Network/UplinkIpv4.cs` | uplink resolve |
-| `Native/libbox/` | sing-ffi generated bindings |
 | `Services/Vpn/SingBoxProcessEngine.cs` | sing-box.exe subprocess (**primary**) |
 | `Services/Vpn/LibboxVpnEngine.cs` | Libbox in-process (optional, `HAS_LIBBOX`) |
-| `Services/Network/UplinkProbe.cs` | TCP preflight uplink |
-| `Services/Vpn/WintunPlatform.cs` | PlatformInterface (`HAS_LIBBOX`) |
 
 Синхронизировать TAGS / pipeline с [demar_vpn_android/readme-core.md](../demar_vpn_android/readme-core.md).

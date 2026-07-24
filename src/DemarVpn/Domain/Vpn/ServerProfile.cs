@@ -2,41 +2,114 @@ using System.Globalization;
 
 namespace DemarVpn.Domain.Vpn;
 
-public abstract record ServerProfileKind
+public enum ServerTier
 {
-    public sealed record Naive(NaiveProfile Profile) : ServerProfileKind;
+    Free,
+    Dev,
+    Tester,
+    Plus,
+    Vip,
+}
+
+public static class ServerTierLabels
+{
+    public static string Label(this ServerTier tier) => tier switch
+    {
+        ServerTier.Dev => "DEV",
+        ServerTier.Tester => "TESTER",
+        ServerTier.Plus => "PLUS",
+        ServerTier.Vip => "VIP",
+        _ => "FREE",
+    };
+}
+
+public enum ServerProtocol
+{
+    Hysteria2,
+}
+
+public static class ServerProtocolLabels
+{
+    public static string Label(this ServerProtocol protocol) => protocol switch
+    {
+        _ => "Hysteria2",
+    };
 }
 
 public sealed record ServerProfile(
     string Id,
     string DisplayName,
-    ServerProfileKind Kind,
+    Hysteria2Profile Profile,
     string? CountryCode = null,
-    string? CountryName = null)
+    string? CountryName = null,
+    string? City = null)
 {
-    public SingBoxConnectPlan ConnectPlan => Kind switch
-    {
-        ServerProfileKind.Naive n => SingBoxConnectPlan.Naive(n.Profile),
-        _ => throw new InvalidOperationException("unknown profile kind"),
-    };
+    public SingBoxConnectPlan ConnectPlan => SingBoxConnectPlan.Hysteria2(Profile);
+    public int UplinkPort => Profile.Port;
+    public ServerProtocol Protocol => ServerProtocol.Hysteria2;
 
-    public int? UplinkPort => Kind switch
+    public ServerTier Tier
     {
-        ServerProfileKind.Naive n => n.Profile.Port,
-        _ => null,
-    };
+        get
+        {
+            var mid = DisplayName.Split('-').ElementAtOrDefault(1)?.ToUpperInvariant();
+            return mid switch
+            {
+                "DEV" => ServerTier.Dev,
+                "TESTER" => ServerTier.Tester,
+                "PLUS" => ServerTier.Plus,
+                "VIP" => ServerTier.Vip,
+                _ => ServerTier.Free,
+            };
+        }
+    }
 
-    public static ServerProfile Naive(NaiveProfile profile, string? countryCode = null, string? countryName = null) => new(
-        $"naive:{profile.DisplayName}",
+    public int? TagNumber
+    {
+        get
+        {
+            var i = DisplayName.LastIndexOf('-');
+            if (i < 0 || i >= DisplayName.Length - 1) return null;
+            return int.TryParse(DisplayName.AsSpan(i + 1), out var n) ? n : null;
+        }
+    }
+
+    public string ListTitle
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(CountryName)) return DisplayName;
+            return $"{CountryName} | {Tier.Label()}";
+        }
+    }
+
+    public string ListSubtitle
+    {
+        get
+        {
+            if (TagNumber is not { } n || string.IsNullOrWhiteSpace(City)) return "";
+            return $"{City} #{n}";
+        }
+    }
+
+    public static ServerProfile Hysteria2(
+        Hysteria2Profile profile,
+        string? countryCode = null,
+        string? countryName = null,
+        string? city = null,
+        string? id = null) => new(
+        id ?? $"hysteria2:{profile.DisplayName}",
         profile.DisplayName,
-        new ServerProfileKind.Naive(profile),
+        profile,
         countryCode,
-        countryName);
+        countryName,
+        city);
 
-    public static ServerProfile NaiveFromTag(NaiveProfile profile)
+    public static ServerProfile Hysteria2FromTag(
+        Hysteria2Profile profile, string? city = null, string? id = null)
     {
-        var countryCode = CountryCodeFromTag(profile.DisplayName);
-        return Naive(profile, countryCode, CountryNameFromCode(countryCode));
+        var code = CountryCodeFromTag(profile.DisplayName);
+        return Hysteria2(profile, code, CountryNameFromCode(code), city, id);
     }
 
     public static string? CountryCodeFromTag(string tag)
@@ -50,13 +123,22 @@ public sealed record ServerProfile(
     public static string? CountryNameFromCode(string? countryCode)
     {
         if (string.IsNullOrWhiteSpace(countryCode)) return null;
-        try
-        {
-            return new RegionInfo(countryCode).NativeName;
-        }
-        catch (ArgumentException)
-        {
-            return null;
-        }
+        try { return new RegionInfo(countryCode).EnglishName; }
+        catch (ArgumentException) { return null; }
     }
+
+    public static IReadOnlyList<ServerTier> VisibleTiers(IEnumerable<ServerProfile> servers)
+    {
+        var list = servers as IList<ServerProfile> ?? servers.ToList();
+        return Enum.GetValues<ServerTier>()
+            .Where(t => (t != ServerTier.Dev && t != ServerTier.Tester) || list.Any(p => p.Tier == t))
+            .ToList();
+    }
+
+    public static IReadOnlyList<ServerProfile> Filter(
+        IEnumerable<ServerProfile> servers, ServerProtocol protocol, ServerTier? tier) =>
+        servers
+            .Where(s => s.Protocol == protocol && (tier is null || s.Tier == tier))
+            .OrderBy(s => s.DisplayName)
+            .ToList();
 }
