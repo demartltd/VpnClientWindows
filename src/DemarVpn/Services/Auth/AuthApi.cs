@@ -22,7 +22,8 @@ public static class AuthApi
         get
         {
             var returnTo = Uri.EscapeDataString(DemarHttp.AppOauthReturn);
-            return $"{DemarHttp.BaseUrl}/auth/oauth/telegram/start?return_to={returnTo}&client={DemarHttp.ClientId}";
+            var ua = Uri.EscapeDataString(DemarHttp.UserAgent);
+            return $"{DemarHttp.BaseUrl}/auth/oauth/telegram/start?return_to={returnTo}&client={DemarHttp.ClientId}&ua={ua}";
         }
     }
 

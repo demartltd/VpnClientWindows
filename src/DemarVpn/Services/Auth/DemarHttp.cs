@@ -27,7 +27,29 @@ public static class DemarHttp
 
     private static readonly HttpClient Http = CreateClient();
 
-    public static string UserAgent => $"DemarVPN/{Strings.VersionName} (windows)";
+    /// <summary>e.g. DESKTOP-ABC (user) — DemarVPN (1.0.9) (Windows)</summary>
+    public static string UserAgent
+    {
+        get
+        {
+            var pc = SanitizeToken(Environment.MachineName, "PC");
+            var user = SanitizeToken(Environment.UserName, "user");
+            var s = $"{pc} ({user}) — DemarVPN ({Strings.VersionName}) (Windows)";
+            return s.Length <= 120 ? s : s[..120];
+        }
+    }
+
+    private static string SanitizeToken(string? raw, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return fallback;
+        var sb = new StringBuilder(raw.Length);
+        foreach (var c in raw.Trim())
+        {
+            if (char.IsLetterOrDigit(c) || c is '.' or '_' or '-')
+                sb.Append(c);
+        }
+        return sb.Length > 0 ? sb.ToString() : fallback;
+    }
 
     private static HttpClient CreateClient()
     {
