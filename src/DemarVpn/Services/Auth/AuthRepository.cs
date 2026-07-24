@@ -17,7 +17,7 @@ public static class AuthRepository
         }
         catch (AuthException e) when (e.StatusCode == 401 || e.Message == "session_revoked")
         {
-            SignOut();
+            ClearLocal();
             AppLog.Append("auth: session inactive — signed out");
             return false;
         }
@@ -62,7 +62,19 @@ public static class AuthRepository
         AppLog.Append($"auth: signed in as {exchange.UserId} (oauth token)");
     }
 
-    public static void SignOut()
+    /** Best-effort server revoke, then always clear local session. */
+    public static async Task SignOutAsync(CancellationToken ct = default)
+    {
+        var current = AuthSessionStore.Current;
+        if (current is not null)
+        {
+            try { await AuthApi.LogoutSessionAsync(current.UserId, current.LoginAt, ct); }
+            catch (Exception e) { AppLog.Append($"auth: logout API failed — {e.Message}"); }
+        }
+        ClearLocal();
+    }
+
+    public static void ClearLocal()
     {
         AuthSessionStore.Clear();
         AppLog.Append("auth: signed out");

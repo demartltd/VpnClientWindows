@@ -59,7 +59,7 @@ VPN connect (Hysteria2) — **реализовано** (`SingBoxProcessEngine` +
 
 ### Auth
 
-Email OTP + TOTP (если включён) и Telegram OIDC через браузер → `demar://auth/callback`. Сессия в `%LOCALAPPDATA%\DemarVpn\demar_auth_session.json`; при старте — `session/check`, при отзыве — local sign-out. Новый email: confirm «Создать новый?» → `purpose: register`. API: `POST /auth/mobile/*` + `X-Demar-Client` / UA `DemarVPN/… (windows)`.
+Email OTP + TOTP (если включён) и Telegram OIDC через браузер → `demar://auth/callback`. Сессия в `%LOCALAPPDATA%\DemarVpn\demar_auth_session.json`; при старте — `session/check`, при отзыве — local sign-out. Выход: `POST /auth/mobile/session/logout` + stop VPN + очистка `last_profile_id`. Новый email: confirm «Создать новый?» → `purpose: register`. API: `POST /auth/mobile/*` + `X-Demar-Client` / UA `DemarVPN/… (windows)`.
 
 ### Servers
 

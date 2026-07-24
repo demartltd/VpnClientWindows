@@ -27,9 +27,9 @@ public sealed class AuthSession : NotifyBase
         Raise(nameof(User));
     }
 
-    public void SignOut()
+    public async Task SignOutAsync()
     {
-        AuthRepository.SignOut();
+        await AuthRepository.SignOutAsync();
         NotifyChanged();
     }
 }

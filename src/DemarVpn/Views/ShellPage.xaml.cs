@@ -68,9 +68,8 @@ public sealed partial class ShellPage : Page
 
     private async void OnSignOutRequested()
     {
-        if (AppServices.Vpn.State.Kind is VpnStateKind.Connected or VpnStateKind.Connecting)
-            await AppServices.Vpn.DisconnectAsync();
-        AppServices.Vpn.ClearServers();
+        await AppServices.SignOutFullyAsync();
+        AccountTab.Refresh();
         GoToTab(0);
     }
 

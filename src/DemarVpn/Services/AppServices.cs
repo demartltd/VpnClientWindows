@@ -28,12 +28,18 @@ public static class AppServices
             var ok = await AuthRepository.RefreshSessionAsync();
             Auth.NotifyChanged();
             if (ok) await Vpn.RefreshServersAsync();
-            else Vpn.ClearServers();
+            else await Vpn.OnSignedOutAsync();
         }
         catch (Exception ex)
         {
             AppLog.Append($"auth: bootstrap failed — {ex.Message}");
         }
+    }
+
+    public static async Task SignOutFullyAsync()
+    {
+        await Auth.SignOutAsync();
+        await Vpn.OnSignedOutAsync();
     }
 
     private static string ReadBundledVersion()

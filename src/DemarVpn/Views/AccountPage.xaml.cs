@@ -36,7 +36,6 @@ public sealed partial class AccountPage : Page
 
     private void OnSignOut(object sender, RoutedEventArgs e)
     {
-        AppServices.Auth.SignOut();
         SignOutRequested?.Invoke();
     }
 }

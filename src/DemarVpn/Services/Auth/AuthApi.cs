@@ -77,6 +77,12 @@ public static class AuthApi
         return ParseSession(json);
     }
 
+    public static Task LogoutSessionAsync(string userId, string loginAt, CancellationToken ct = default) =>
+        DemarHttp.PostJsonAsync(
+            $"{DemarHttp.BaseUrl}/auth/mobile/session/logout",
+            new JsonObject { ["userId"] = userId, ["loginAt"] = loginAt },
+            ct);
+
     public static async Task<SessionExchange> SessionFromClientTokenAsync(string token, CancellationToken ct = default)
     {
         var json = await DemarHttp.GetJsonAsync(

@@ -46,6 +46,14 @@ public sealed class VpnController : NotifyBase
         Raise(nameof(ServerReachability));
     }
 
+    public async Task OnSignedOutAsync()
+    {
+        if (State.Kind is not VpnStateKind.Disconnected)
+            await DisconnectAsync();
+        ClearLastProfileId();
+        ClearServers();
+    }
+
     public async Task RefreshServersAsync(CancellationToken ct = default)
     {
         var session = AuthSessionStore.Current;
@@ -68,9 +76,9 @@ public sealed class VpnController : NotifyBase
         }
         catch (AuthException e) when (e.StatusCode == 401)
         {
-            AuthRepository.SignOut();
+            AuthRepository.ClearLocal();
             AppServices.Auth.NotifyChanged();
-            ClearServers();
+            await OnSignedOutAsync();
             AppLog.Append("servers: session revoked");
         }
         catch (Exception e)
@@ -359,6 +367,12 @@ public sealed class VpnController : NotifyBase
             Directory.CreateDirectory(Path.GetDirectoryName(LastProfilePath)!);
             File.WriteAllText(LastProfilePath, id);
         }
+        catch { /* ignore */ }
+    }
+
+    private static void ClearLastProfileId()
+    {
+        try { if (File.Exists(LastProfilePath)) File.Delete(LastProfilePath); }
         catch { /* ignore */ }
     }
 }
