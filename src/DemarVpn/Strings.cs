@@ -77,7 +77,7 @@ public static class Strings
     public const string ServerStatusChecking = "Проверка…";
     public const string ServerStatusDegraded = "С ограничениями";
     public const string Soon = "Скоро";
-    public const string ServerSelected = "Сервер выбран";
+    public const string ServerSelected = "Сервер {0}";
     public const string VpnConnectFailed = "Не удалось подключиться";
     public const string VpnTunnelLost = "Соединение потеряно";
     public const string VpnServerUnreachable = "Сервер недоступен";

@@ -42,6 +42,8 @@ public sealed partial class ServerRow : UserControl
 
     public event EventHandler? Click;
 
+    private string? _flagCode;
+
     public ServerRow()
     {
         InitializeComponent();
@@ -50,10 +52,13 @@ public sealed partial class ServerRow : UserControl
 
     private static void OnVisualChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is ServerRow row) row.Apply();
+        if (d is not ServerRow row) return;
+        if (e.Property == ProfileProperty) row.ApplyProfile();
+        else if (e.Property == IsSelectedProperty) row.ApplySelection();
+        else if (e.Property == ReachStateProperty) row.ApplyReach();
     }
 
-    private void Apply()
+    private void ApplyProfile()
     {
         var p = Profile;
         if (p is null) return;
@@ -62,9 +67,18 @@ public sealed partial class ServerRow : UserControl
         var sub = p.ListSubtitle;
         SubtitleBlock.Text = sub;
         SubtitleBlock.Visibility = string.IsNullOrEmpty(sub) ? Visibility.Collapsed : Visibility.Visible;
-        FlagImage.Source = new BitmapImage(CountryFlags.AssetUri(p.CountryCode));
         AutomationProperties.SetName(Root, p.DisplayName);
+        if (_flagCode != p.CountryCode)
+        {
+            _flagCode = p.CountryCode;
+            FlagImage.Source = new BitmapImage(CountryFlags.AssetUri(p.CountryCode));
+        }
+        ApplySelection();
+        ApplyReach();
+    }
 
+    private void ApplySelection()
+    {
         var res = Application.Current.Resources;
         var onSel = (Brush)res["DemarOnPrimaryContainerBrush"];
         var onNorm = (Brush)res["DemarSecondaryBrush"];
@@ -74,6 +88,11 @@ public sealed partial class ServerRow : UserControl
             : new SolidColorBrush(((SolidColorBrush)res["DemarOutlineBrush"]).Color) { Opacity = 0.2 };
         TitleBlock.Foreground = IsSelected ? onSel : onNorm;
         SubtitleBlock.Foreground = IsSelected ? onSel : onNorm;
+    }
+
+    private void ApplyReach()
+    {
+        var res = Application.Current.Resources;
         StatusDot.Fill = DotBrush(ReachState.Status, res);
         ToolTipService.SetToolTip(StatusDot, ReachState.Status switch
         {

@@ -40,11 +40,13 @@ public sealed partial class ServersPage : Page
                 RefreshShadow.Receivers.Add(ShadowCast);
                 AppServices.Vpn.PropertyChanged += (_, e) =>
                 {
-                    if (e.PropertyName is nameof(Services.Vpn.VpnController.Selected)
-                        or nameof(Services.Vpn.VpnController.Servers)
+                    if (e.PropertyName == nameof(Services.Vpn.VpnController.Selected))
+                        DispatcherQueue.TryEnqueue(SyncSelection);
+                    else if (e.PropertyName == nameof(Services.Vpn.VpnController.ServerReachability))
+                        DispatcherQueue.TryEnqueue(SyncReachability);
+                    else if (e.PropertyName is nameof(Services.Vpn.VpnController.Servers)
                         or nameof(Services.Vpn.VpnController.ServersLoading)
-                        or nameof(Services.Vpn.VpnController.ServersError)
-                        or nameof(Services.Vpn.VpnController.ServerReachability))
+                        or nameof(Services.Vpn.VpnController.ServersError))
                         DispatcherQueue.TryEnqueue(Rebuild);
                 };
             }
@@ -203,10 +205,28 @@ public sealed partial class ServersPage : Page
             row.Click += (_, _) =>
             {
                 vpn.Select(profile);
-                AppServices.Snackbar.ShowSuccess(Strings.ServerSelected);
-                RebuildList();
+                AppServices.Snackbar.ShowSuccess(string.Format(Strings.ServerSelected, profile.ListTitle));
             };
             ListHost.Children.Add(row);
+        }
+    }
+
+    private void SyncSelection()
+    {
+        var id = AppServices.Vpn.Selected?.Id;
+        foreach (var child in ListHost.Children)
+            if (child is ServerRow row)
+                row.IsSelected = row.Profile?.Id == id;
+    }
+
+    private void SyncReachability()
+    {
+        var map = AppServices.Vpn.ServerReachability;
+        foreach (var child in ListHost.Children)
+        {
+            if (child is not ServerRow row || row.Profile is not { } p) continue;
+            map.TryGetValue(p.Id, out var reach);
+            row.ReachState = reach ?? new ServerReachState(ServerReachStatus.Checking);
         }
     }
 
