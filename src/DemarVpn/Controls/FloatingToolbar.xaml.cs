@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 
 namespace DemarVpn.Controls;
@@ -15,6 +16,7 @@ public sealed partial class FloatingToolbar : UserControl
   private readonly double _tabWidth;
   private int _selectedIndex;
   private bool _wide;
+  private bool _scrubbing;
 
   public FloatingToolbar()
   {
@@ -62,10 +64,47 @@ public sealed partial class FloatingToolbar : UserControl
   private void OnTabClick(object sender, RoutedEventArgs e)
   {
     if (sender is ToggleButton btn && int.TryParse(btn.Tag?.ToString(), out var idx))
+      NotifySelect(idx);
+  }
+
+  private void OnMainPointer(object sender, PointerRoutedEventArgs e)
+  {
+    var pt = e.GetCurrentPoint(MainShell);
+    if (e.Pointer.PointerDeviceType == Microsoft.UI.Input.PointerDeviceType.Mouse
+        && !pt.Properties.IsLeftButtonPressed)
+      return;
+
+    if (!_scrubbing)
     {
-      Select(idx);
-      SelectionChanged?.Invoke(this, new SelectionChangedEventArgs([], [btn]));
+      _scrubbing = true;
+      MainShell.CapturePointer(e.Pointer);
+      MainShell.PointerReleased += OnReleased;
+      MainShell.PointerCaptureLost += OnReleased;
     }
+    PickMain(pt.Position.X);
+    e.Handled = true;
+  }
+
+  private void OnReleased(object sender, PointerRoutedEventArgs e)
+  {
+    _scrubbing = false;
+    MainShell.ReleasePointerCapture(e.Pointer);
+    MainShell.PointerReleased -= OnReleased;
+    MainShell.PointerCaptureLost -= OnReleased;
+  }
+
+  private void PickMain(double x)
+  {
+    if (MainShell.ActualWidth <= 0) return;
+    var index = Math.Clamp((int)((x / MainShell.ActualWidth) * 3), 0, 2);
+    if (index == _selectedIndex) return;
+    NotifySelect(index);
+  }
+
+  private void NotifySelect(int index)
+  {
+    Select(index);
+    SelectionChanged?.Invoke(this, new SelectionChangedEventArgs([], []));
   }
 
   public void Select(int index)

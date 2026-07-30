@@ -7,7 +7,8 @@
       <ColumnDefinition Width="*" />
       <ColumnDefinition Width="64" />
     </Grid.ColumnDefinitions>
-    <Border x:Name="MainShell" Grid.Column="0" Style="{StaticResource DemarToolbarShellStyle}" Padding="4">
+    <Border x:Name="MainShell" Grid.Column="0" Style="{StaticResource DemarToolbarShellStyle}" Padding="4"
+            PointerPressed="OnMainPointer" PointerMoved="OnMainPointer">
       <Grid x:Name="MainTabGrid">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*" />
@@ -16,13 +17,16 @@
         </Grid.ColumnDefinitions>
         <Border x:Name="MainIndicator" Grid.Column="0"
                 Background="{StaticResource DemarPrimaryContainerBrush}" CornerRadius="24" />
-        <ToggleButton x:Name="Tab0" Grid.Column="0" Style="{StaticResource FloatingTabButtonStyle}" Click="OnTabClick" Tag="0">
+        <ToggleButton x:Name="Tab0" Grid.Column="0" Style="{StaticResource FloatingTabButtonStyle}"
+                      IsHitTestVisible="False" Tag="0">
           <FontIcon Glyph="&#xE72E;" />
         </ToggleButton>
-        <ToggleButton x:Name="Tab1" Grid.Column="1" Style="{StaticResource FloatingTabButtonStyle}" Click="OnTabClick" Tag="1">
+        <ToggleButton x:Name="Tab1" Grid.Column="1" Style="{StaticResource FloatingTabButtonStyle}"
+                      IsHitTestVisible="False" Tag="1">
           <FontIcon Glyph="&#xE774;" />
         </ToggleButton>
-        <ToggleButton x:Name="Tab2" Grid.Column="2" Style="{StaticResource FloatingTabButtonStyle}" Click="OnTabClick" Tag="2">
+        <ToggleButton x:Name="Tab2" Grid.Column="2" Style="{StaticResource FloatingTabButtonStyle}"
+                      IsHitTestVisible="False" Tag="2">
           <FontIcon Glyph="&#xE713;" />
         </ToggleButton>
       </Grid>
