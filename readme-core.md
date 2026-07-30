@@ -129,6 +129,7 @@ Mixed `127.0.0.1:10808` (`SingBoxTags.diagInbound`):
 - Post-connect: `VpnTunnelProbe` — Phase 1: diag-proxy IP trace ×2; Phase 2: TUN hostname trace ×1
 - Post-connect health: `VpnController.HealthLoopAsync` (TUN trace каждые 25с)
 - Egress: `PublicEgressDiagnostics` (Service Menu)
+- Clash API `127.0.0.1:19090` (`experimental.clash_api`) — Home throughput via `GET /traffic`
 
 ---
 

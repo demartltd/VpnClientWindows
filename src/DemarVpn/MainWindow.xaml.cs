@@ -8,8 +8,6 @@ namespace DemarVpn;
 
 public sealed partial class MainWindow : Window
 {
-    private readonly DispatcherTimer _throughputTimer = new() { Interval = TimeSpan.FromSeconds(1) };
-
     public Views.ShellPage? Shell => Root.Content as Views.ShellPage;
 
     public MainWindow()
@@ -45,9 +43,6 @@ public sealed partial class MainWindow : Window
         }
         TryMicaBackdrop();
         Root.Navigate(typeof(Views.ShellPage));
-        _throughputTimer.Tick += (_, _) => AppServices.Vpn.TickThroughput();
-        _throughputTimer.Start();
-        Activated += (_, _) => AppServices.Vpn.TickThroughput();
     }
 
     private void TryMicaBackdrop()

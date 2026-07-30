@@ -6,6 +6,8 @@ public static class SingBoxTags
     public const string DiagInbound = "diag-in";
     public const string DiagListenHost = "127.0.0.1";
     public const int DiagListenPort = 10808;
+    public const string ClashApiHost = "127.0.0.1";
+    public const int ClashApiPort = 19090;
     public const string Proxy = "proxy";
     public const string Direct = "direct";
     public const string DnsDirect = "dns-direct";

@@ -36,6 +36,13 @@ public static class SingBoxConfigBuilder
                 ["type"] = "direct",
                 ["tag"] = SingBoxTags.Direct,
             }),
+            ["experimental"] = new JsonObject
+            {
+                ["clash_api"] = new JsonObject
+                {
+                    ["external_controller"] = $"{SingBoxTags.ClashApiHost}:{SingBoxTags.ClashApiPort}",
+                },
+            },
         };
     }
 

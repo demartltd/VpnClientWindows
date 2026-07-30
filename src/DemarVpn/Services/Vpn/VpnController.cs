@@ -16,6 +16,7 @@ public sealed class VpnController : NotifyBase
     private Dictionary<string, ServerReachState> _reachability = new();
     private readonly object _reachLock = new();
     private CancellationTokenSource? _reachCts;
+    private CancellationTokenSource? _trafficCts;
     private static readonly string LastProfilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "DemarVpn", "last_profile_id");
@@ -137,6 +138,8 @@ public sealed class VpnController : NotifyBase
         _op?.Cancel();
         _watchdog?.Cancel();
         _health?.Cancel();
+        StopTraffic();
+        ClearThroughput();
         _op = new CancellationTokenSource();
         var token = _op.Token;
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -195,6 +198,7 @@ public sealed class VpnController : NotifyBase
         catch (Exception ex)
         {
             await _engine.StopAsync();
+            ClearThroughput();
             var msg = ex.Message;
             SetState(VpnState.Error(msg));
             ErrorRaised?.Invoke(msg);
@@ -209,19 +213,20 @@ public sealed class VpnController : NotifyBase
         _op?.Cancel();
         _watchdog?.Cancel();
         _health?.Cancel();
+        StopTraffic();
         SetState(VpnState.Disconnecting);
         AppLog.Append("[ui] windows home: disconnect");
         try
         {
             await _engine.StopAsync();
-            Throughput = new(0, 0);
-            Raise(nameof(Throughput));
+            ClearThroughput();
             SetState(VpnState.Disconnected);
             AppLog.Append("[vpn] disconnected");
         }
         catch (Exception ex)
         {
             AppLog.Append($"[vpn] disconnect error: {ex.Message}");
+            ClearThroughput();
             SetState(VpnState.Disconnected);
         }
     }
@@ -232,24 +237,6 @@ public sealed class VpnController : NotifyBase
             throw new InvalidOperationException(Strings.ServiceRestartFail);
         await DisconnectAsync();
         await ConnectAsync();
-    }
-
-    public void TickThroughput()
-    {
-        if (State.Kind != VpnStateKind.Connected)
-        {
-            if (Throughput.DownloadBps != 0 || Throughput.UploadBps != 0)
-            {
-                Throughput = new(0, 0);
-                Raise(nameof(Throughput));
-            }
-            return;
-        }
-        if (Throughput.DownloadBps != 0 || Throughput.UploadBps != 0)
-        {
-            Throughput = new(0, 0);
-            Raise(nameof(Throughput));
-        }
     }
 
     private void ApplyServerList(IReadOnlyList<ServerProfile> servers)
@@ -270,6 +257,7 @@ public sealed class VpnController : NotifyBase
         _op?.Cancel();
         _watchdog?.Cancel();
         _health?.Cancel();
+        StopTraffic();
         var kind = State.Kind;
         if (kind == VpnStateKind.Connected)
             await DisconnectAsync();
@@ -320,7 +308,9 @@ public sealed class VpnController : NotifyBase
                 if (++fails < ConnectTimeouts.HealthFailLimit) continue;
 
                 _health?.Cancel();
+                StopTraffic();
                 await _engine.StopAsync();
+                ClearThroughput();
                 var msg = Strings.VpnTunnelLost;
                 SetState(VpnState.Error(msg));
                 ErrorRaised?.Invoke(msg);
@@ -344,11 +334,39 @@ public sealed class VpnController : NotifyBase
             _health?.Cancel();
             _health = new CancellationTokenSource();
             _ = HealthLoopAsync(_health.Token);
+            StartTraffic();
         }
         else
         {
             _health?.Cancel();
+            StopTraffic();
+            ClearThroughput();
         }
+    }
+
+    private void StartTraffic()
+    {
+        StopTraffic();
+        _trafficCts = new CancellationTokenSource();
+        var ct = _trafficCts.Token;
+        _ = ClashTrafficMonitor.RunAsync((up, down) =>
+        {
+            Throughput = new(down, up);
+            Raise(nameof(Throughput));
+        }, ct);
+    }
+
+    private void StopTraffic()
+    {
+        _trafficCts?.Cancel();
+        _trafficCts = null;
+    }
+
+    private void ClearThroughput()
+    {
+        if (Throughput.DownloadBps == 0 && Throughput.UploadBps == 0) return;
+        Throughput = new(0, 0);
+        Raise(nameof(Throughput));
     }
 
     private static string? LoadLastProfileId()

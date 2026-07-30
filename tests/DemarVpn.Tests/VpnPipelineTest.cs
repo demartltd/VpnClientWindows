@@ -71,6 +71,21 @@ public class VpnPipelineTest
 
         var diag = inbounds.First(i => i!["type"]!.GetValue<string>() == "mixed")!.AsObject();
         Assert.Equal(SingBoxTags.DiagListenPort, diag["listen_port"]!.GetValue<int>());
+
+        var clash = cfg["experimental"]!["clash_api"]!.AsObject();
+        Assert.Equal(
+            $"{SingBoxTags.ClashApiHost}:{SingBoxTags.ClashApiPort}",
+            clash["external_controller"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void ClashTraffic_parsesSampleLine()
+    {
+        var sample = ClashTrafficMonitor.TryParse("""{"up":100,"down":200}""");
+        Assert.NotNull(sample);
+        Assert.Equal(100, sample.Value.Up);
+        Assert.Equal(200, sample.Value.Down);
+        Assert.Null(ClashTrafficMonitor.TryParse("not-json"));
     }
 
     [Fact]

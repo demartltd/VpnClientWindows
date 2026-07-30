@@ -80,7 +80,6 @@ public sealed partial class ShellPage : Page
         Toolbar.Select(index);
         for (var i = 0; i < _tabs.Length; i++)
             _tabs[i].Visibility = i == index ? Visibility.Visible : Visibility.Collapsed;
-        if (index == 0) AppServices.Vpn.TickThroughput();
         if (index == 1) ServersTab.OnTabVisible();
         if (index == 3) AccountTab.Refresh();
     }
