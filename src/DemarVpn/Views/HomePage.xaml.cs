@@ -26,20 +26,24 @@ public sealed partial class HomePage : Page
         }
         if (vpn.State.IsBusy) return;
 
-        if (Frame?.Parent is not FrameworkElement { Parent: ShellPage shell })
-            return;
-
         if (!AppServices.Auth.SignedIn)
         {
-            shell.ShowLogin(returnTab: 0);
+            FindShell()?.ShowLogin(0);
             return;
         }
         if (vpn.Selected is null)
         {
-            shell.GoToServers();
+            FindShell()?.GoToServers();
             return;
         }
         await vpn.ConnectAsync();
+    }
+
+    private ShellPage? FindShell()
+    {
+        for (DependencyObject? n = this; n is not null; n = VisualTreeHelper.GetParent(n))
+            if (n is ShellPage s) return s;
+        return null;
     }
 
     private void Refresh()
