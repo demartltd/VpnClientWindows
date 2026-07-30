@@ -17,6 +17,8 @@ public sealed partial class ShellPage : Page
         _tabs = [HomeTab, ServersTab, SettingsTab, AccountTab];
         SettingsTab.AppSettingsRequested += () => ShowOverlay(typeof(AppSettingsPage));
         SettingsTab.ServiceMenuRequested += () => ShowOverlay(typeof(ServiceMenuPage));
+        SettingsTab.DocumentsRequested += () => DocumentsSheet.Show();
+        DocumentsSheet.DocumentSelected += doc => ShowOverlay(typeof(DocumentPage), doc);
         AccountTab.SignOutRequested += OnSignOutRequested;
         LoginSheet.SignedIn += OnLoginSuccess;
         Loaded += (_, _) => UpdateToolbarLayout();
@@ -84,13 +86,13 @@ public sealed partial class ShellPage : Page
         if (index == 3) AccountTab.Refresh();
     }
 
-    private void ShowOverlay(Type pageType)
+    private void ShowOverlay(Type pageType, object? parameter = null)
     {
         MainLayer.Visibility = Visibility.Collapsed;
         BottomChrome.Visibility = Visibility.Collapsed;
         Snackbar.Margin = (Thickness)Application.Current.Resources["SnackbarOverlayMargin"];
         OverlayFrame.Visibility = Visibility.Visible;
-        OverlayFrame.Navigate(pageType);
+        OverlayFrame.Navigate(pageType, parameter);
     }
 
     public void CloseOverlay()

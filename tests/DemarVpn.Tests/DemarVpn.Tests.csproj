@@ -32,5 +32,6 @@
     <Compile Include="..\..\src\DemarVpn\Services\Vpn\TunnelPathProbe.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Vpn\VpnTunnelProbe.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\AppLog.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Content\RawTextFetcher.cs" />
   </ItemGroup>
 </Project>

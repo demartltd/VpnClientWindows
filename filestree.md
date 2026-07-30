@@ -8,7 +8,9 @@ Windows-only. C# + WinUI 3 (dark only, x64 unpackaged EXE).
 src/DemarVpn/
 ├── App.xaml / MainWindow.xaml
 ├── Theme/                         # DemarPalette (MaterialColorUtilities TonalSpot)
-├── Domain/Vpn/                    # Hysteria2Profile, SingBoxConnectPlan, ServerProfile, ServerReachability
+├── Domain/
+│   ├── Vpn/                       # Hysteria2Profile, SingBoxConnectPlan, ServerProfile, ServerReachability
+│   └── Content/LegalDocument.cs   # Terms / Privacy + GitHub MD URLs
 ├── Views/
 │   ├── ShellPage.xaml             # tabs + overlay frame + snackbar overlay
 │   ├── HomePage.xaml
@@ -16,6 +18,7 @@ src/DemarVpn/
 │   ├── SettingsPage.xaml
 │   ├── AccountPage.xaml
 │   ├── AppSettingsPage.xaml
+│   ├── DocumentPage.xaml          # ToS / PP Markdown viewer
 │   └── ServiceMenuPage.xaml
 ├── Controls/
 │   ├── FloatingToolbar.xaml
@@ -23,12 +26,14 @@ src/DemarVpn/
 │   ├── IconLinkChip.xaml
 │   ├── DemarKvRow.xaml             # key/value row (service menu)
 │   ├── LoginBottomSheet.xaml      # email OTP / TOTP / Telegram OAuth
+│   ├── DocumentsBottomSheet.xaml  # Terms / Privacy picker
 │   ├── DemarSegmentBar.xaml       # protocol/tier filter (drag-scrub)
 │   └── ServerRow.xaml             # флаг + listTitle/subtitle + reachability dot
 ├── Services/
 │   ├── AppPackageInfo.cs
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi (POST /auth/mobile/servers → hy2)
+│   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
 │   ├── Vpn/                       # VpnController, SingBoxConfigBuilder, engines
 │   ├── Device/DeviceIdentity.cs
 │   ├── Network/
@@ -51,7 +56,8 @@ src/DemarVpn/
 tests/DemarVpn.Tests/
 ├── VpnPipelineTest.cs
 ├── UplinkProbeTest.cs
-└── AppLogTest.cs
+├── AppLogTest.cs
+└── LegalDocumentTest.cs         # ToS/PP URLs + RawTextFetcher.Decode
 ```
 
 ## `src/DemarVpn.Installer/`

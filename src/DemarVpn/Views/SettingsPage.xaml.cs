@@ -10,6 +10,7 @@ public sealed partial class SettingsPage : Page
 {
     public event Action? AppSettingsRequested;
     public event Action? ServiceMenuRequested;
+    public event Action? DocumentsRequested;
 
     private int _tapCount;
     private DateTimeOffset _tapWindow;
@@ -33,15 +34,13 @@ public sealed partial class SettingsPage : Page
 
     private void BuildMenu()
     {
-        AddRow("\uE713", "Настройки приложения", "Подключение, журнал диагностики и статус функций",
+        AddRow("\uE713", Strings.SettingsApp, Strings.SettingsAppSub,
             (_, _) => AppSettingsRequested?.Invoke());
-        AddRow("\uE939", "Обратная связь", "Отправить ошибку или предложение",
+        AddRow("\uE939", Strings.SettingsFeedback, Strings.SettingsFeedbackSub,
             (_, _) => AppServices.Snackbar.ShowSoon());
-        AddRow("\uE72D", "Пригласите друзей по ссылке", "Получите бесплатный премиум", OnShare);
-        AddRow("\uE8A5", "Условия использования", "Правила использования сервиса",
-            (_, _) => AppServices.Snackbar.ShowSoon());
-        AddRow("\uF5B4", "Конфиденциальность", "Как обрабатываются данные",
-            (_, _) => AppServices.Snackbar.ShowSoon());
+        AddRow("\uE72D", Strings.SettingsShare, Strings.SettingsShareSub, OnShare);
+        AddRow("\uE8B7", Strings.SettingsDocuments, Strings.SettingsDocumentsSub,
+            (_, _) => DocumentsRequested?.Invoke());
     }
 
     private void AddRow(string glyph, string title, string subtitle, EventHandler click)

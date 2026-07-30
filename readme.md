@@ -50,7 +50,7 @@ pwsh scripts/for_builds/build_windows.ps1 -Fast
 |-------|--------|
 | Home (VPN toggle) | Hysteria2 connect/disconnect через `VpnController` |
 | Servers | SegmentBar протокол/тиры (drag), divider, `Country \| TIER` + city, FAB refresh, reachability; Dev/Tester только если есть в списке |
-| Settings + social links | FA6 brand icons (`IconLinkChip`), реальные URL |
+| Settings + social links | FA6 brand icons (`IconLinkChip`); Documents sheet → ToS/PP с GitHub Markdown |
 | Account + login dialog | Email OTP + TOTP + Telegram OAuth → `auth.example.invalid` |
 | App settings (журнал) | `AppLog` — до 512 строк, tail-trim |
 | Service menu (3× tap version) | О приложении, Route, egress probes, device identity |

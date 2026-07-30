@@ -18,6 +18,8 @@ public static class Strings
     public const string SettingsFeedbackSub = "Отправить ошибку или предложение";
     public const string SettingsShare = "Пригласите друзей по ссылке";
     public const string SettingsShareSub = "Получите бесплатный премиум";
+    public const string SettingsDocuments = "Документы";
+    public const string SettingsDocumentsSub = "Условия использования и конфиденциальность";
     public const string SettingsTerms = "Условия использования";
     public const string SettingsTermsSub = "Правила использования сервиса";
     public const string SettingsPrivacy = "Конфиденциальность";
