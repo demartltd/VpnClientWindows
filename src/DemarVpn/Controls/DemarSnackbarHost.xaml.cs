@@ -22,6 +22,7 @@ public sealed partial class DemarSnackbarHost : UserControl
 
     private readonly DispatcherTimer _timer = new();
     private SnackMessage? _shown;
+    private bool _wide;
 
     public DemarSnackbarHost()
     {
@@ -32,6 +33,22 @@ public sealed partial class DemarSnackbarHost : UserControl
                 DispatcherQueue.TryEnqueue(Refresh);
         };
         _timer.Tick += (_, _) => AppServices.Snackbar.Dismiss();
+    }
+
+    public void SetWideLayout(bool wide)
+    {
+        if (_wide == wide) return;
+        _wide = wide;
+        if (wide)
+        {
+            Width = (double)Application.Current.Resources["ToolbarTabWidth"] * 3;
+            HorizontalAlignment = HorizontalAlignment.Left;
+        }
+        else
+        {
+            ClearValue(WidthProperty);
+            HorizontalAlignment = HorizontalAlignment.Stretch;
+        }
     }
 
     private void Refresh()

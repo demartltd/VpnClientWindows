@@ -40,8 +40,9 @@ public sealed partial class ShellPage : Page
 
     private void UpdateToolbarLayout()
     {
-        var breakpoint = (double)Application.Current.Resources["ToolbarWideBreakpoint"];
-        Toolbar.SetWideLayout(ActualWidth >= breakpoint);
+        var wide = ActualWidth >= (double)Application.Current.Resources["ToolbarWideBreakpoint"];
+        Toolbar.SetWideLayout(wide);
+        Snackbar.SetWideLayout(wide);
     }
 
     private void OnTabChanged(object sender, SelectionChangedEventArgs e)
