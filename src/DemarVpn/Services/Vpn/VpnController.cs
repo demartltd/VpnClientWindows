@@ -8,7 +8,7 @@ namespace DemarVpn.Services.Vpn;
 
 public sealed class VpnController : NotifyBase
 {
-    private readonly IVpnEngine _engine = VpnEngineFactory.Create();
+    private readonly IVpnEngine _engine = new SingBoxProcessEngine();
     private CancellationTokenSource? _op;
     private CancellationTokenSource? _watchdog;
     private CancellationTokenSource? _health;

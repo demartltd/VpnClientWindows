@@ -14,10 +14,10 @@
 
 ## Первая сборка
 
-Требуется **Windows** + VS 2022 / .NET 10 SDK (Desktop/WPF для Installer) + Windows App SDK + Go (для Libbox).
+Требуется **Windows** + VS 2022 / .NET 10 SDK (Desktop/WPF для Installer) + Windows App SDK.
 
 ```powershell
-py -3 scripts/for_builds/libbox-build-windows.py   # sing-box.exe + wintun.dll + libcronet.dll
+py -3 scripts/for_builds/singbox-build-windows.py   # sing-box.exe + wintun.dll + libcronet.dll
 python3 scripts/port_brand_icons.py       # при изменении Android brand icons
 python3 scripts/other/port_country_flags.py  # Twemoji флаги → Assets/Flags/
 python3 scripts/generate_icons.py         # Assets из scripts/logo_clear.png
@@ -101,7 +101,7 @@ Unit-тесты pipeline (без WinUI): `dotnet test tests/DemarVpn.Tests`
 |---------|--------|
 | WinUI 3 UI (4 tabs + overlay + login) | реализовано |
 | Тема / snackbar / соц. иконки | parity с Android |
-| Libbox VPN layer | `Native/libbox/` optional; **primary:** `SingBoxProcessEngine` |
+| VPN engine | `SingBoxProcessEngine` (sing-box.exe + Wintun + libcronet) |
 | Domain / data / Hysteria2 pipeline | `Domain/Vpn/*`, `SingBoxConfigBuilder`, `UplinkProbe` |
 | Auth + servers API | `Services/Auth/*`, `Services/Servers/*` → `auth.example.invalid` |
 | Home connect/disconnect | `VpnController` + tunnel probe |

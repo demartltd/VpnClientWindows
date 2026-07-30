@@ -44,7 +44,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         var exe = FindSingBoxExe();
         if (exe is null)
             throw new InvalidOperationException(
-                "sing-box.exe not found. Run: py -3 scripts/for_builds/libbox-build-windows.py");
+                "sing-box.exe not found. Run: py -3 scripts/for_builds/singbox-build-windows.py");
 
         var workDir = Path.GetDirectoryName(exe) ?? AppContext.BaseDirectory;
         var args = $"run -c \"{_configPath}\"";
@@ -251,10 +251,10 @@ public sealed class SingBoxProcessEngine : IVpnEngine
     {
         err ??= _stderr.Length > 0 ? _stderr.ToString() : ReadLogTail();
         if (err.Contains("wintun", StringComparison.OrdinalIgnoreCase))
-            return "wintun.dll not found. Run: py -3 scripts/for_builds/libbox-build-windows.py";
+            return "wintun.dll not found. Run: py -3 scripts/for_builds/singbox-build-windows.py";
         if (err.Contains("libcronet", StringComparison.OrdinalIgnoreCase)
             || err.Contains("cronet", StringComparison.OrdinalIgnoreCase))
-            return "libcronet.dll not found. Run: py -3 scripts/for_builds/libbox-build-windows.py";
+            return "libcronet.dll not found. Run: py -3 scripts/for_builds/singbox-build-windows.py";
         if (err.Contains("access is denied", StringComparison.OrdinalIgnoreCase)
             || err.Contains("Access denied", StringComparison.OrdinalIgnoreCase))
             return Strings.VpnTunAccessDenied;
@@ -269,7 +269,6 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         {
             Path.Combine(AppContext.BaseDirectory, "sing-box.exe"),
             Path.Combine(AppContext.BaseDirectory, "Native", "bin", "sing-box.exe"),
-            Path.Combine(AppContext.BaseDirectory, "runtimes", "win-x64", "native", "sing-box.exe"),
         };
         foreach (var path in candidates)
             if (File.Exists(path)) return path;

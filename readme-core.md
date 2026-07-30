@@ -1,16 +1,17 @@
 # Ядро VPN: Sing-box (Hysteria2) — Demar VPN Windows
 
-Целевая версия core: **sing-box latest**. Фактическая — в `src/DemarVpn/Assets/singbox/bundled_version.txt` после `scripts/for_builds/libbox-build-windows.py`.
+Целевая версия core: **sing-box latest**. Фактическая — в `src/DemarVpn/Assets/singbox/bundled_version.txt` после `scripts/for_builds/singbox-build-windows.py`.
 
 Документация: https://sing-box.sagernet.org/
 
 - [Hysteria2 outbound](https://sing-box.sagernet.org/configuration/outbound/hysteria2/)
+- [NaiveProxy outbound](https://sing-box.sagernet.org/configuration/outbound/naive/) (since 1.13; Windows → `libcronet.dll`)
 - [DNS rule action](https://sing-box.sagernet.org/configuration/dns/rule_action/) (since 1.11.0)
 - [Dial Fields](https://sing-box.sagernet.org/configuration/shared/dial/) — `domain_resolver`
 
-Платформа: **Windows only** (WinUI 3 + sing-ffi C# bindings).
+Платформа: **Windows only** (WinUI 3 + sing-box.exe subprocess).
 
-**Итерация:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine` primary). Auth/servers — `auth.example.invalid` (parity Android).
+**Итерация:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine`). Auth/servers — `auth.example.invalid` (parity Android).
 
 Connect pipeline: `UplinkIpv4` (retry) → DNS resolve success → config → subprocess → `VpnTunnelProbe.WaitForTunnelReadyAsync` (diag IP ×2 + TUN hostname ×1). Hysteria2 = QUIC/UDP — **без TCP preflight**.
 
@@ -49,7 +50,7 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 1. Profile struct (`FooProfile`) в `Domain/Vpn/`
 2. `SingBoxConnectPlan.Foo(profile)` — outbound + tun overrides
 3. Parser в `ServersApi`
-4. При новом outbound — обновить TAGS в `scripts/for_builds/libbox-build-windows.py` (если self-build)
+4. Official release zip уже включает Hysteria2 + Naive; `libcronet.dll` рядом с `sing-box.exe`
 
 ---
 
@@ -145,25 +146,17 @@ Headers: `X-Demar-Client: demar-vpn`, `User-Agent: DemarVPN/{ver} (windows)`. Pr
 
 ---
 
-## Сборка Libbox (Windows)
+## Сборка ядра (Windows)
 
 ```powershell
-py -3 scripts/for_builds/libbox-build-windows.py
+py -3 scripts/for_builds/singbox-build-windows.py
+# перекачать:  py -3 scripts/for_builds/singbox-build-windows.py --force
 pwsh scripts/for_builds/build_windows.ps1
 ```
 
-Runtime рядом с `sing-box.exe`: `wintun.dll`, `libcronet.dll` — скрипт кладёт в `Native/bin/` и publish копирует в output. Official release zip уже включает Hysteria2.
+Runtime в `Native/bin/`: `sing-box.exe`, `wintun.dll`, `libcronet.dll` (NaiveProxy). Official release zip уже включает Hysteria2.
 
 Очистка: `python3 scripts/singbox-cleaner.py -y`
-
-### Build (sing-ffi)
-
-```makefile
-lib_windows:
-    sing-ffi generate --config ./experimental/libbox/ffi.json --platform-type csharp
-```
-
-Скрипт клонирует тег `v1.13.14`, генерирует C# в `src/DemarVpn/Native/libbox/` (опционально).
 
 ---
 
@@ -177,7 +170,6 @@ lib_windows:
 | `Services/Vpn/SingBoxConfigBuilder.cs` | TUN + DNS + route JSON (`stack: system`) |
 | `Services/Vpn/VpnController.cs` | Connect pipeline, UI bridge |
 | `Services/Network/UplinkIpv4.cs` | uplink resolve |
-| `Services/Vpn/SingBoxProcessEngine.cs` | sing-box.exe subprocess (**primary**) |
-| `Services/Vpn/LibboxVpnEngine.cs` | Libbox in-process (optional, `HAS_LIBBOX`) |
+| `Services/Vpn/SingBoxProcessEngine.cs` | sing-box.exe subprocess |
 
 Синхронизировать TAGS / pipeline с [demar_vpn_android/readme-core.md](../demar_vpn_android/readme-core.md).

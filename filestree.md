@@ -42,10 +42,7 @@ src/DemarVpn/
 ├── Models/
 ├── Assets/                        # icons, BrandIcons.xaml, Flags/, singbox/
 └── Native/
-    ├── libbox/                    # sing-ffi C# (gitignore)
-    ├── packages/                  # SagerNet.Libbox nupkg (gitignore)
-    ├── runtimes/win-x64/native/   # wintun.dll, sing-box.exe (gitignore)
-    └── bin/                       # build output sing-box.exe (gitignore)
+    └── bin/                       # sing-box.exe, wintun.dll, libcronet.dll (gitignore)
 ```
 
 ## Tests
@@ -79,7 +76,7 @@ src/DemarVpn.Installer/
 scripts/
 ├── journal.ps1                    # AppLog journal (parity adb/journal.sh)
 ├── for_builds/
-│   ├── libbox-build-windows.py
+│   ├── singbox-build-windows.py
 │   └── build_windows.ps1          # publish app + Updater.exe
 ├── port_brand_icons.py
 ├── other/

@@ -29,12 +29,7 @@ src/DemarVpn.Installer/Resources/*
 *.p12
 scripts/build/
 
-# Native (libbox-build-windows.py)
-src/DemarVpn/Native/libbox/*
-!src/DemarVpn/Native/libbox/README.txt
-src/DemarVpn/Native/packages/*
-!src/DemarVpn/Native/packages/README.txt
-src/DemarVpn/Native/runtimes/
+# Native (singbox-build-windows.py)
 src/DemarVpn/Native/bin/
 
 # sing-box — bundled_version.txt + README only

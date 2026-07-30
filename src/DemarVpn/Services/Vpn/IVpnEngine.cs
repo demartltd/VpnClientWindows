@@ -6,8 +6,3 @@ public interface IVpnEngine
     Task StartAsync(string configJson, CancellationToken cancellationToken);
     Task StopAsync();
 }
-
-public static class VpnEngineFactory
-{
-    public static IVpnEngine Create() => new SingBoxProcessEngine();
-}

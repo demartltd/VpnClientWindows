@@ -23,28 +23,10 @@
     <SatelliteResourceLanguages>en-US;ru-RU</SatelliteResourceLanguages>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <LibboxPkg>$(MSBuildProjectDirectory)\Native\packages\SagerNet.Libbox.0.0.0-local.nupkg</LibboxPkg>
-    <HasLibbox Condition="Exists('$(LibboxPkg)')">true</HasLibbox>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(HasLibbox)' == 'true'">
-    <DefineConstants>$(DefineConstants);HAS_LIBBOX</DefineConstants>
-    <RestoreAdditionalProjectSources>$(MSBuildProjectDirectory)\Native\packages;$(RestoreAdditionalProjectSources)</RestoreAdditionalProjectSources>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="MaterialColorUtilities" Version="0.3.0" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260529003" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
-    <PackageReference Include="SagerNet.Libbox" Version="0.0.0-local" Condition="'$(HasLibbox)' == 'true'">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(HasLibbox)' == 'true'">
-    <Content Include="Native\runtimes\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
   <ItemGroup>
