@@ -9,6 +9,11 @@
     <Setter Property="Background" Value="{StaticResource DemarBackgroundBrush}" />
   </Style>
 
+  <Style TargetType="ScrollViewer">
+    <Setter Property="VerticalScrollBarVisibility" Value="Hidden" />
+    <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+  </Style>
+
   <Style x:Key="DemarTitleText" TargetType="TextBlock">
     <Setter Property="FontSize" Value="22" />
     <Setter Property="FontWeight" Value="SemiBold" />

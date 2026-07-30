@@ -14,7 +14,7 @@
       <Border.RenderTransform>
         <TranslateTransform x:Name="SheetSlide" Y="400" />
       </Border.RenderTransform>
-      <ScrollViewer MaxHeight="520" VerticalScrollBarVisibility="Auto">
+      <ScrollViewer MaxHeight="520">
         <StackPanel Padding="24,0,24,28" Spacing="16">
           <TextBlock x:Name="StepTitle" Style="{StaticResource DemarTabTitleStyle}"
                      FontSize="22" Margin="0,24,0,8" TextWrapping="Wrap" TextAlignment="Center" />

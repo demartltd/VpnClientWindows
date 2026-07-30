@@ -28,8 +28,7 @@
               <Grid>
                 <TextBlock x:Name="JournalEmpty" Text="Пока пусто" Opacity="0.6"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <ScrollViewer x:Name="JournalScroll" Padding="8"
-                              VerticalScrollBarVisibility="Auto">
+                <ScrollViewer x:Name="JournalScroll" Padding="8">
                   <TextBlock x:Name="JournalText" FontFamily="Consolas" FontSize="12"
                              IsTextSelectionEnabled="True" TextWrapping="Wrap"
                              MaxWidth="{Binding ViewportWidth, ElementName=JournalScroll}" />
