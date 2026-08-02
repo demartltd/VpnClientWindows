@@ -86,12 +86,23 @@ public static class MarkdownBlocks
         return panel;
     }
 
-    private static ScrollViewer BuildTable(Table table)
+    private static Grid BuildTable(Table table)
     {
-        var grid = new Grid { Margin = new Thickness(0, 4, 0, 12) };
-        var colCount = table.ColumnDefinitions.Count;
+        var grid = new Grid
+        {
+            Margin = new Thickness(0, 4, 0, 12),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        var colCount = Math.Max(1, table.ColumnDefinitions.Count);
         for (var c = 0; c < colCount; c++)
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 120 });
+        {
+            var last = c == colCount - 1;
+            grid.ColumnDefinitions.Add(new ColumnDefinition
+            {
+                Width = last ? new GridLength(1, GridUnitType.Star) : GridLength.Auto,
+                MaxWidth = last ? double.PositiveInfinity : 240,
+            });
+        }
 
         var r = 0;
         foreach (var row in table.OfType<TableRow>())
@@ -109,14 +120,17 @@ public static class MarkdownBlocks
                         ? (Brush)Application.Current.Resources["DemarSurfaceHighBrush"]
                         : null,
                 };
-                var cellPanel = new StackPanel { Spacing = 4 };
+                var cellPanel = new StackPanel { Spacing = 2 };
                 foreach (var child in cell)
                 {
-                    if (Create(child) is { } el)
+                    if (Create(child) is not { } el) continue;
+                    if (el is RichTextBlock rtb)
                     {
-                        if (el is RichTextBlock rtb) rtb.FontSize = 12;
-                        cellPanel.Children.Add(el);
+                        rtb.FontSize = 12;
+                        rtb.TextWrapping = TextWrapping.WrapWholeWords;
+                        rtb.Margin = new Thickness(0);
                     }
+                    cellPanel.Children.Add(el);
                 }
                 border.Child = cellPanel;
                 Grid.SetRow(border, r);
@@ -127,14 +141,7 @@ public static class MarkdownBlocks
             r++;
         }
 
-        return new ScrollViewer
-        {
-            Content = grid,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            HorizontalScrollMode = ScrollMode.Auto,
-            VerticalScrollMode = ScrollMode.Disabled,
-        };
+        return grid;
     }
 
     private static RichTextBlock Rich(ContainerInline? inline, double size, FontWeight weight,
