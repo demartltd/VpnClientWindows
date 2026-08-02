@@ -10,15 +10,17 @@ public sealed record ServersListResult(
     string? VpnExpiresAt,
     IReadOnlyList<ServerProfile> Servers);
 
+/// <summary>VPN servers — parity Android ServersApi (POST vpn.example.invalid/vpn/servers).</summary>
 public static class ServersApi
 {
     public static async Task<ServersListResult> FetchServersAsync(
         string userId, string loginAt, CancellationToken ct = default)
     {
         var json = await DemarHttp.PostJsonAsync(
-            $"{DemarHttp.BaseUrl}/auth/mobile/servers",
+            $"{DemarHttp.VpnApiBaseUrl}/vpn/servers",
             new JsonObject { ["userId"] = userId, ["loginAt"] = loginAt },
             ct);
+
         var profiles = new List<ServerProfile>();
         if (json["servers"] is JsonArray arr)
         {
@@ -28,14 +30,12 @@ public static class ServersApi
                 var profile = ParseServerItem(item);
                 if (profile is not null) profiles.Add(profile);
                 else
-                {
-                    var proto = DemarHttp.OptString(item, "protocol");
-                    var name = DemarHttp.OptString(item, "name");
-                    AppLog.Append($"servers: skip unsupported protocol={proto} name={name}");
-                }
+                    AppLog.Append(
+                        $"servers: skip unsupported protocol={DemarHttp.OptString(item, "protocol")} name={DemarHttp.OptString(item, "name")}");
             }
         }
-        return new ServersListResult(
+
+        return new(
             DemarHttp.OptString(json, "vpnSubscription"),
             DemarHttp.OptString(json, "vpnExpiresAt"),
             profiles);
@@ -46,29 +46,30 @@ public static class ServersApi
         var id = DemarHttp.OptString(item, "id");
         var name = DemarHttp.OptString(item, "name");
         if (id is null || name is null) return null;
-        var city = DemarHttp.OptString(item, "city");
+
         var protocol = DemarHttp.OptString(item, "protocol")?.ToLowerInvariant();
         var configRaw = DemarHttp.OptString(item, "clientConfigJson");
-        if (protocol != "hysteria2" || configRaw is null) return null;
+        if (configRaw is null) return null;
+
         JsonObject? config;
         try { config = JsonNode.Parse(configRaw) as JsonObject; }
         catch (JsonException) { return null; }
-        return config is null ? null : ParseHysteria2(id, name, city, config);
+        if (config is null) return null;
+
+        return protocol switch
+        {
+            "hysteria2" => ParseHysteria2(id, name, DemarHttp.OptString(item, "city"), config),
+            _ => null,
+        };
     }
 
     private static ServerProfile? ParseHysteria2(string id, string name, string? city, JsonObject config)
     {
         if (config["outbounds"] is not JsonArray outbounds) return null;
-        JsonObject? hy2 = null;
-        foreach (var n in outbounds)
-        {
-            if (n is JsonObject o && DemarHttp.OptString(o, "type") == "hysteria2")
-            {
-                hy2 = o;
-                break;
-            }
-        }
+        var hy2 = outbounds.OfType<JsonObject>()
+            .FirstOrDefault(o => DemarHttp.OptString(o, "type") == "hysteria2");
         if (hy2 is null) return null;
+
         var server = DemarHttp.OptString(hy2, "server");
         var port = DemarHttp.OptInt(hy2, "server_port");
         var password = DemarHttp.OptString(hy2, "password");
@@ -76,23 +77,18 @@ public static class ServersApi
 
         var tls = hy2["tls"] as JsonObject;
         var tlsName = (tls is not null ? DemarHttp.OptString(tls, "server_name") : null) ?? server;
-        var alpn = new List<string>();
-        if (tls?["alpn"] is JsonArray alpnArr)
-        {
-            foreach (var a in alpnArr)
-            {
-                var s = a?.GetValueKind() == JsonValueKind.String ? a.GetValue<string>() : null;
-                if (!string.IsNullOrWhiteSpace(s)) alpn.Add(s);
-            }
-        }
-        string? obfs = null;
-        if (hy2["obfs"] is JsonObject obfsObj)
-            obfs = DemarHttp.OptString(obfsObj, "password");
-        var outboundCity = DemarHttp.OptString(hy2, "city") ?? city;
+        var alpn = tls?["alpn"] is JsonArray alpnArr
+            ? alpnArr
+                .Where(a => a?.GetValueKind() == JsonValueKind.String)
+                .Select(a => a!.GetValue<string>())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .ToList()
+            : null;
+        var obfs = hy2["obfs"] is JsonObject obfsObj ? DemarHttp.OptString(obfsObj, "password") : null;
 
         return ServerProfile.Hysteria2FromTag(
-            new Hysteria2Profile(name, server, port, password, tlsName, alpn.Count > 0 ? alpn : null, obfs),
-            city: outboundCity,
+            new Hysteria2Profile(name, server, port, password, tlsName, alpn is { Count: > 0 } ? alpn : null, obfs),
+            city: DemarHttp.OptString(hy2, "city") ?? city,
             id: id);
     }
 }

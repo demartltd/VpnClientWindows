@@ -11,7 +11,7 @@
 
 Платформа: **Windows only** (WinUI 3 + sing-box.exe subprocess).
 
-**Итерация:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine`). Auth/servers — `auth.example.invalid` (parity Android).
+**Итерация:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine`). Auth — `auth.example.invalid`; servers — `vpn.example.invalid` (parity Android).
 
 Connect pipeline: `UplinkIpv4` (retry) → DNS resolve success → config → subprocess → `VpnTunnelProbe.WaitForTunnelReadyAsync` (diag IP ×2 + TUN hostname ×1). Hysteria2 = QUIC/UDP — **без TCP preflight**.
 
@@ -43,7 +43,7 @@ Connect pipeline: `UplinkIpv4` (retry) → DNS resolve success → config → su
 ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigBuilder → config.json
 ```
 
-`resolveUplinkIpv4s` — перед connect на Windows. Список серверов: `POST /auth/mobile/servers` → только `protocol=hysteria2`.
+`resolveUplinkIpv4s` — перед connect на Windows. Список серверов: `POST https://vpn.example.invalid/vpn/servers` → только `protocol=hysteria2`.
 
 ### Добавление протокола
 
@@ -140,7 +140,7 @@ Mixed `127.0.0.1:10808` (`SingBoxTags.diagInbound`):
 | `POST /auth/mobile/email/send\|confirm` | Email OTP |
 | `POST /auth/mobile/totp/verify` | TOTP |
 | `POST /auth/mobile/session/exchange\|check` | сессия |
-| `POST /auth/mobile/servers` | список hy2 по подписке; UI: SegmentBar + listTitle/`City #N` + DNS reachability |
+| `POST vpn.example.invalid/vpn/servers` | список hy2 по подписке; UI: SegmentBar + listTitle/`City #N` + DNS reachability |
 | `GET account.example.invalid/api/auth/client/me` | Telegram OAuth token |
 
 Headers: `X-Demar-Client: demar-vpn`, `User-Agent: DemarVPN/{ver} (windows)`. Protocol: `demar://auth/callback`.

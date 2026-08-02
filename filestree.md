@@ -32,7 +32,7 @@ src/DemarVpn/
 ├── Services/
 │   ├── AppPackageInfo.cs
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
-│   ├── Servers/                   # ServersApi (POST /auth/mobile/servers → hy2)
+│   ├── Servers/                   # ServersApi (POST vpn.example.invalid/vpn/servers → hy2)
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
 │   ├── Vpn/                       # VpnController, SingBoxConfigBuilder, engines
 │   ├── Device/DeviceIdentity.cs

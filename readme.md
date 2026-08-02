@@ -63,7 +63,7 @@ Email OTP + TOTP (если включён) и Telegram OIDC через брау�
 
 ### Servers
 
-После входа `POST /auth/mobile/servers` → список по подписке. UI: SegmentBar протокола + All/тиры (Dev/Tester только при наличии), divider, строки `Country | TIER` / `City #N`, floating refresh (roll + snackbar), DNS reachability-dot. Неподдерживаемые протоколы пропускаются. Без сессии — CTA войти.
+После входа `POST https://vpn.example.invalid/vpn/servers` → список по подписке. UI: SegmentBar протокола + All/тиры (Dev/Tester только при наличии), divider, строки `Country | TIER` / `City #N`, floating refresh (roll + snackbar), DNS reachability-dot. Неподдерживаемые протоколы пропускаются. Без сессии — CTA войти.
 
 ---
 
