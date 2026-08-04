@@ -208,6 +208,7 @@ public static class InstallService
         s.TargetPath = target;
         s.WorkingDirectory = workDir;
         s.Description = AppName;
+        s.IconLocation = target + ",0";
         s.Save();
         if (!File.Exists(lnkPath))
             throw new InvalidOperationException("Start Menu shortcut failed");

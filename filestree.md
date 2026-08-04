@@ -45,7 +45,7 @@ src/DemarVpn/
 │   ├── ProtocolRegistration.cs    # demar:// HKCU
 │   └── SnackbarService.cs
 ├── Models/
-├── Assets/                        # icons, BrandIcons.xaml, Flags/, singbox/
+├── Assets/                        # AppIcon.ico, logos, BrandIcons.xaml, Flags/, singbox/
 └── Native/
     └── bin/                       # sing-box.exe, wintun.dll, libcronet.dll (gitignore)
 ```
@@ -87,7 +87,8 @@ scripts/
 ├── port_brand_icons.py
 ├── other/
 │   └── port_country_flags.py
-├── generate_icons.py
+├── generate_icons.py              # Assets + AppIcon.ico из logo_clear.png
+├── logo_clear.png                 # source (parity Android)
 ├── singbox-cleaner.py
 ├── install_release.ps1            # silent Updater /silent
 ├── increment_version*.ps1

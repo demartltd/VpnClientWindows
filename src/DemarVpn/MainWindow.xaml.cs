@@ -16,6 +16,9 @@ public sealed partial class MainWindow : Window
         Title = Strings.AppName;
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
+        if (File.Exists(iconPath))
+            AppWindow.SetIcon(iconPath);
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
             var res = Application.Current.Resources;
