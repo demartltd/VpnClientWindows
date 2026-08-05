@@ -237,10 +237,150 @@ public class VpnPipelineTest
         Assert.Equal(443, profile.UplinkPort);
         Assert.Equal("Finland | FREE", profile.ListTitle);
         Assert.Equal("Helsinki #1", profile.ListSubtitle);
+        Assert.Null(profile.Profile.UpMbps);
+        Assert.Null(profile.Profile.DownMbps);
+        Assert.Empty(profile.BypassRuleSets ?? []);
 
         var skip = JsonNode.Parse("""
             {"id":"s2","name":"X","protocol":"trojan","clientConfigJson":"{}"}
             """)!.AsObject();
         Assert.Null(ServersApi.ParseServerItem(skip));
+    }
+
+    [Fact]
+    public void ServersApi_parseBandwidthAndRuleSets()
+    {
+        var config = """
+            {
+              "outbounds": [
+                {
+                  "type": "hysteria2",
+                  "tag": "FI-FREE-2",
+                  "city": "Helsinki",
+                  "server": "hy2.example.com",
+                  "server_port": 443,
+                  "password": "hy2-pass",
+                  "up_mbps": 10,
+                  "down_mbps": 10,
+                  "tls": { "enabled": true, "server_name": "hy2.example.com", "alpn": ["h3"] }
+                },
+                { "type": "direct", "tag": "direct" }
+              ],
+              "route": {
+                "final": "FI-FREE-2",
+                "rule_set": [
+                  {
+                    "tag": "geoip-ru",
+                    "type": "remote",
+                    "format": "binary",
+                    "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-ru.srs"
+                  },
+                  {
+                    "tag": "geosite-category-ru",
+                    "type": "remote",
+                    "format": "binary",
+                    "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ru.srs"
+                  },
+                  {
+                    "tag": "geoip-ir",
+                    "type": "remote",
+                    "format": "binary",
+                    "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-ir.srs"
+                  },
+                  {
+                    "tag": "geosite-ir",
+                    "type": "remote",
+                    "format": "binary",
+                    "url": "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-ir.srs"
+                  },
+                  {
+                    "tag": "geoip-cn",
+                    "type": "remote",
+                    "format": "binary",
+                    "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs"
+                  },
+                  {
+                    "tag": "geosite-cn",
+                    "type": "remote",
+                    "format": "binary",
+                    "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs"
+                  }
+                ]
+              }
+            }
+            """;
+        var item = new JsonObject
+        {
+            ["id"] = "s2",
+            ["name"] = "FI-FREE-2",
+            ["protocol"] = "hysteria2",
+            ["clientConfigJson"] = config,
+        };
+
+        var profile = ServersApi.ParseServerItem(item);
+        Assert.NotNull(profile);
+        Assert.Equal(10, profile!.Profile.UpMbps);
+        Assert.Equal(10, profile.Profile.DownMbps);
+        Assert.Equal(6, profile.BypassRuleSets!.Count);
+        Assert.Contains(profile.BypassRuleSets, rs => rs.Tag == "geosite-ir" && rs.Url.Contains("Chocolate4U"));
+        Assert.Contains(profile.BypassRuleSets, rs => rs.Tag == "geosite-cn");
+
+        var built = SingBoxConfigBuilder.BuildTunConfigJson(profile.ConnectPlan);
+        Assert.Contains("\"up_mbps\": 10", built);
+        Assert.Contains("\"down_mbps\": 10", built);
+
+        var cfg = JsonNode.Parse(built)!.AsObject();
+        Assert.True(cfg["route"]!.AsObject().ContainsKey("rule_set"));
+        Assert.True(cfg["experimental"]!["cache_file"]!["enabled"]!.GetValue<bool>());
+        Assert.Contains(
+            cfg["dns"]!["rules"]!.AsArray(),
+            r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == "geosite-cn") == true &&
+                 r!["server"]?.GetValue<string>() == SingBoxTags.DnsDirect);
+        Assert.Contains(
+            cfg["route"]!["rules"]!.AsArray(),
+            r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == "geoip-ru") == true &&
+                 r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
+    }
+
+    [Fact]
+    public void Bandwidth_omittedWhenMissingOrNonPositive()
+    {
+        var zero = JsonNode.Parse("""
+            {
+              "id": "z1",
+              "name": "FI-FREE-1",
+              "protocol": "hysteria2",
+              "clientConfigJson": "{\"outbounds\":[{\"type\":\"hysteria2\",\"server\":\"1.2.3.4\",\"server_port\":443,\"password\":\"x\",\"up_mbps\":0,\"down_mbps\":-1,\"tls\":{\"server_name\":\"1.2.3.4\"}}]}"
+            }
+            """)!.AsObject();
+        var profile = ServersApi.ParseServerItem(zero);
+        Assert.NotNull(profile);
+        Assert.Null(profile!.Profile.UpMbps);
+        Assert.Null(profile.Profile.DownMbps);
+        var plan = profile.ConnectPlan;
+        Assert.False(plan.ProxyOutbound.ContainsKey("up_mbps"));
+        Assert.False(plan.ProxyOutbound.ContainsKey("down_mbps"));
+    }
+
+    [Fact]
+    public void RuleSets_empty_omitsRouteRuleSetAndCacheFile()
+    {
+        var plan = Fixture().ConnectPlan;
+        Assert.Empty(plan.BypassRuleSets);
+        var cfg = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan))!.AsObject();
+        Assert.False(cfg["route"]!.AsObject().ContainsKey("rule_set"));
+        Assert.False(cfg["experimental"]!.AsObject().ContainsKey("cache_file"));
+    }
+
+    [Fact]
+    public void Bandwidth_emittedWhenPositive()
+    {
+        var plan = SingBoxConnectPlan.Hysteria2(
+            new Hysteria2Profile("FI-FREE-1", "1.2.3.4", 443, "x", "1.2.3.4", UpMbps: 10, DownMbps: 10));
+        Assert.Equal(10, plan.ProxyOutbound["up_mbps"]);
+        Assert.Equal(10, plan.ProxyOutbound["down_mbps"]);
+        var json = SingBoxConfigBuilder.BuildTunConfigJson(plan);
+        Assert.Contains("\"up_mbps\": 10", json);
+        Assert.Contains("\"down_mbps\": 10", json);
     }
 }

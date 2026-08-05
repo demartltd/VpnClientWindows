@@ -9,7 +9,7 @@ src/DemarVpn/
 ├── App.xaml / MainWindow.xaml
 ├── Theme/                         # DemarPalette (MaterialColorUtilities TonalSpot)
 ├── Domain/
-│   ├── Vpn/                       # Hysteria2Profile, SingBoxConnectPlan, ServerProfile, ServerReachability
+│   ├── Vpn/                       # Hysteria2Profile, SingBoxConnectPlan, ApiBypassRuleSet, ServerProfile, ServerReachability
 │   └── Content/LegalDocument.cs   # Terms / Privacy + GitHub MD URLs
 ├── Views/
 │   ├── ShellPage.xaml             # tabs + overlay frame + snackbar overlay

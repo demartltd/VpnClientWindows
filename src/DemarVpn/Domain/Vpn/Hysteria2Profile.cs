@@ -7,7 +7,9 @@ public sealed record Hysteria2Profile(
     string Password,
     string TlsServerName,
     IReadOnlyList<string>? Alpn = null,
-    string? ObfsPassword = null)
+    string? ObfsPassword = null,
+    int? UpMbps = null,
+    int? DownMbps = null)
 {
     public IReadOnlyList<string> ResolvedAlpn => Alpn is { Count: > 0 } ? Alpn : ["h3"];
 }

@@ -64,6 +64,7 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 | `tlsServerName` | `tls.server_name` |
 | `alpn` | `tls.alpn` (default `["h3"]`) |
 | `obfsPassword` | `obfs.type=salamander` + `obfs.password` |
+| `upMbps` / `downMbps` | `up_mbps` / `down_mbps` (empty → BBR) |
 | `displayName` | UI only |
 
 ### Outbound defaults (`SingBoxConnectPlan.Hysteria2`)
@@ -73,6 +74,7 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 | `tls` | enabled + `server_name` + `alpn` |
 | `domain_resolver` | `dns-direct`, `ipv4_only` |
 | `obfs` | optional salamander |
+| `up_mbps` / `down_mbps` | omitted → BBR |
 
 ---
 
@@ -83,7 +85,7 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 | `dns-direct` | UDP `1.1.1.1` | bootstrap, domain resolver |
 | `dns-remote` | HTTPS `1.1.1.1` | DoH через proxy |
 
-Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); bootstrap domains (uplink hostname + TLS name) → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`.
+Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); bootstrap domains (uplink hostname + TLS name) → `dns-direct`; geosite rule-sets from API → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`.
 
 ---
 
@@ -92,11 +94,20 @@ Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); bootstrap domai
 - TUN: **Wintun** (Windows), `strict_route`, `172.19.0.1/30`
 - Split `0.0.0.0/1` + `128.0.0.0/1` — только при literal IPv4 uplink
 - `route_exclude_address` **всегда**: `127.0.0.0/8`, RFC1918 (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`) + uplink IPs
-- Route: sniff → hijack-dns → QUIC reject → `127.0.0.0/8` direct → private direct → IPv6 reject → proxy
+- Route: sniff → hijack-dns → QUIC reject → `127.0.0.0/8` direct → private direct → **API rule-sets** → uplink IPs → bootstrap → IPv6 reject → proxy
 - `default_domain_resolver`: `dns-direct`, `ipv4_only`
 
 (Android использует gVisor TUN + `override_android_vpn`; на Windows — Wintun adapter.)
 
+### API geo-bypass (из `clientConfigJson`)
+
+Servermaster кладёт remote `route.rule_set` (RU/IR/CN) в `clientConfigJson`. Клиент парсит tags/URLs в `ApiBypassRuleSet` и собирает Windows-конфиг:
+
+- geosite → DNS `dns-direct` + route `direct`
+- geoip → route `direct`
+- **не** эмитить TUN `route_exclude_address_set` (parity Android)
+- `download_detour` → `proxy`
+- при непустых rule-sets: `experimental.cache_file.enabled`
 ---
 
 ## Bypass
@@ -165,7 +176,7 @@ Runtime в `Native/bin/`: `sing-box.exe`, `wintun.dll`, `libcronet.dll` (NaivePr
 
 | Путь | Роль |
 |------|------|
-| `Domain/Vpn/*` | Profiles, `SingBoxConnectPlan` |
+| `Domain/Vpn/*` | Profiles, `SingBoxConnectPlan`, `ApiBypassRuleSet` |
 | `Services/Auth/*` | API + session store |
 | `Services/Servers/*` | servers fetch/parse |
 | `Services/Vpn/SingBoxConfigBuilder.cs` | TUN + DNS + route JSON (`stack: system`) |

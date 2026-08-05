@@ -87,8 +87,41 @@ public static class ServersApi
         var obfs = hy2["obfs"] is JsonObject obfsObj ? DemarHttp.OptString(obfsObj, "password") : null;
 
         return ServerProfile.Hysteria2FromTag(
-            new Hysteria2Profile(name, server, port, password, tlsName, alpn is { Count: > 0 } ? alpn : null, obfs),
+            new Hysteria2Profile(
+                name, server, port, password, tlsName,
+                alpn is { Count: > 0 } ? alpn : null,
+                obfs,
+                PositiveMbps(hy2, "up_mbps"),
+                PositiveMbps(hy2, "down_mbps")),
             city: DemarHttp.OptString(hy2, "city") ?? city,
-            id: id);
+            id: id,
+            bypassRuleSets: ParseBypassRuleSets(config));
+    }
+
+    private static int? PositiveMbps(JsonObject obj, string key)
+    {
+        var value = DemarHttp.OptInt(obj, key);
+        return value > 0 ? value : null;
+    }
+
+    /// <summary>Remote rule-sets from API; ignores TUN <c>route_exclude_address_set</c> (parity Android).</summary>
+    public static IReadOnlyList<ApiBypassRuleSet> ParseBypassRuleSets(JsonObject config)
+    {
+        if (config["route"] is not JsonObject route || route["rule_set"] is not JsonArray arr)
+            return [];
+
+        var byTag = new Dictionary<string, ApiBypassRuleSet>(StringComparer.Ordinal);
+        foreach (var node in arr)
+        {
+            if (node is not JsonObject item) continue;
+            var tag = DemarHttp.OptString(item, "tag")?.Trim();
+            var url = DemarHttp.OptString(item, "url")?.Trim();
+            if (string.IsNullOrEmpty(tag) || string.IsNullOrEmpty(url)) continue;
+            var type = DemarHttp.OptString(item, "type") ?? "remote";
+            var format = DemarHttp.OptString(item, "format") ?? "binary";
+            if (type != "remote" || format != "binary") continue;
+            byTag.TryAdd(tag, new ApiBypassRuleSet(tag, url));
+        }
+        return byTag.Values.ToList();
     }
 }

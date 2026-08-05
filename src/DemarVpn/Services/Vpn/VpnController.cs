@@ -169,7 +169,8 @@ public sealed class VpnController : NotifyBase
 
             var port = Selected.UplinkPort;
             var configJson = SingBoxConfigBuilder.BuildTunConfigJson(plan);
-            AppLog.Append($"connect uplinkHost={plan.UplinkHost} uplinkPort={port} target={connectTarget} resolved={string.Join(",", resolved)}");
+            AppLog.Append(
+                $"connect uplinkHost={plan.UplinkHost} uplinkPort={port} target={connectTarget} resolved={string.Join(",", resolved)} rs={plan.BypassRuleSets.Count}");
 
             _watchdog = CancellationTokenSource.CreateLinkedTokenSource(token);
             _ = WatchdogAsync(_watchdog.Token);

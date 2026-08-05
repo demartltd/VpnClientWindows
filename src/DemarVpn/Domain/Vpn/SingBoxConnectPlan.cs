@@ -8,6 +8,7 @@ public sealed record SingBoxConnectPlan
     public required Dictionary<string, object?> ProxyOutbound { get; init; }
     public required IReadOnlyList<string> DirectIPs { get; init; }
     public required SingBoxTunOptions Tun { get; init; }
+    public IReadOnlyList<ApiBypassRuleSet> BypassRuleSets { get; init; } = [];
 
     public SingBoxConnectPlan WithExtraDirectIps(IEnumerable<string> ips)
     {
@@ -16,7 +17,9 @@ public sealed record SingBoxConnectPlan
         return this with { DirectIPs = merged };
     }
 
-    public static SingBoxConnectPlan Hysteria2(Hysteria2Profile profile)
+    public static SingBoxConnectPlan Hysteria2(
+        Hysteria2Profile profile,
+        IReadOnlyList<ApiBypassRuleSet>? bypassRuleSets = null)
     {
         var tls = new Dictionary<string, object?>
         {
@@ -46,6 +49,8 @@ public sealed record SingBoxConnectPlan
                 ["password"] = profile.ObfsPassword,
             };
         }
+        if (profile.UpMbps is > 0) outbound["up_mbps"] = profile.UpMbps;
+        if (profile.DownMbps is > 0) outbound["down_mbps"] = profile.DownMbps;
 
         return new SingBoxConnectPlan
         {
@@ -53,6 +58,7 @@ public sealed record SingBoxConnectPlan
             ProxyOutbound = outbound,
             DirectIPs = DirectIps(profile.Server),
             Tun = new SingBoxTunOptions(SingBoxTags.DnsRemote, BootstrapDomains(profile.Server, profile.TlsServerName), true),
+            BypassRuleSets = bypassRuleSets ?? [],
         };
     }
 

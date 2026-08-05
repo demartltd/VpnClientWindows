@@ -42,9 +42,11 @@ public sealed record ServerProfile(
     Hysteria2Profile Profile,
     string? CountryCode = null,
     string? CountryName = null,
-    string? City = null)
+    string? City = null,
+    IReadOnlyList<ApiBypassRuleSet>? BypassRuleSets = null)
 {
-    public SingBoxConnectPlan ConnectPlan => SingBoxConnectPlan.Hysteria2(Profile);
+    public SingBoxConnectPlan ConnectPlan =>
+        SingBoxConnectPlan.Hysteria2(Profile, BypassRuleSets ?? []);
     public int UplinkPort => Profile.Port;
     public ServerProtocol Protocol => ServerProtocol.Hysteria2;
 
@@ -97,19 +99,24 @@ public sealed record ServerProfile(
         string? countryCode = null,
         string? countryName = null,
         string? city = null,
-        string? id = null) => new(
+        string? id = null,
+        IReadOnlyList<ApiBypassRuleSet>? bypassRuleSets = null) => new(
         id ?? $"hysteria2:{profile.DisplayName}",
         profile.DisplayName,
         profile,
         countryCode,
         countryName,
-        city);
+        city,
+        bypassRuleSets ?? []);
 
     public static ServerProfile Hysteria2FromTag(
-        Hysteria2Profile profile, string? city = null, string? id = null)
+        Hysteria2Profile profile,
+        string? city = null,
+        string? id = null,
+        IReadOnlyList<ApiBypassRuleSet>? bypassRuleSets = null)
     {
         var code = CountryCodeFromTag(profile.DisplayName);
-        return Hysteria2(profile, code, CountryNameFromCode(code), city, id);
+        return Hysteria2(profile, code, CountryNameFromCode(code), city, id, bypassRuleSets);
     }
 
     public static string? CountryCodeFromTag(string tag)

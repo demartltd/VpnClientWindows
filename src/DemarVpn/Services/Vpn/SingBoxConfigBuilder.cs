@@ -19,10 +19,21 @@ public static class SingBoxConfigBuilder
     private static JsonObject BuildTunConfig(SingBoxConnectPlan plan, string tunName, int mtu, string logLevel)
     {
         var bootstrap = plan.Tun.BootstrapDomains.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var ruleSets = plan.BypassRuleSets.DistinctBy(rs => rs.Tag).ToList();
+        var experimental = new JsonObject
+        {
+            ["clash_api"] = new JsonObject
+            {
+                ["external_controller"] = $"{SingBoxTags.ClashApiHost}:{SingBoxTags.ClashApiPort}",
+            },
+        };
+        if (ruleSets.Count > 0)
+            experimental["cache_file"] = new JsonObject { ["enabled"] = true };
+
         return new JsonObject
         {
             ["log"] = new JsonObject { ["level"] = logLevel, ["timestamp"] = true },
-            ["dns"] = MakeDns(plan.Tun.DnsFinal, bootstrap),
+            ["dns"] = MakeDns(plan.Tun.DnsFinal, bootstrap, ruleSets),
             ["inbounds"] = new JsonArray(MakeTunInbound(tunName, mtu, plan.DirectIPs, plan.Tun.StrictRoute), new JsonObject
             {
                 ["type"] = "mixed",
@@ -30,23 +41,20 @@ public static class SingBoxConfigBuilder
                 ["listen"] = SingBoxTags.DiagListenHost,
                 ["listen_port"] = SingBoxTags.DiagListenPort,
             }),
-            ["route"] = MakeRoute(SingBoxTags.TunInbound, plan.DirectIPs, bootstrap),
+            ["route"] = MakeRoute(SingBoxTags.TunInbound, plan.DirectIPs, bootstrap, ruleSets),
             ["outbounds"] = new JsonArray(ToJson(plan.ProxyOutbound), new JsonObject
             {
                 ["type"] = "direct",
                 ["tag"] = SingBoxTags.Direct,
             }),
-            ["experimental"] = new JsonObject
-            {
-                ["clash_api"] = new JsonObject
-                {
-                    ["external_controller"] = $"{SingBoxTags.ClashApiHost}:{SingBoxTags.ClashApiPort}",
-                },
-            },
+            ["experimental"] = experimental,
         };
     }
 
-    private static JsonObject MakeDns(string dnsFinal, IReadOnlyList<string> bootstrapDomains)
+    private static JsonObject MakeDns(
+        string dnsFinal,
+        IReadOnlyList<string> bootstrapDomains,
+        IReadOnlyList<ApiBypassRuleSet> ruleSets)
     {
         var rules = new JsonArray(
             new JsonObject { ["query_type"] = Arr("PTR"), ["action"] = "reject", ["method"] = "drop" },
@@ -62,6 +70,15 @@ public static class SingBoxConfigBuilder
             rules.Add(new JsonObject
             {
                 ["domain"] = Arr(clean),
+                ["action"] = "route",
+                ["server"] = SingBoxTags.DnsDirect,
+            });
+        }
+        foreach (var rs in ruleSets.Where(r => r.IsGeosite))
+        {
+            rules.Add(new JsonObject
+            {
+                ["rule_set"] = Arr(rs.Tag),
                 ["action"] = "route",
                 ["server"] = SingBoxTags.DnsDirect,
             });
@@ -84,7 +101,11 @@ public static class SingBoxConfigBuilder
         };
     }
 
-    private static JsonObject MakeRoute(string inboundTag, IReadOnlyList<string> directIPs, IReadOnlyList<string> bootstrapDomains)
+    private static JsonObject MakeRoute(
+        string inboundTag,
+        IReadOnlyList<string> directIPs,
+        IReadOnlyList<string> bootstrapDomains,
+        IReadOnlyList<ApiBypassRuleSet> ruleSets)
     {
         var rules = new JsonArray(
             new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "sniff" },
@@ -92,6 +113,14 @@ public static class SingBoxConfigBuilder
             new JsonObject { ["network"] = Arr("udp"), ["port"] = Arr(443), ["action"] = "reject" },
             new JsonObject { ["ip_cidr"] = Arr("127.0.0.0/8"), ["action"] = "route", ["outbound"] = SingBoxTags.Direct },
             new JsonObject { ["ip_is_private"] = true, ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
+
+        foreach (var rs in ruleSets)
+            rules.Add(new JsonObject
+            {
+                ["rule_set"] = Arr(rs.Tag),
+                ["action"] = "route",
+                ["outbound"] = SingBoxTags.Direct,
+            });
 
         foreach (var ip in directIPs)
             rules.Add(new JsonObject { ["ip_cidr"] = Arr($"{ip}/32"), ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
@@ -106,13 +135,30 @@ public static class SingBoxConfigBuilder
         rules.Add(new JsonObject { ["inbound"] = Arr(SingBoxTags.DiagInbound), ["action"] = "route", ["outbound"] = SingBoxTags.Proxy });
         rules.Add(new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "route", ["outbound"] = SingBoxTags.Proxy });
 
-        return new JsonObject
+        var route = new JsonObject
         {
             ["auto_detect_interface"] = true,
             ["default_domain_resolver"] = new JsonObject { ["server"] = SingBoxTags.DnsDirect, ["strategy"] = "ipv4_only" },
             ["final"] = SingBoxTags.Proxy,
             ["rules"] = rules,
         };
+        if (ruleSets.Count > 0)
+        {
+            var sets = new JsonArray();
+            foreach (var rs in ruleSets)
+            {
+                sets.Add(new JsonObject
+                {
+                    ["tag"] = rs.Tag,
+                    ["type"] = "remote",
+                    ["format"] = "binary",
+                    ["url"] = rs.Url,
+                    ["download_detour"] = SingBoxTags.Proxy,
+                });
+            }
+            route["rule_set"] = sets;
+        }
+        return route;
     }
 
     private static JsonObject MakeTunInbound(string tunName, int mtu, IReadOnlyList<string> directIPs, bool strictRoute)
