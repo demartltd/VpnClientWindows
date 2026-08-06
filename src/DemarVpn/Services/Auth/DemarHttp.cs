@@ -12,6 +12,7 @@ public sealed class AuthException(string message, int statusCode = 0, int? retry
     public int StatusCode { get; } = statusCode;
     public int? RetryAfterSeconds { get; } = retryAfterSeconds;
     public string? Hint { get; } = hint;
+    public bool IsSessionInvalid => StatusCode == 401;
 }
 
 /// <summary>Mobile API HTTP — parity with Android AuthApi (IO off UI, explicit timeouts).</summary>

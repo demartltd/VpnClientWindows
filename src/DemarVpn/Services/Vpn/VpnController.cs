@@ -75,7 +75,7 @@ public sealed class VpnController : NotifyBase
             AppLog.Append($"servers: loaded {result.Servers.Count} (sub={result.VpnSubscription})");
             await RefreshServerReachabilityAsync(ct);
         }
-        catch (AuthException e) when (e.StatusCode == 401)
+        catch (AuthException e) when (e.IsSessionInvalid)
         {
             AuthRepository.ClearLocal();
             AppServices.Auth.NotifyChanged();

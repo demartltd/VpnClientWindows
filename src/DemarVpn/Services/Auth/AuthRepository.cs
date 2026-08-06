@@ -15,7 +15,7 @@ public static class AuthRepository
             AuthSessionStore.Save(checkedSession);
             return true;
         }
-        catch (AuthException e) when (e.StatusCode == 401 || e.Message == "session_revoked")
+        catch (AuthException e) when (e.IsSessionInvalid)
         {
             ClearLocal();
             AppLog.Append("auth: session inactive — signed out");
