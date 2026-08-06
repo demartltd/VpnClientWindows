@@ -1,4 +1,4 @@
-﻿namespace DemarVpn;
+namespace DemarVpn;
 
 public static class Strings
 {
@@ -86,5 +86,5 @@ public static class Strings
     public const string VpnUacCancelled = "Подключение отменено (UAC)";
     public const string VpnTunAccessDenied = "Нет прав для TUN. Подтвердите запрос UAC при подключении.";
     public const string PlatformWindows = "Windows";
-    public const string VersionName = "1.0.9";
+    public const string VersionName = "1.0.10";
 }

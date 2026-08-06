@@ -4,9 +4,9 @@
 
 **Min OS:** Windows 10 19041+ (WinUI 3 / Windows App SDK).
 
-Ядро: **sing-box latest** (**Hysteria2**). Документация: https://sing-box.sagernet.org/
+Ядро: **sing-box latest** (**Hysteria2**). Документация: [https://sing-box.sagernet.org/](https://sing-box.sagernet.org/)
 
-**UI:** Fluent Design, **тёмная тема only**, seed `#3A6EA5` — MaterialColorUtilities `TonalSpot` (parity с Android / Flutter).
+**UI:** Fluent Design, **тёмная тема only**, seed `#3A6EA5` — MaterialColorUtilities `TonalSpot`.
 
 Структура: `filestree.md` · ядро: `readme-core.md`
 
@@ -34,9 +34,11 @@ pwsh scripts/for_builds/build_windows.ps1 -Fast
 Версия: `version.properties`. Bump: `pwsh scripts/increment_version_auto.ps1`
 
 Артефакты:
+
 - `artifacts/Updater.exe` — установщик (WPF; внутри `payload.zip` + AOT `Uninstall.exe`; GUI / `/silent` / `/D=C:\Path` / `/uninstall`). Путь установки запоминается в `%LOCALAPPDATA%\DemarVpn\install_location` для обновлений.
 
 После установки в выбранную папку (по умолчанию `Program Files\Demar VPN\`):
+
 - `Demar VPN.exe` — приложение
 - `Uninstall.exe` — крошечный AOT-деинсталлятор с Demar UI (извлекается из Updater)
 
@@ -46,20 +48,22 @@ pwsh scripts/for_builds/build_windows.ps1 -Fast
 
 ## UI (parity с demar_vpn Android)
 
-| Экран | Статус |
-|-------|--------|
-| Home (VPN toggle) | Hysteria2 connect/disconnect через `VpnController` |
-| Servers | SegmentBar протокол/тиры (drag), divider, `Country \| TIER` + city, FAB refresh, reachability; Dev/Tester только если есть в списке |
-| Settings + social links | FA6 brand icons (`IconLinkChip`); Documents sheet → ToS/PP с GitHub Markdown |
-| Account + login dialog | Email OTP + TOTP + Telegram OAuth → `auth.example.invalid` |
-| App settings (журнал) | `AppLog` — до 512 строк, tail-trim |
-| Service menu (3× tap version) | О приложении, Route, egress probes, device identity |
+
+| Экран                         | Статус                                                                                                                             |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Home (VPN toggle)             | Hysteria2 connect/disconnect через `VpnController`                                                                                 |
+| Servers                       | SegmentBar протокол/тиры (drag), divider, `Country | TIER` + city, FAB refresh, reachability; Dev/Tester только если есть в списке |
+| Settings + social links       | FA6 brand icons (`IconLinkChip`); Documents sheet → ToS/PP с GitHub Markdown                                                       |
+| Account + login dialog        | Email OTP + TOTP + Telegram OAuth → `auth.example.invalid`                                                                                 |
+| App settings (журнал)         | `AppLog` — до 512 строк, tail-trim                                                                                                 |
+| Service menu (3× tap version) | О приложении, Route, egress probes, device identity                                                                                |
+
 
 VPN connect (Hysteria2) — **реализовано** (`SingBoxProcessEngine` + Wintun). При Connect появится **UAC для sing-box.exe** (TUN).
 
 ### Auth
 
-Email OTP + TOTP (если включён) и Telegram OIDC через браузер → `demar://auth/callback`. Сессия в `%LOCALAPPDATA%\DemarVpn\demar_auth_session.json`; при старте — `session/check`, при отзыве — local sign-out. Выход: `POST /auth/mobile/session/logout` + stop VPN + очистка `last_profile_id`. Новый email: confirm «Создать новый?» → `purpose: register`. API: `POST /auth/mobile/*` + `X-Demar-Client` / UA `DemarVPN/… (windows)`.
+Email OTP + TOTP (если включён) и Telegram OIDC через браузер → `demar://auth/callback`. Сессия в `%LOCALAPPDATA%\DemarVpn\demar_auth_session.json`; при старте — `session/check`, при отзыве — local sign-out. Выход: `POST /auth/mobile/session/logout` + stop VPN + очистка `last_profile_id`. Новый email: confirm «Создать новый?» → `purpose: register`. API: `POST /auth/mobile/`* + `X-Demar-Client` / UA `DemarVPN/… (windows)`.
 
 ### Servers
 
@@ -86,22 +90,3 @@ UI-журнал: «Настройки → Настройки приложени�
 
 Unit-тесты pipeline (без WinUI): `dotnet test tests/DemarVpn.Tests`
 
-### Сборка долго висит (>15 мин)
-
-1. **Прервите** (Ctrl+C) и используйте быстрый режим: `pwsh scripts/for_builds/build_windows.ps1 -Fast`
-2. **Windows Defender** — добавьте исключение для папки репозитория
-3. Очистка: `dotnet clean DemarVpn.sln -c Release; Remove-Item -Recurse -Force src\DemarVpn\bin, src\DemarVpn\obj, artifacts`
-4. В Диспетчере задач проверьте, не зависли ли `XamlCompiler.exe`, `dotnet.exe`
-
----
-
-## Статус (2026-07)
-
-| Область | Статус |
-|---------|--------|
-| WinUI 3 UI (4 tabs + overlay + login) | реализовано |
-| Тема / snackbar / соц. иконки | parity с Android |
-| VPN engine | `SingBoxProcessEngine` (sing-box.exe + Wintun + libcronet) |
-| Domain / data / Hysteria2 pipeline | `Domain/Vpn/*`, `SingBoxConfigBuilder`, `UplinkProbe` |
-| Auth + servers API | `Services/Auth/*`, `Services/Servers/*` → `auth.example.invalid` |
-| Home connect/disconnect | `VpnController` + tunnel probe |
