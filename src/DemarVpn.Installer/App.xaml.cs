@@ -26,9 +26,19 @@ public partial class App : Application
             try
             {
                 if (mode.Uninstall)
+                {
                     InstallService.Uninstall(null);
+                }
                 else
-                    InstallService.Install(mode.InstallDir ?? InstallService.ResolveTargetInstallDir(), null);
+                {
+                    var installDir = mode.InstallDir ?? InstallService.ResolveTargetInstallDir();
+                    InstallService.Install(installDir, null);
+                    if (mode.LaunchAfter)
+                    {
+                        InstallService.LaunchApp(installDir);
+                        InstallService.ScheduleSelfDeleteAfterUpdate();
+                    }
+                }
             }
             catch (Exception ex)
             {

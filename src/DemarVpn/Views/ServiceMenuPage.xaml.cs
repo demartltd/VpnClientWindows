@@ -29,6 +29,7 @@ public sealed partial class ServiceMenuPage : OverlayPage
         NameRow.Value = Strings.AppName;
         PackageRow.Value = AppPackageInfo.PackageId;
         VersionRow.Value = AppPackageInfo.VersionDetail;
+        LatestVersionRow.Value = "…";
         PlatformRow.Value = Strings.PlatformWindows;
         CoreRow.Key = Strings.ServiceCore;
         CoreRow.Value = AppServices.SingBoxLabel;
@@ -49,6 +50,14 @@ public sealed partial class ServiceMenuPage : OverlayPage
         AppServices.Vpn.PropertyChanged += OnVpnChanged;
         _ = ReloadDeviceAsync();
         _ = ReloadEgressAsync();
+        _ = ReloadLatestVersionAsync();
+    }
+
+    private async Task ReloadLatestVersionAsync()
+    {
+        LatestVersionRow.Value = "…";
+        var latest = await WindowsReleaseApi.FetchLatestVersionAsync();
+        LatestVersionRow.Value = latest ?? "—";
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)

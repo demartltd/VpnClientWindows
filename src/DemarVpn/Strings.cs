@@ -86,5 +86,11 @@ public static class Strings
     public const string VpnUacCancelled = "Подключение отменено (UAC)";
     public const string VpnTunAccessDenied = "Нет прав для TUN. Подтвердите запрос UAC при подключении.";
     public const string PlatformWindows = "Windows";
-    public const string VersionName = "1.0.10";
+    public const string UpdateTitle = "Доступно обновление";
+    public const string UpdateBody = "Установлена версия {0}. Доступна {1}.";
+    public const string UpdateNow = "Обновить сейчас";
+    public const string UpdateNextLaunch = "При следующем запуске";
+    public const string UpdateDownloadFail = "Не удалось скачать обновление";
+    public const string UpdateDownloading = "Загрузка";
+    public const string VersionName = "1.0.12";
 }

@@ -19,6 +19,8 @@ public partial class App : Application
         if (!SingleInstance.TryClaim(OnRedirectedActivation)) return;
 
         AppServices.Init();
+        if (AppServices.Update.TryApplyPending()) return;
+
         ProtocolRegistration.EnsureRegistered();
         DemarPalette.Apply(Resources);
         _main = new MainWindow();
@@ -28,7 +30,13 @@ public partial class App : Application
         var launchArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
         _ = HandleAuthUriAsync(SingleInstance.TryGetAuthUri(launchArgs)
                                ?? ProtocolRegistration.ConsumePendingUri());
-        _ = AppServices.BootstrapSessionAsync();
+        _ = BootstrapAsync();
+    }
+
+    private async Task BootstrapAsync()
+    {
+        await AppServices.BootstrapSessionAsync();
+        AppServices.Update.StartPeriodicChecks();
     }
 
     private void OnRedirectedActivation(AppActivationArguments args)

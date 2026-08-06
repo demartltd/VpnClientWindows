@@ -129,6 +129,56 @@ public static class InstallService
         progress?.Report("Готово");
     }
 
+    public static bool LaunchApp(string installDir)
+    {
+        var exe = IOPath.Combine(installDir, AppExeName);
+        if (!File.Exists(exe)) return false;
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = exe,
+            WorkingDirectory = IOPath.GetDirectoryName(exe),
+            UseShellExecute = true,
+        });
+        return true;
+    }
+
+    /// <summary>After in-app update only: delete this Updater.exe once the process exits.</summary>
+    public static void ScheduleSelfDeleteAfterUpdate()
+    {
+        var self = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(self)) return;
+        if (IOPath.GetFileNameWithoutExtension(self)
+            .Equals("Uninstall", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var pending = IOPath.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "DemarVpn", "pending_update");
+        var partial = self + ".partial";
+        var bat = IOPath.Combine(IOPath.GetTempPath(), $"demar-upd-clean-{Guid.NewGuid():N}.cmd");
+        File.WriteAllText(bat, $"""
+            @echo off
+            timeout /t 2 /nobreak >nul
+            for /L %%i in (1,1,60) do (
+              del /f /q "{self}" >nul 2>&1
+              if not exist "{self}" goto cleaned
+              timeout /t 1 /nobreak >nul
+            )
+            :cleaned
+            del /f /q "{partial}" >nul 2>&1
+            del /f /q "{pending}" >nul 2>&1
+            del /f /q "%~f0" >nul 2>&1
+            """);
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = $"/c \"{bat}\"",
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            WorkingDirectory = IOPath.GetTempPath(),
+        });
+    }
+
     static void ClearInstallDir(string installDir)
     {
         if (!Directory.Exists(installDir)) return;

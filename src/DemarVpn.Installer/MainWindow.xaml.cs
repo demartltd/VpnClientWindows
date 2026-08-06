@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -106,16 +105,7 @@ public partial class MainWindow : Window
 
     void Open_OnClick(object sender, RoutedEventArgs e)
     {
-        var exe = IOPath.Combine(_installDir ?? PathBox.Text, InstallService.AppExeName);
-        if (File.Exists(exe))
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = exe,
-                WorkingDirectory = IOPath.GetDirectoryName(exe),
-                UseShellExecute = true,
-            });
-        }
+        InstallService.LaunchApp(_installDir ?? PathBox.Text);
         Close();
     }
 }

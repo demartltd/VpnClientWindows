@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using DemarVpn.Models;
+using DemarVpn.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -7,13 +9,121 @@ namespace DemarVpn.Views;
 
 public sealed partial class HomePage : Page
 {
+    private bool _shadowWired;
+    private bool _promptShown;
+    private bool _promptInFlight;
+
     public HomePage()
     {
         InitializeComponent();
         TitleBlock.Text = Strings.HomeTitle;
         ConnectedLabel.Text = Strings.VpnConnected;
+        UpdateHint.Text = Strings.UpdateDownloading;
         AppServices.Vpn.PropertyChanged += (_, e) => DispatcherQueue.TryEnqueue(Refresh);
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
         Refresh();
+        SyncUpdateFab();
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (!_shadowWired)
+        {
+            _shadowWired = true;
+            UpdateShadow.Receivers.Add(ShadowCast);
+        }
+        AppServices.Update.PropertyChanged += OnUpdateChanged;
+        SyncUpdateFab();
+        MaybePromptUpdate();
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        AppServices.Update.PropertyChanged -= OnUpdateChanged;
+    }
+
+    private void OnUpdateChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            SyncUpdateFab();
+            if (e.PropertyName is nameof(AppUpdateService.State)
+                or nameof(AppUpdateService.LatestVersion))
+                MaybePromptUpdate();
+        });
+    }
+
+    private void SyncUpdateFab()
+    {
+        var update = AppServices.Update;
+        var show = update.State is AppUpdateState.Available
+            or AppUpdateState.Downloading
+            or AppUpdateState.Ready
+            or AppUpdateState.Applying;
+        UpdateFab.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        if (!show) return;
+
+        var downloading = update.State == AppUpdateState.Downloading;
+        UpdateProgressPanel.Visibility = downloading ? Visibility.Visible : Visibility.Collapsed;
+        UpdateIcon.Visibility = downloading ? Visibility.Collapsed : Visibility.Visible;
+        UpdatePercent.Text = $"{update.ProgressPercent}%";
+        UpdateButton.IsEnabled = update.State == AppUpdateState.Ready;
+    }
+
+    private void MaybePromptUpdate()
+    {
+        if (_promptShown || _promptInFlight) return;
+        if (AppServices.Update.State != AppUpdateState.Ready) return;
+        if (XamlRoot is null) return;
+        _ = ShowUpdateDialogAsync();
+    }
+
+    private async void OnUpdateFabClick(object sender, RoutedEventArgs e)
+    {
+        if (AppServices.Update.State != AppUpdateState.Ready) return;
+        _promptShown = false;
+        await ShowUpdateDialogAsync();
+    }
+
+    private async Task ShowUpdateDialogAsync()
+    {
+        if (_promptInFlight) return;
+        if (XamlRoot is null) return;
+        _promptInFlight = true;
+        try
+        {
+            var latest = AppServices.Update.LatestVersion ?? "?";
+            var dialog = new ContentDialog
+            {
+                Title = Strings.UpdateTitle,
+                Content = string.Format(Strings.UpdateBody, Strings.VersionName, latest),
+                PrimaryButtonText = Strings.UpdateNow,
+                SecondaryButtonText = Strings.UpdateNextLaunch,
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = XamlRoot,
+            };
+            var result = await dialog.ShowAsync();
+            _promptShown = true;
+            if (result == ContentDialogResult.Primary)
+            {
+                if (!AppServices.Update.ApplyNow())
+                    AppServices.Snackbar.ShowError(Strings.UpdateDownloadFail);
+            }
+            else if (result == ContentDialogResult.Secondary)
+            {
+                AppServices.Update.ScheduleNextLaunch();
+            }
+            else
+            {
+                // Dismiss without choice — allow FAB to reopen.
+                _promptShown = false;
+            }
+        }
+        finally
+        {
+            _promptInFlight = false;
+        }
     }
 
     private async void OnToggle(object sender, RoutedEventArgs e)

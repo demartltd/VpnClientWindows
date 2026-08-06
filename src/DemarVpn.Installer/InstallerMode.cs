@@ -1,6 +1,6 @@
 namespace DemarVpn.Installer;
 
-readonly record struct InstallerMode(bool Uninstall, bool Silent, string? InstallDir)
+readonly record struct InstallerMode(bool Uninstall, bool Silent, string? InstallDir, bool LaunchAfter)
 {
     public static InstallerMode Detect()
     {
@@ -12,6 +12,9 @@ readonly record struct InstallerMode(bool Uninstall, bool Silent, string? Instal
             a.Equals("/silent", StringComparison.OrdinalIgnoreCase) ||
             a.Equals("/s", StringComparison.OrdinalIgnoreCase) ||
             a.Equals("/verysilent", StringComparison.OrdinalIgnoreCase));
+        var launch = args.Any(a =>
+            a.Equals("/launch", StringComparison.OrdinalIgnoreCase) ||
+            a.Equals("/open", StringComparison.OrdinalIgnoreCase));
 
         string? dir = null;
         for (var i = 0; i < args.Length; i++)
@@ -23,6 +26,6 @@ readonly record struct InstallerMode(bool Uninstall, bool Silent, string? Instal
                 dir = args[++i].Trim('"');
         }
 
-        return new(uninstall, silent, string.IsNullOrWhiteSpace(dir) ? null : dir);
+        return new(uninstall, silent, string.IsNullOrWhiteSpace(dir) ? null : dir, launch);
     }
 }

@@ -9,6 +9,7 @@ public static class AppServices
     public static VpnController Vpn { get; } = new();
     public static SnackbarService Snackbar { get; } = new();
     public static AuthSession Auth { get; } = new();
+    public static AppUpdateService Update { get; } = new();
 
     public static string SingBoxLabel { get; private set; } = "1.13.13";
 

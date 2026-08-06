@@ -28,6 +28,7 @@
             <controls:DemarKvRow x:Name="NameRow" Key="Имя" />
             <controls:DemarKvRow x:Name="PackageRow" Key="Пакет" />
             <controls:DemarKvRow x:Name="VersionRow" Key="Версия" />
+            <controls:DemarKvRow x:Name="LatestVersionRow" Key="Актуальная версия" />
             <controls:DemarKvRow x:Name="PlatformRow" Key="Платформа" />
             <controls:DemarKvRow x:Name="CoreRow" Key="Core" />
           </StackPanel>

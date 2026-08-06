@@ -31,6 +31,7 @@ src/DemarVpn/
 │   └── ServerRow.xaml             # флаг + listTitle/subtitle + reachability dot
 ├── Services/
 │   ├── AppPackageInfo.cs
+│   ├── AppUpdateService.cs        # check API version + download Updater.exe
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi (POST vpn.example.invalid/vpn/servers → hy2)
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
@@ -67,7 +68,7 @@ src/DemarVpn.Installer/
 ├── DemarVpn.Installer.csproj   # EmbedPayload=true → Updater WPF; false → Uninstall AOT
 ├── App.xaml / App.xaml.cs
 ├── MainWindow.xaml / MainWindow.xaml.cs
-├── InstallerMode.cs            # /silent /uninstall /D=
+├── InstallerMode.cs            # /silent /uninstall /launch /D=
 ├── InstallService.cs           # install / uninstall / ARP / shortcut / demar://
 ├── UninstallProgram.cs         # Native AOT Win32 Demar UI
 ├── app.manifest                # requireAdministrator

@@ -10,6 +10,7 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
+    <Grid x:Name="ShadowCast" Grid.RowSpan="5" Background="Transparent" IsHitTestVisible="False" />
     <TextBlock x:Name="TitleBlock" Style="{StaticResource DemarTitleText}" />
     <StackPanel Grid.Row="2" HorizontalAlignment="Center" Spacing="14">
       <Button x:Name="Toggle" Width="200" Height="200" CornerRadius="100" Click="OnToggle"
@@ -25,5 +26,36 @@
       <TextBlock x:Name="ServerName" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" />
       <TextBlock x:Name="Throughput" HorizontalAlignment="Center" Opacity="0.8" />
     </StackPanel>
+    <Border x:Name="UpdateFab" Grid.RowSpan="5"
+            Width="64" Height="64"
+            Background="{StaticResource DemarOnTertiaryBrush}"
+            CornerRadius="20"
+            HorizontalAlignment="Right" VerticalAlignment="Bottom"
+            Margin="0,0,0,8" Canvas.ZIndex="10"
+            Translation="0,0,32"
+            Visibility="Collapsed">
+      <Border.Shadow>
+        <ThemeShadow x:Name="UpdateShadow" />
+      </Border.Shadow>
+      <Button x:Name="UpdateButton" Click="OnUpdateFabClick"
+              Background="Transparent" BorderThickness="0"
+              HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+              CornerRadius="20" Padding="0">
+        <Grid>
+          <FontIcon x:Name="UpdateIcon" Glyph="&#xE72C;" FontSize="20"
+                    Foreground="{StaticResource DemarTertiaryBrush}" />
+          <StackPanel x:Name="UpdateProgressPanel" Spacing="0"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Visibility="Collapsed">
+            <TextBlock x:Name="UpdatePercent" Text="0%" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{StaticResource DemarTertiaryBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock x:Name="UpdateHint" FontSize="9" Opacity="0.85"
+                       Foreground="{StaticResource DemarTertiaryBrush}"
+                       HorizontalAlignment="Center" TextWrapping="NoWrap" />
+          </StackPanel>
+        </Grid>
+      </Button>
+    </Border>
   </Grid>
 </Page>
