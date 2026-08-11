@@ -8,12 +8,17 @@ namespace DemarVpn.Views;
 public sealed partial class AppSettingsPage : OverlayPage
 {
     private bool _expanded;
+    private bool _startupUiReady;
     private bool _betaUiReady;
 
     public AppSettingsPage()
     {
         InitializeComponent();
         Chrome.Title = Strings.AppSettingsTitle;
+        StartupTitle.Text = Strings.SettingsRunAtStartup;
+        StartupSub.Text = Strings.SettingsRunAtStartupSub;
+        StartupToggle.IsOn = RunAtStartup.Enabled;
+        _startupUiReady = true;
         BetaTitle.Text = Strings.SettingsBeta;
         BetaSub.Text = Strings.SettingsBetaSub;
         BetaToggle.IsOn = UpdateChannelStore.PreferBeta;
@@ -21,6 +26,12 @@ public sealed partial class AppSettingsPage : OverlayPage
         AppLog.Changed += () => DispatcherQueue.TryEnqueue(RefreshJournal);
         RefreshJournal();
         UpdateExpandLabel();
+    }
+
+    private void OnStartupToggled(object sender, RoutedEventArgs e)
+    {
+        if (!_startupUiReady) return;
+        RunAtStartup.Set(StartupToggle.IsOn);
     }
 
     private async void OnBetaToggled(object sender, RoutedEventArgs e)

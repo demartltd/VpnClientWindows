@@ -17,6 +17,8 @@ public static class AppServices
     {
         AppLog.Init();
         UpdateChannelStore.Init();
+        RunAtStartup.Init();
+        RunAtStartup.Sync();
         AuthSessionStore.Load();
         Auth.NotifyChanged();
         SingBoxLabel = ReadBundledVersion();

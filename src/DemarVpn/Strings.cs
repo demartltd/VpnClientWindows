@@ -25,6 +25,8 @@ public static class Strings
     public const string SettingsPrivacy = "Конфиденциальность";
     public const string SettingsPrivacySub = "Как обрабатываются данные";
     public const string AppSettingsTitle = "Настройки приложения";
+    public const string SettingsRunAtStartup = "Запускать при включении ПК";
+    public const string SettingsRunAtStartupSub = "Автоматически открывать Demar VPN после входа в Windows";
     public const string SettingsBeta = "Устанавливать бета-версии";
     public const string SettingsBetaSub = "Получать предварительные обновления, если они есть";
     public const string SettingsBetaOffTitle = "Отключение бета-канала";
@@ -98,5 +100,5 @@ public static class Strings
     public const string UpdateDownloadFail = "Не удалось скачать обновление";
     public const string UpdateHashMismatch = "Файл обновления повреждён (SHA-256). Попробуйте снова.";
     public const string UpdateDownloading = "Загрузка";
-    public const string VersionName = "1.0.13";
+    public const string VersionName = "1.0.14";
 }

@@ -34,5 +34,6 @@
     <Compile Include="..\..\src\DemarVpn\Services\AppLog.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Content\RawTextFetcher.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\WindowsReleaseApi.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\RunAtStartup.cs" />
   </ItemGroup>
 </Project>

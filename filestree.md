@@ -35,6 +35,7 @@ src/DemarVpn/
 │   ├── AppUpdateService.cs        # fastapi version+sha256, download /windows/download|beta
 │   ├── WindowsReleaseApi.cs       # GET /windows/version (+ beta channel pick)
 │   ├── UpdateChannelStore.cs      # prefer_beta prefs
+│   ├── RunAtStartup.cs            # logon Task Scheduler autostart (default ON)
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi (POST vpn.example.invalid/vpn/servers → hy2)
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
@@ -62,6 +63,7 @@ tests/DemarVpn.Tests/
 ├── UplinkProbeTest.cs
 ├── AppLogTest.cs
 ├── AppUpdateTest.cs             # version parse + SHA256 + beta channel
+├── RunAtStartupTest.cs          # run_at_startup prefs (default ON)
 └── LegalDocumentTest.cs         # ToS/PP URLs + RawTextFetcher.Decode
 ```
 

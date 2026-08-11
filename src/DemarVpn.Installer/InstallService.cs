@@ -285,6 +285,21 @@ public static class InstallService
         catch { /* ignore */ }
     }
 
+    static void UnregisterRunAtStartup()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "schtasks.exe",
+                Arguments = $"/Delete /TN \"{AppName}\" /F",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+            })?.WaitForExit();
+        }
+        catch { /* ignore */ }
+    }
+
     public static void Uninstall(IProgress<string>? progress)
     {
         var dir = ResolveInstallDirFromArp();
@@ -297,6 +312,7 @@ public static class InstallService
         DeleteArp();
         ClearMarker();
         UnregisterProtocol();
+        UnregisterRunAtStartup();
 
         var self = Environment.ProcessPath;
         if (Directory.Exists(dir))
