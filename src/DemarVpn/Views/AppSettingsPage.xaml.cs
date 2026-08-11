@@ -1,3 +1,4 @@
+using DemarVpn.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel.DataTransfer;
@@ -7,14 +8,57 @@ namespace DemarVpn.Views;
 public sealed partial class AppSettingsPage : OverlayPage
 {
     private bool _expanded;
+    private bool _betaUiReady;
 
     public AppSettingsPage()
     {
         InitializeComponent();
         Chrome.Title = Strings.AppSettingsTitle;
+        BetaTitle.Text = Strings.SettingsBeta;
+        BetaSub.Text = Strings.SettingsBetaSub;
+        BetaToggle.IsOn = UpdateChannelStore.PreferBeta;
+        _betaUiReady = true;
         AppLog.Changed += () => DispatcherQueue.TryEnqueue(RefreshJournal);
         RefreshJournal();
         UpdateExpandLabel();
+    }
+
+    private async void OnBetaToggled(object sender, RoutedEventArgs e)
+    {
+        if (!_betaUiReady) return;
+        var on = BetaToggle.IsOn;
+        if (on)
+        {
+            ApplyChannel(true);
+            return;
+        }
+
+        // Revert until user confirms leave-beta dialog.
+        _betaUiReady = false;
+        BetaToggle.IsOn = true;
+        _betaUiReady = true;
+
+        if (XamlRoot is null) return;
+        var dialog = new ContentDialog
+        {
+            Title = Strings.SettingsBetaOffTitle,
+            Content = Strings.SettingsBetaOffBody,
+            PrimaryButtonText = Strings.SettingsBetaOffOk,
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = XamlRoot,
+        };
+        await dialog.ShowAsync();
+        _betaUiReady = false;
+        BetaToggle.IsOn = false;
+        _betaUiReady = true;
+        ApplyChannel(false);
+    }
+
+    private void ApplyChannel(bool preferBeta)
+    {
+        UpdateChannelStore.Set(preferBeta);
+        AppServices.Update.ClearPendingUpdate();
+        _ = AppServices.Update.CheckAndDownloadAsync();
     }
 
     private void OnExpand(object sender, RoutedEventArgs e)

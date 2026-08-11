@@ -56,8 +56,8 @@ public sealed partial class ServiceMenuPage : OverlayPage
     private async Task ReloadLatestVersionAsync()
     {
         LatestVersionRow.Value = "…";
-        var latest = await WindowsReleaseApi.FetchLatestVersionAsync();
-        LatestVersionRow.Value = latest ?? "—";
+        var release = await WindowsReleaseApi.FetchAsync(UpdateChannelStore.PreferBeta);
+        LatestVersionRow.Value = release?.Version ?? "—";
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)

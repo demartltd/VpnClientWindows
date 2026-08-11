@@ -32,7 +32,9 @@ src/DemarVpn/
 │   └── ServerRow.xaml             # флаг + listTitle/subtitle + reachability dot
 ├── Services/
 │   ├── AppPackageInfo.cs
-│   ├── AppUpdateService.cs        # check API version + download Updater.exe
+│   ├── AppUpdateService.cs        # fastapi version+sha256, download /windows/download|beta
+│   ├── WindowsReleaseApi.cs       # GET /windows/version (+ beta channel pick)
+│   ├── UpdateChannelStore.cs      # prefer_beta prefs
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi (POST vpn.example.invalid/vpn/servers → hy2)
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
@@ -59,6 +61,7 @@ tests/DemarVpn.Tests/
 ├── VpnPipelineTest.cs
 ├── UplinkProbeTest.cs
 ├── AppLogTest.cs
+├── AppUpdateTest.cs             # version parse + SHA256 + beta channel
 └── LegalDocumentTest.cs         # ToS/PP URLs + RawTextFetcher.Decode
 ```
 

@@ -8,6 +8,21 @@
     <ScrollViewer Padding="{StaticResource OverlayBodyPadding}">
       <StackPanel Spacing="12">
         <Border Style="{StaticResource DemarCard}">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="4" VerticalAlignment="Center">
+              <TextBlock x:Name="BetaTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock x:Name="BetaSub" Opacity="0.7" TextWrapping="Wrap" />
+            </StackPanel>
+            <ToggleSwitch x:Name="BetaToggle" Grid.Column="1" VerticalAlignment="Center"
+                          MinWidth="0" OnContent="" OffContent=""
+                          Toggled="OnBetaToggled" />
+          </Grid>
+        </Border>
+        <Border Style="{StaticResource DemarCard}">
           <StackPanel Spacing="8">
             <TextBlock Text="Журнал" FontWeight="SemiBold" />
             <TextBlock Text="Сообщения приложения и ядра VPN" Opacity="0.7" TextWrapping="Wrap" />

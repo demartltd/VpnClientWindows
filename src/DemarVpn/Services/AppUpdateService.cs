@@ -1,5 +1,8 @@
 using System.Diagnostics;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using DemarVpn.Services.Auth;
 
 namespace DemarVpn.Services;
 
@@ -12,25 +15,22 @@ public enum AppUpdateState
     Applying,
 }
 
-/// <summary>Checks API version, downloads Updater.exe, applies silent update.</summary>
+/// <summary>Checks fastapi version + sha256, downloads Updater from fastapi only, applies silent update.</summary>
 public sealed class AppUpdateService : NotifyBase
 {
-    public const string UpdaterUrl = "https://vpn.demar.cc/Updater.exe";
-
     static readonly HttpClient Http = CreateHttp();
 
     static string UpdateDir =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "DemarVpn", "update");
 
-    static string UpdaterPath => Path.Combine(UpdateDir, "Updater.exe");
-    static string PartialPath => Path.Combine(UpdateDir, "Updater.exe.partial");
     static string PendingPath =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "DemarVpn", "pending_update");
 
     int _downloadInFlight;
     CancellationTokenSource? _loopCts;
+    WindowsRelease? _release;
 
     AppUpdateState _state = AppUpdateState.Idle;
     int _progressPercent;
@@ -54,6 +54,10 @@ public sealed class AppUpdateService : NotifyBase
         private set => Set(ref _latestVersion, value);
     }
 
+    string TargetPath(WindowsRelease r) => Path.Combine(UpdateDir, r.Asset);
+    static string StampPath(string target) => target + ".sha256";
+    static string PartialPath(string target) => target + ".partial";
+
     public bool TryApplyPending()
     {
         try
@@ -63,7 +67,7 @@ public sealed class AppUpdateService : NotifyBase
             var exe = lines.ElementAtOrDefault(0)?.Trim();
             if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe))
             {
-                ClearPending();
+                ClearPendingFile();
                 return false;
             }
 
@@ -92,6 +96,14 @@ public sealed class AppUpdateService : NotifyBase
         _loopCts = null;
     }
 
+    /// <summary>Reset state (unless downloading) after channel toggle.</summary>
+    public void ClearPendingUpdate()
+    {
+        if (State != AppUpdateState.Downloading)
+            State = AppUpdateState.Idle;
+        ClearPendingFile();
+    }
+
     async Task RunPeriodicAsync(CancellationToken ct)
     {
         await CheckAndDownloadAsync(ct);
@@ -108,10 +120,10 @@ public sealed class AppUpdateService : NotifyBase
     {
         if (State is AppUpdateState.Downloading or AppUpdateState.Applying) return;
 
-        string? latest;
+        WindowsRelease? release;
         try
         {
-            latest = await WindowsReleaseApi.FetchLatestVersionAsync(ct);
+            release = await WindowsReleaseApi.FetchAsync(UpdateChannelStore.PreferBeta, ct);
         }
         catch (Exception ex)
         {
@@ -119,21 +131,28 @@ public sealed class AppUpdateService : NotifyBase
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(latest) || !IsNewer(latest, Strings.VersionName))
+        if (release is null || !IsNewer(release.Version, Strings.VersionName))
+        {
+            ClearCache(keepAsset: null);
+            State = AppUpdateState.Idle;
             return;
+        }
 
-        if (State == AppUpdateState.Ready
-            && string.Equals(LatestVersion, latest, StringComparison.OrdinalIgnoreCase)
-            && File.Exists(UpdaterPath))
+        _release = release;
+        LatestVersion = release.Version;
+
+        if (CachedFile(release) is { })
+        {
+            State = AppUpdateState.Ready;
             return;
+        }
 
-        LatestVersion = latest;
         State = AppUpdateState.Available;
 
         if (Interlocked.Exchange(ref _downloadInFlight, 1) == 1) return;
         try
         {
-            await DownloadAsync(latest, ct);
+            await DownloadAsync(release, ct);
         }
         finally
         {
@@ -141,40 +160,83 @@ public sealed class AppUpdateService : NotifyBase
         }
     }
 
-    async Task DownloadAsync(string version, CancellationToken ct)
+    async Task DownloadAsync(WindowsRelease release, CancellationToken ct)
     {
         State = AppUpdateState.Downloading;
         ProgressPercent = 0;
+        var target = TargetPath(release);
+        var partial = PartialPath(target);
+        var stamp = StampPath(target);
         try
         {
             Directory.CreateDirectory(UpdateDir);
-            if (File.Exists(PartialPath)) File.Delete(PartialPath);
+            if (File.Exists(target) && CachedFile(release) is null)
+            {
+                TryDelete(target);
+                TryDelete(stamp);
+            }
 
-            using var response = await Http.GetAsync(UpdaterUrl, HttpCompletionOption.ResponseHeadersRead, ct);
-            response.EnsureSuccessStatusCode();
-            var total = response.Content.Headers.ContentLength ?? -1L;
+            var offset = File.Exists(partial) ? new FileInfo(partial).Length : 0L;
+            if (offset > 0) ProgressPercent = 1;
+
+            using var req = new HttpRequestMessage(HttpMethod.Get, release.DownloadUrl);
+            req.Headers.TryAddWithoutValidation("Accept", "application/octet-stream,*/*");
+            if (offset > 0) req.Headers.Range = new RangeHeaderValue(offset, null);
+
+            using var response = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+            var code = (int)response.StatusCode;
+            if (code == 206)
+            {
+                // resume
+            }
+            else if (response.IsSuccessStatusCode)
+            {
+                offset = 0L;
+                TryDelete(partial);
+            }
+            else
+            {
+                throw new HttpRequestException($"HTTP {code}");
+            }
+
+            var total = ContentTotal(response, offset);
 
             await using (var input = await response.Content.ReadAsStreamAsync(ct))
-            await using (var output = new FileStream(PartialPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true))
+            await using (var output = new FileStream(partial, offset > 0 ? FileMode.Append : FileMode.Create,
+                           FileAccess.Write, FileShare.None, 81920, true))
             {
                 var buffer = new byte[81920];
-                long read = 0;
+                long read = offset;
                 int n;
                 while ((n = await input.ReadAsync(buffer.AsMemory(0, buffer.Length), ct)) > 0)
                 {
                     await output.WriteAsync(buffer.AsMemory(0, n), ct);
                     read += n;
                     if (total > 0)
-                        ProgressPercent = (int)Math.Clamp(read * 100 / total, 0, 100);
+                        ProgressPercent = (int)Math.Clamp(read * 100 / total, 0, 99);
                 }
             }
 
-            if (File.Exists(UpdaterPath)) File.Delete(UpdaterPath);
-            File.Move(PartialPath, UpdaterPath);
+            if (!string.Equals(await Sha256FileAsync(partial, ct), release.Sha256, StringComparison.Ordinal))
+            {
+                TryDelete(partial);
+                TryDelete(target);
+                TryDelete(stamp);
+                AppLog.Append("update: sha256 mismatch");
+                AppServices.Snackbar.ShowError(Strings.UpdateHashMismatch);
+                State = AppUpdateState.Idle;
+                ProgressPercent = 0;
+                return;
+            }
+
+            TryDelete(target);
+            File.Move(partial, target);
+            await File.WriteAllTextAsync(stamp, release.Sha256, ct);
             ProgressPercent = 100;
-            LatestVersion = version;
+            LatestVersion = release.Version;
+            _release = release;
             State = AppUpdateState.Ready;
-            AppLog.Append($"update: downloaded {version}");
+            AppLog.Append($"update: ready {release.Version}");
         }
         catch (OperationCanceledException)
         {
@@ -183,22 +245,85 @@ public sealed class AppUpdateService : NotifyBase
         }
         catch (Exception ex)
         {
+            // Keep .partial for resume.
             AppLog.Append($"update: download failed — {ex.Message}");
-            TryDelete(PartialPath);
+            AppServices.Snackbar.ShowError(Strings.UpdateDownloadFail);
             State = AppUpdateState.Idle;
             ProgressPercent = 0;
         }
     }
 
+    string? CachedFile(WindowsRelease release)
+    {
+        var target = TargetPath(release);
+        var stamp = StampPath(target);
+        if (!File.Exists(target) || !File.Exists(stamp)) return null;
+        try
+        {
+            var stamped = File.ReadAllText(stamp).Trim().ToLowerInvariant();
+            return stamped == release.Sha256 ? target : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    void ClearCache(string? keepAsset)
+    {
+        try
+        {
+            if (!Directory.Exists(UpdateDir)) return;
+            foreach (var f in Directory.EnumerateFiles(UpdateDir))
+            {
+                var name = Path.GetFileName(f);
+                if (keepAsset is not null && name.StartsWith(keepAsset, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                TryDelete(f);
+            }
+        }
+        catch { /* ignore */ }
+    }
+
+    static long ContentTotal(HttpResponseMessage response, long offset)
+    {
+        if (response.StatusCode == System.Net.HttpStatusCode.PartialContent)
+        {
+            var range = response.Content.Headers.ContentRange;
+            if (range?.HasLength == true && range.Length is > 0) return range.Length.Value;
+            var len = response.Content.Headers.ContentLength ?? -1L;
+            return len > 0 ? offset + len : -1L;
+        }
+        return response.Content.Headers.ContentLength ?? -1L;
+    }
+
+    public static async Task<string> Sha256FileAsync(string path, CancellationToken ct = default)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, true);
+        var hash = await SHA256.HashDataAsync(stream, ct);
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
     public void ScheduleNextLaunch()
     {
-        if (!File.Exists(UpdaterPath)) return;
+        var path = _release is not null ? TargetPath(_release) : null;
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
         Directory.CreateDirectory(Path.GetDirectoryName(PendingPath)!);
-        File.WriteAllText(PendingPath, $"{UpdaterPath}\n{LatestVersion ?? ""}\n");
+        File.WriteAllText(PendingPath, $"{path}\n{LatestVersion ?? ""}\n");
         AppLog.Append($"update: scheduled for next launch ({LatestVersion})");
     }
 
-    public bool ApplyNow() => Apply(UpdaterPath);
+    public bool ApplyNow()
+    {
+        var path = _release is not null ? TargetPath(_release) : null;
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
+        {
+            path = Directory.Exists(UpdateDir)
+                ? Directory.EnumerateFiles(UpdateDir, "*.exe").FirstOrDefault()
+                : null;
+        }
+        return path is not null && Apply(path);
+    }
 
     bool Apply(string exePath)
     {
@@ -211,7 +336,7 @@ public sealed class AppUpdateService : NotifyBase
         try
         {
             State = AppUpdateState.Applying;
-            ClearPending();
+            ClearPendingFile();
             Process.Start(new ProcessStartInfo
             {
                 FileName = exePath,
@@ -230,32 +355,9 @@ public sealed class AppUpdateService : NotifyBase
         }
     }
 
-    public static bool IsNewer(string latest, string local)
-    {
-        if (!TryParseVersion(latest, out var remote)) return false;
-        if (!TryParseVersion(local, out var current)) return true;
-        return remote > current;
-    }
+    public static bool IsNewer(string latest, string local) => WindowsReleaseApi.IsNewer(latest, local);
 
-    static bool TryParseVersion(string raw, out Version version)
-    {
-        version = new Version(0, 0);
-        var s = raw.Trim().TrimStart('v', 'V');
-        if (string.IsNullOrWhiteSpace(s)) return false;
-        // Version needs at least Major.Minor
-        var parts = s.Split('.');
-        if (parts.Length == 1 && int.TryParse(parts[0], out var major))
-        {
-            version = new Version(major, 0);
-            return true;
-        }
-        return Version.TryParse(s, out version!);
-    }
-
-    static void ClearPending()
-    {
-        TryDelete(PendingPath);
-    }
+    static void ClearPendingFile() => TryDelete(PendingPath);
 
     static void TryDelete(string path)
     {
@@ -269,6 +371,9 @@ public sealed class AppUpdateService : NotifyBase
     static HttpClient CreateHttp()
     {
         var handler = new HttpClientHandler { AutomaticDecompression = System.Net.DecompressionMethods.All };
-        return new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(30) };
+        var client = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(30) };
+        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Demar-Client", DemarHttp.ClientId);
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", DemarHttp.UserAgent);
+        return client;
     }
 }

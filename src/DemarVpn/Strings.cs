@@ -25,6 +25,11 @@ public static class Strings
     public const string SettingsPrivacy = "Конфиденциальность";
     public const string SettingsPrivacySub = "Как обрабатываются данные";
     public const string AppSettingsTitle = "Настройки приложения";
+    public const string SettingsBeta = "Устанавливать бета-версии";
+    public const string SettingsBetaSub = "Получать предварительные обновления, если они есть";
+    public const string SettingsBetaOffTitle = "Отключение бета-канала";
+    public const string SettingsBetaOffBody = "Если установлена бета новее стабильной, приложение останется на текущей версии до выхода более новой стабильной — она установится автоматически.";
+    public const string SettingsBetaOffOk = "Понятно";
     public const string JournalTitle = "Журнал";
     public const string JournalSubtitle = "Сообщения приложения и ядра VPN";
     public const string JournalEmpty = "Пока пусто";
@@ -91,6 +96,7 @@ public static class Strings
     public const string UpdateNow = "Обновить сейчас";
     public const string UpdateNextLaunch = "При следующем запуске";
     public const string UpdateDownloadFail = "Не удалось скачать обновление";
+    public const string UpdateHashMismatch = "Файл обновления повреждён (SHA-256). Попробуйте снова.";
     public const string UpdateDownloading = "Загрузка";
-    public const string VersionName = "1.0.12";
+    public const string VersionName = "1.0.13";
 }
