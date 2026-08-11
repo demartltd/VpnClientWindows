@@ -27,6 +27,13 @@
     <Setter Property="HorizontalAlignment" Value="Center" />
   </Style>
 
+  <Style x:Key="OverlayTitleStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
   <Style x:Key="DemarTextBoxStyle" TargetType="TextBox">
     <Setter Property="Background" Value="{StaticResource DemarSurfaceHighBrush}" />
     <Setter Property="BorderBrush" Value="{StaticResource DemarOutlineVariantBrush}" />

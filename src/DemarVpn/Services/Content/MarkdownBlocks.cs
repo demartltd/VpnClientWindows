@@ -93,24 +93,22 @@ public static class MarkdownBlocks
             Margin = new Thickness(0, 4, 0, 12),
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
-        var colCount = Math.Max(1, table.ColumnDefinitions.Count);
+        var rows = table.OfType<TableRow>().ToArray();
+        var colCount = rows.Length == 0
+            ? 1
+            : Math.Max(1, rows.Max(row =>
+                row.OfType<TableCell>().Sum(cell => Math.Max(1, cell.ColumnSpan))));
         for (var c = 0; c < colCount; c++)
-        {
-            var last = c == colCount - 1;
-            grid.ColumnDefinitions.Add(new ColumnDefinition
-            {
-                Width = last ? new GridLength(1, GridUnitType.Star) : GridLength.Auto,
-                MaxWidth = last ? double.PositiveInfinity : 240,
-            });
-        }
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
         var r = 0;
-        foreach (var row in table.OfType<TableRow>())
+        foreach (var row in rows)
         {
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             var c = 0;
             foreach (var cell in row.OfType<TableCell>())
             {
+                var span = Math.Max(1, cell.ColumnSpan);
                 var border = new Border
                 {
                     BorderBrush = (Brush)Application.Current.Resources["DemarOutlineVariantBrush"],
@@ -127,7 +125,7 @@ public static class MarkdownBlocks
                     if (el is RichTextBlock rtb)
                     {
                         rtb.FontSize = 12;
-                        rtb.TextWrapping = TextWrapping.WrapWholeWords;
+                        rtb.TextWrapping = TextWrapping.Wrap;
                         rtb.Margin = new Thickness(0);
                     }
                     cellPanel.Children.Add(el);
@@ -135,8 +133,9 @@ public static class MarkdownBlocks
                 border.Child = cellPanel;
                 Grid.SetRow(border, r);
                 Grid.SetColumn(border, c);
+                if (span > 1) Grid.SetColumnSpan(border, span);
                 grid.Children.Add(border);
-                c++;
+                c += span;
             }
             r++;
         }

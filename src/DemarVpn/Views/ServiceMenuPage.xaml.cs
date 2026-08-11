@@ -21,7 +21,7 @@ public sealed partial class ServiceMenuPage : OverlayPage
     public ServiceMenuPage()
     {
         InitializeComponent();
-        TitleBlock.Text = Strings.ServiceMenuTitle;
+        Chrome.Title = Strings.ServiceMenuTitle;
         AboutHeader.Text = Strings.ServiceAbout;
         InternetHeader.Text = Strings.ServiceInternet;
         DeviceHeader.Text = Strings.ServiceDevice;
@@ -145,7 +145,6 @@ public sealed partial class ServiceMenuPage : OverlayPage
         _spinStoryboard.Begin();
     }
 
-    private void OnBack(object sender, RoutedEventArgs e) => GoBack();
     private void OnEgressRefresh(object sender, RoutedEventArgs e) => _ = ReloadEgressAsync();
 
     private async void OnRestartCore(object sender, RoutedEventArgs e)

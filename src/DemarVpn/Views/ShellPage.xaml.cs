@@ -107,7 +107,7 @@ public sealed partial class ShellPage : Page
 
 public abstract class OverlayPage : Page
 {
-    protected void GoBack()
+    internal void GoBack()
     {
         if (Frame?.Parent is FrameworkElement grid &&
             grid.Parent is ShellPage shell)

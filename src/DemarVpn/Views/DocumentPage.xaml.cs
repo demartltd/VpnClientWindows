@@ -20,7 +20,7 @@ public sealed partial class DocumentPage : OverlayPage
             GoBack();
             return;
         }
-        TitleBlock.Text = doc.Title();
+        Chrome.Title = doc.Title();
         _cts = new CancellationTokenSource();
         _ = LoadLoopAsync(doc, _cts.Token);
     }
@@ -72,6 +72,4 @@ public sealed partial class DocumentPage : OverlayPage
         LoadingRing.Visibility = Visibility.Collapsed;
         ContentScroll.Visibility = Visibility.Visible;
     }
-
-    private void OnBack(object sender, RoutedEventArgs e) => GoBack();
 }

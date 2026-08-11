@@ -22,6 +22,7 @@ src/DemarVpn/
 │   └── ServiceMenuPage.xaml
 ├── Controls/
 │   ├── FloatingToolbar.xaml
+│   ├── OverlayChrome.xaml         # overlay ← + title + body slot
 │   ├── DemarSnackbarHost.xaml
 │   ├── IconLinkChip.xaml
 │   ├── DemarKvRow.xaml             # key/value row (service menu)

@@ -11,12 +11,11 @@ public sealed partial class AppSettingsPage : OverlayPage
     public AppSettingsPage()
     {
         InitializeComponent();
+        Chrome.Title = Strings.AppSettingsTitle;
         AppLog.Changed += () => DispatcherQueue.TryEnqueue(RefreshJournal);
         RefreshJournal();
         UpdateExpandLabel();
     }
-
-    private void OnBack(object sender, RoutedEventArgs e) => GoBack();
 
     private void OnExpand(object sender, RoutedEventArgs e)
     {

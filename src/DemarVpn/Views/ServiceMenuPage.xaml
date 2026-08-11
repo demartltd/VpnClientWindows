@@ -6,21 +6,8 @@
     xmlns:controls="using:DemarVpn.Controls"
     Loaded="OnLoaded"
     Unloaded="OnUnloaded">
-  <Grid>
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto" />
-      <RowDefinition Height="*" />
-    </Grid.RowDefinitions>
-    <Grid Padding="8">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto" />
-        <ColumnDefinition Width="*" />
-      </Grid.ColumnDefinitions>
-      <Button Click="OnBack" Content="←" />
-      <TextBlock x:Name="TitleBlock" Grid.Column="1"
-                 VerticalAlignment="Center" FontSize="20" FontWeight="SemiBold" />
-    </Grid>
-    <ScrollViewer Grid.Row="1" Padding="16">
+  <controls:OverlayChrome x:Name="Chrome">
+    <ScrollViewer Padding="{StaticResource OverlayBodyPadding}">
       <StackPanel Spacing="12">
         <Border Style="{StaticResource DemarCard}">
           <StackPanel Spacing="8">
@@ -78,5 +65,5 @@
         </Border>
       </StackPanel>
     </ScrollViewer>
-  </Grid>
+  </controls:OverlayChrome>
 </local:OverlayPage>

@@ -39,5 +39,8 @@
   <Thickness x:Key="ToolbarSnackbarMargin">16,0,16,104</Thickness>
   <Thickness x:Key="SnackbarOverlayMargin">16,0,16,16</Thickness>
   <Thickness x:Key="TabScrollPadding">16,8,16,0</Thickness>
+  <Thickness x:Key="OverlayHeaderPadding">8</Thickness>
+  <x:Double x:Key="OverlayHeaderColumnSpacing">8</x:Double>
+  <Thickness x:Key="OverlayBodyPadding">16</Thickness>
   <FontFamily x:Key="FaBrandsFont">ms-appx:///Assets/Fonts/fa-brands-400.ttf#Font Awesome 6 Brands</FontFamily>
 </ResourceDictionary>
