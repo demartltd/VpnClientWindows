@@ -65,6 +65,21 @@ public static class AuthSessionStore
         }
     }
 
+    public static void UpdateVpnProfile(string? vpnSubscription, string? vpnExpiresAt)
+    {
+        lock (Gate)
+        {
+            if (_session is null) return;
+            _session = _session with { VpnSubscription = vpnSubscription, VpnExpiresAt = vpnExpiresAt };
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+                File.WriteAllText(FilePath, JsonSerializer.Serialize(_session));
+            }
+            catch { /* ignore */ }
+        }
+    }
+
     public static void Clear()
     {
         lock (Gate)

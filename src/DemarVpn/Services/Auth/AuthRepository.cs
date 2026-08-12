@@ -74,6 +74,9 @@ public static class AuthRepository
         ClearLocal();
     }
 
+    public static void UpdateVpnProfile(string? vpnSubscription, string? vpnExpiresAt) =>
+        AuthSessionStore.UpdateVpnProfile(vpnSubscription, vpnExpiresAt);
+
     public static void ClearLocal()
     {
         AuthSessionStore.Clear();

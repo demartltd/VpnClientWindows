@@ -20,7 +20,7 @@
         <ColumnDefinition Width="*" />
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
-      <Border Grid.Column="0" Width="40" Height="40" VerticalAlignment="Center"
+      <Border x:Name="IconWell" Grid.Column="0" Width="40" Height="40" VerticalAlignment="Center"
               Background="{StaticResource DemarPrimaryMutedBrush}" CornerRadius="8">
         <FontIcon x:Name="Icon" FontSize="24" Foreground="{StaticResource DemarPrimaryBrush}"
                   HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -28,6 +28,8 @@
       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
         <TextBlock x:Name="TitleBlock" FontWeight="SemiBold" />
         <TextBlock x:Name="SubtitleBlock" Opacity="0.7" TextWrapping="Wrap" />
+        <ProgressBar x:Name="UsageBar" Height="4" Minimum="0" Maximum="100" Visibility="Collapsed"
+                     Margin="0,4,0,0" />
       </StackPanel>
       <FontIcon Grid.Column="2" Glyph="&#xE76C;" FontSize="16" Opacity="0.7" VerticalAlignment="Center" />
     </Grid>

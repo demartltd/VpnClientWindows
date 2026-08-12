@@ -1,4 +1,5 @@
 using DemarVpn.Models;
+using DemarVpn.Services.Account;
 using DemarVpn.Services.Auth;
 using DemarVpn.Services.Vpn;
 
@@ -32,7 +33,11 @@ public static class AppServices
             var ok = await AuthRepository.RefreshSessionAsync();
             Auth.NotifyChanged();
             if (ok) await Vpn.RefreshServersAsync();
-            else await Vpn.OnSignedOutAsync();
+            else
+            {
+                AccountStore.Clear();
+                await Vpn.OnSignedOutAsync();
+            }
         }
         catch (Exception ex)
         {
@@ -43,6 +48,7 @@ public static class AppServices
     public static async Task SignOutFullyAsync()
     {
         await Auth.SignOutAsync();
+        AccountStore.Clear();
         await Vpn.OnSignedOutAsync();
     }
 

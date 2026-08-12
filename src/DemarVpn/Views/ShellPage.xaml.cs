@@ -1,5 +1,6 @@
 using DemarVpn.Controls;
 using DemarVpn.Services;
+using DemarVpn.Services.Account;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -20,6 +21,9 @@ public sealed partial class ShellPage : Page
         SettingsTab.DocumentsRequested += () => DocumentsSheet.Show();
         DocumentsSheet.DocumentSelected += doc => ShowOverlay(typeof(DocumentPage), doc);
         AccountTab.SignOutRequested += OnSignOutRequested;
+        AccountTab.NotifySheetRequested += () => NotifySheet.Show();
+        AccountTab.TrafficSheetRequested += () => TrafficSheet.Show();
+        AccountStore.Changed += OnAccountStoreChanged;
         LoginSheet.SignedIn += OnLoginSuccess;
         Loaded += (_, _) => UpdateToolbarLayout();
         SizeChanged += (_, _) => UpdateToolbarLayout();
@@ -47,6 +51,14 @@ public sealed partial class ShellPage : Page
         Snackbar.SetWideLayout(wide);
     }
 
+    private void OnAccountStoreChanged() =>
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            AccountTab.Refresh();
+            if (NotifySheet.Visibility == Visibility.Visible) NotifySheet.BindFromStore();
+            if (TrafficSheet.Visibility == Visibility.Visible) TrafficSheet.BindFromStore();
+        });
+
     private void OnTabChanged(object sender, SelectionChangedEventArgs e)
     {
         var index = Toolbar.SelectedIndex;
@@ -71,6 +83,8 @@ public sealed partial class ShellPage : Page
 
     private async void OnSignOutRequested()
     {
+        NotifySheet.Dismiss();
+        TrafficSheet.Dismiss();
         await AppServices.SignOutFullyAsync();
         AccountTab.Refresh();
         GoToTab(0);

@@ -28,7 +28,11 @@ src/DemarVpn/
 │   ├── DemarKvRow.xaml             # key/value row (service menu)
 │   ├── LoginBottomSheet.xaml      # email OTP / TOTP / Telegram OAuth
 │   ├── DocumentsBottomSheet.xaml  # Terms / Privacy picker
+│   ├── NotifyBottomSheet.xaml     # account notify toggles
+│   ├── TrafficBottomSheet.xaml    # monthly traffic pie
+│   ├── TrafficPieChart.xaml
 │   ├── DemarSegmentBar.xaml       # protocol/tier filter (drag-scrub)
+│   ├── SettingsActionButton.xaml
 │   └── ServerRow.xaml             # флаг + listTitle/subtitle + reachability dot
 ├── Services/
 │   ├── AppPackageInfo.cs
@@ -36,6 +40,7 @@ src/DemarVpn/
 │   ├── WindowsReleaseApi.cs       # GET /windows/version (+ beta channel pick)
 │   ├── UpdateChannelStore.cs      # prefer_beta prefs
 │   ├── RunAtStartup.cs            # logon Task Scheduler autostart (default ON)
+│   ├── Account/                   # VpnAccountApi, AccountStore (account/traffic/notify)
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi (POST vpn.example.invalid/vpn/servers → hy2)
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
@@ -64,6 +69,7 @@ tests/DemarVpn.Tests/
 ├── AppLogTest.cs
 ├── AppUpdateTest.cs             # version parse + SHA256 + beta channel
 ├── RunAtStartupTest.cs          # run_at_startup prefs (default ON)
+├── VpnAccountApiTest.cs         # account/traffic parse + pieSlices + formatBytes
 └── LegalDocumentTest.cs         # ToS/PP URLs + RawTextFetcher.Decode
 ```
 

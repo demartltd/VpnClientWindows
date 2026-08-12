@@ -169,7 +169,13 @@ public static class DemarHttp
         catch { return -1; }
     }
 
-    public static bool OptBool(JsonObject json, string key) =>
-        json.TryGetPropertyValue(key, out var n) && n is not null && n.GetValueKind() != JsonValueKind.Null
-        && n.GetValue<bool>();
+    public static bool OptBool(JsonObject json, string key) => OptBool(json, key, false);
+
+    public static bool OptBool(JsonObject json, string key, bool defaultValue)
+    {
+        if (!json.TryGetPropertyValue(key, out var n) || n is null || n.GetValueKind() == JsonValueKind.Null)
+            return defaultValue;
+        try { return n.GetValue<bool>(); }
+        catch { return defaultValue; }
+    }
 }

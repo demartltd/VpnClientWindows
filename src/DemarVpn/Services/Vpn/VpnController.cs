@@ -1,5 +1,6 @@
 using DemarVpn.Domain.Vpn;
 using DemarVpn.Models;
+using DemarVpn.Services.Account;
 using DemarVpn.Services.Auth;
 using DemarVpn.Services.Network;
 using DemarVpn.Services.Servers;
@@ -61,6 +62,7 @@ public sealed class VpnController : NotifyBase
         if (session is null)
         {
             ClearServers();
+            AccountStore.Clear();
             return;
         }
 
@@ -70,15 +72,19 @@ public sealed class VpnController : NotifyBase
         Raise(nameof(ServersError));
         try
         {
-            var result = await ServersApi.FetchServersAsync(session.UserId, session.LoginAt, ct);
+            var serversTask = ServersApi.FetchServersAsync(session.UserId, session.LoginAt, ct);
+            var accountTask = AccountStore.RefreshAsync(ct);
+            var result = await serversTask;
             ApplyServerList(result.Servers);
             AppLog.Append($"servers: loaded {result.Servers.Count} (sub={result.VpnSubscription})");
+            await accountTask;
             await RefreshServerReachabilityAsync(ct);
         }
         catch (AuthException e) when (e.IsSessionInvalid)
         {
             AuthRepository.ClearLocal();
             AppServices.Auth.NotifyChanged();
+            AccountStore.Clear();
             await OnSignedOutAsync();
             AppLog.Append("servers: session revoked");
         }

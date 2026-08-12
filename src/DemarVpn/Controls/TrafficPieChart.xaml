@@ -1,0 +1,20 @@
+<UserControl
+    x:Class="DemarVpn.Controls.TrafficPieChart"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <StackPanel Spacing="16" HorizontalAlignment="Stretch">
+    <Grid Width="200" Height="200" HorizontalAlignment="Center">
+      <Canvas x:Name="RingCanvas" Width="200" Height="200" />
+      <TextBlock x:Name="CenterLabel" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 FontWeight="SemiBold" FontSize="16" TextAlignment="Center" TextWrapping="Wrap"
+                 MaxWidth="120" />
+    </Grid>
+    <ItemsControl x:Name="LegendHost">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="3" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

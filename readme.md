@@ -54,7 +54,7 @@ pwsh scripts/for_builds/build_windows.ps1 -Fast
 | Home (VPN toggle)             | Hysteria2 connect/disconnect через `VpnController`                                                                                 |
 | Servers                       | SegmentBar протокол/тиры (drag), divider, `Country | TIER` + city, FAB refresh, reachability; Dev/Tester только если есть в списке |
 | Settings + social links       | FA6 brand icons (`IconLinkChip`); Documents sheet → ToS/PP с GitHub Markdown                                                       |
-| Account + login dialog        | Email OTP + TOTP + Telegram OAuth → `auth.example.invalid`                                                                                 |
+| Account + login + notify/traffic sheets | Email OTP + TOTP + Telegram OAuth → `auth.example.invalid`; Account: подписка / трафик pie / семья (stub) / уведомления / выход; `AccountStore` + `fastapi…/vpn/account|traffic|notify` |
 | App settings (журнал + beta + autostart)  | `AppLog` — до 512 строк; тоггл бета-канала; автозапуск при входе (Task Scheduler); обновления с `vpn.example.invalid` + SHA-256                       |
 | Service menu (3× tap version) | О приложении, Route, egress probes, device identity                                                                                |
 
