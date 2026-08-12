@@ -40,8 +40,8 @@ src/DemarVpn/
 │   ├── WindowsReleaseApi.cs       # GET /windows/version (+ beta channel pick)
 │   ├── UpdateChannelStore.cs      # prefer_beta prefs
 │   ├── RunAtStartup.cs            # logon Task Scheduler autostart (default ON)
-│   ├── Account/                   # VpnAccountApi, AccountStore (account/traffic/notify)
-│   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
+│   ├── Account/                   # VpnAccountApi, AccountStore (account/traffic/notify; refresh on start + servers)
+│   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp (CF edge dial)
 │   ├── Servers/                   # ServersApi (POST vpn.example.invalid/vpn/servers → hy2)
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
 │   ├── Vpn/                       # VpnController, SingBoxConfigBuilder, engines
@@ -70,6 +70,7 @@ tests/DemarVpn.Tests/
 ├── AppUpdateTest.cs             # version parse + SHA256 + beta channel
 ├── RunAtStartupTest.cs          # run_at_startup prefs (default ON)
 ├── VpnAccountApiTest.cs         # account/traffic parse + pieSlices + formatBytes
+├── DemarHttpTest.cs             # control-host CF dial surface
 └── LegalDocumentTest.cs         # ToS/PP URLs + RawTextFetcher.Decode
 ```
 

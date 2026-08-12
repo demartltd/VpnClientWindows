@@ -54,7 +54,7 @@ pwsh scripts/for_builds/build_windows.ps1 -Fast
 | Home (VPN toggle)             | Hysteria2 connect/disconnect через `VpnController`                                                                                 |
 | Servers                       | SegmentBar протокол/тиры (drag), divider, `Country | TIER` + city, FAB refresh, reachability; Dev/Tester только если есть в списке |
 | Settings + social links       | FA6 brand icons (`IconLinkChip`); Documents sheet → ToS/PP с GitHub Markdown                                                       |
-| Account + login + notify/traffic sheets | Email OTP + TOTP + Telegram OAuth → `auth.example.invalid`; Account: подписка / трафик pie / семья (stub) / уведомления / выход; `AccountStore` + `fastapi…/vpn/account|traffic|notify` |
+| Account + login + notify/traffic sheets | Email OTP + TOTP + Telegram OAuth → `auth.example.invalid`; Account: подписка / трафик pie / семья (stub) / уведомления / выход; `AccountStore` refresh при старте и при обновлении серверов (`fastapi…/vpn/account|traffic|notify`) |
 | App settings (журнал + beta + autostart)  | `AppLog` — до 512 строк; тоггл бета-канала; автозапуск при входе (Task Scheduler); обновления с `vpn.example.invalid` + SHA-256                       |
 | Service menu (3× tap version) | О приложении, Route, egress probes, device identity                                                                                |
 
@@ -63,7 +63,7 @@ VPN connect (Hysteria2) — **реализовано** (`SingBoxProcessEngine` +
 
 ### Auth
 
-Email OTP + TOTP (если включён) и Telegram OIDC через браузер → `demar://auth/callback`. Сессия в `%LOCALAPPDATA%\DemarVpn\demar_auth_session.json`; при старте — `session/check`, при отзыве — local sign-out. Выход: `POST /auth/mobile/session/logout` + stop VPN + очистка `last_profile_id`. Новый email: confirm «Создать новый?» → `purpose: register`. API: `POST /auth/mobile/`* + `X-Demar-Client` / UA `DemarVPN/… (windows)`.
+Email OTP + TOTP (если включён) и Telegram OIDC через браузер → `demar://auth/callback`. Сессия в `%LOCALAPPDATA%\DemarVpn\demar_auth_session.json`; при старте — `session/check`, при отзыве — local sign-out. Выход: `POST /auth/mobile/session/logout` + stop VPN + очистка `last_profile_id`. Новый email: confirm «Создать новый?» → `purpose: register`. API: `POST /auth/mobile/`* + `X-Demar-Client` / UA `DemarVPN/… (windows)`. Control-plane (`api` / `fastapi` / `account.example.invalid`) — dial через Cloudflare anycast (parity Android DPI bypass), SNI/Host исходные.
 
 ### Servers
 

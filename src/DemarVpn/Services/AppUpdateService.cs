@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -370,8 +371,12 @@ public sealed class AppUpdateService : NotifyBase
 
     static HttpClient CreateHttp()
     {
-        var handler = new HttpClientHandler { AutomaticDecompression = System.Net.DecompressionMethods.All };
-        var client = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(30) };
+        var client = new HttpClient(DemarHttp.CreateControlHandler(30_000))
+        {
+            Timeout = TimeSpan.FromMinutes(30),
+            DefaultRequestVersion = HttpVersion.Version11,
+            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
+        };
         client.DefaultRequestHeaders.TryAddWithoutValidation("X-Demar-Client", DemarHttp.ClientId);
         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", DemarHttp.UserAgent);
         return client;

@@ -21,6 +21,7 @@ public static class AccountStore
     {
         lock (Gate)
         {
+            _refreshGen++;
             _account = null;
             _traffic = null;
             _loading = false;
