@@ -11,7 +11,7 @@
 
 Платформа: **Windows only** (WinUI 3 + sing-box.exe subprocess).
 
-**Итерация:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine`). Auth — `auth.example.invalid`; servers — `vpn.example.invalid` (parity Android). Control-plane HTTP (`DemarHttp`) dials Cloudflare anycast for `api`/`fastapi`/`account.example.invalid` (DPI bypass; SNI/Host unchanged).
+**Итерация:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine`). Auth — `auth.example.invalid`; servers — `vpn.example.invalid` (parity Android).
 
 Connect pipeline: `UplinkIpv4` (retry) → DNS resolve success → config → subprocess → `VpnTunnelProbe.WaitForTunnelReadyAsync` (diag IP ×2 + TUN hostname ×1). Hysteria2 = QUIC/UDP — **без TCP preflight**.
 

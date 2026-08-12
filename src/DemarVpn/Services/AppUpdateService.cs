@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -16,7 +15,7 @@ public enum AppUpdateState
     Applying,
 }
 
-/// <summary>Checks fastapi version + sha256, downloads Updater from fastapi only, applies silent update.</summary>
+/// <summary>Checks fastapi version + sha256, downloads Updater from fastapi, applies silent update.</summary>
 public sealed class AppUpdateService : NotifyBase
 {
     static readonly HttpClient Http = CreateHttp();
@@ -177,81 +176,108 @@ public sealed class AppUpdateService : NotifyBase
                 TryDelete(stamp);
             }
 
-            var offset = File.Exists(partial) ? new FileInfo(partial).Length : 0L;
-            if (offset > 0) ProgressPercent = 1;
-
-            using var req = new HttpRequestMessage(HttpMethod.Get, release.DownloadUrl);
-            req.Headers.TryAddWithoutValidation("Accept", "application/octet-stream,*/*");
-            if (offset > 0) req.Headers.Range = new RangeHeaderValue(offset, null);
-
-            using var response = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
-            var code = (int)response.StatusCode;
-            if (code == 206)
-            {
-                // resume
-            }
-            else if (response.IsSuccessStatusCode)
-            {
-                offset = 0L;
+            // Drop empty leftovers from a stalled prior attempt.
+            if (File.Exists(partial) && new FileInfo(partial).Length == 0)
                 TryDelete(partial);
-            }
-            else
-            {
-                throw new HttpRequestException($"HTTP {code}");
-            }
 
-            var total = ContentTotal(response, offset);
-
-            await using (var input = await response.Content.ReadAsStreamAsync(ct))
-            await using (var output = new FileStream(partial, offset > 0 ? FileMode.Append : FileMode.Create,
-                           FileAccess.Write, FileShare.None, 81920, true))
+            Exception? last = null;
+            for (var attempt = 0; attempt < 3; attempt++)
             {
-                var buffer = new byte[81920];
-                long read = offset;
-                int n;
-                while ((n = await input.ReadAsync(buffer.AsMemory(0, buffer.Length), ct)) > 0)
+                try
                 {
-                    await output.WriteAsync(buffer.AsMemory(0, n), ct);
-                    read += n;
-                    if (total > 0)
-                        ProgressPercent = (int)Math.Clamp(read * 100 / total, 0, 99);
+                    await DownloadOnceAsync(release, target, partial, stamp, ct);
+                    return;
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+                catch (Exception ex)
+                {
+                    last = ex;
+                    AppLog.Append($"update: attempt {attempt + 1}/3 failed — {ex.Message}");
                 }
             }
 
-            if (!string.Equals(await Sha256FileAsync(partial, ct), release.Sha256, StringComparison.Ordinal))
-            {
-                TryDelete(partial);
-                TryDelete(target);
-                TryDelete(stamp);
-                AppLog.Append("update: sha256 mismatch");
-                AppServices.Snackbar.ShowError(Strings.UpdateHashMismatch);
-                State = AppUpdateState.Idle;
-                ProgressPercent = 0;
-                return;
-            }
-
-            TryDelete(target);
-            File.Move(partial, target);
-            await File.WriteAllTextAsync(stamp, release.Sha256, ct);
-            ProgressPercent = 100;
-            LatestVersion = release.Version;
-            _release = release;
-            State = AppUpdateState.Ready;
-            AppLog.Append($"update: ready {release.Version}");
+            AppLog.Append($"update: download failed — {last?.Message}");
+            AppServices.Snackbar.ShowError(Strings.UpdateDownloadFail);
+            State = AppUpdateState.Idle;
+            ProgressPercent = 0;
         }
         catch (OperationCanceledException)
         {
             State = AppUpdateState.Idle;
             throw;
         }
-        catch (Exception ex)
+    }
+
+    async Task DownloadOnceAsync(
+        WindowsRelease release, string target, string partial, string stamp, CancellationToken ct)
+    {
+        var offset = File.Exists(partial) ? new FileInfo(partial).Length : 0L;
+        if (offset > 0) ProgressPercent = Math.Max(ProgressPercent, 1);
+        AppLog.Append($"update: download {release.Version} offset={offset}");
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, release.DownloadUrl);
+        req.Headers.TryAddWithoutValidation("Accept", "application/octet-stream,*/*");
+        if (offset > 0) req.Headers.Range = new RangeHeaderValue(offset, null);
+
+        using var response = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+
+        var code = (int)response.StatusCode;
+        if (code == 206) { /* resume */ }
+        else if (response.IsSuccessStatusCode)
         {
-            // Keep .partial for resume.
-            AppLog.Append($"update: download failed — {ex.Message}");
-            AppServices.Snackbar.ShowError(Strings.UpdateDownloadFail);
+            offset = 0L;
+            TryDelete(partial);
+        }
+        else
+        {
+            throw new HttpRequestException($"HTTP {code}");
+        }
+
+        var total = ContentTotal(response, offset);
+        const int idleMs = 45_000;
+
+        await using (var input = await response.Content.ReadAsStreamAsync(ct))
+        await using (var output = new FileStream(partial, offset > 0 ? FileMode.Append : FileMode.Create,
+                       FileAccess.Write, FileShare.None, 81920, true))
+        {
+            var buffer = new byte[81920];
+            long read = offset;
+            using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            idleCts.CancelAfter(idleMs);
+            int n;
+            while ((n = await input.ReadAsync(buffer.AsMemory(0, buffer.Length), idleCts.Token)) > 0)
+            {
+                await output.WriteAsync(buffer.AsMemory(0, n), ct);
+                read += n;
+                idleCts.CancelAfter(idleMs);
+                if (total > 0)
+                    ProgressPercent = (int)Math.Clamp(read * 100 / total, 0, 99);
+            }
+
+            if (read <= offset)
+                throw new IOException("download stalled (0 bytes)");
+        }
+
+        if (!string.Equals(await Sha256FileAsync(partial, ct), release.Sha256, StringComparison.Ordinal))
+        {
+            TryDelete(partial);
+            TryDelete(target);
+            TryDelete(stamp);
+            AppLog.Append("update: sha256 mismatch");
+            AppServices.Snackbar.ShowError(Strings.UpdateHashMismatch);
             State = AppUpdateState.Idle;
             ProgressPercent = 0;
+            return;
         }
+
+        TryDelete(target);
+        File.Move(partial, target);
+        await File.WriteAllTextAsync(stamp, release.Sha256, ct);
+        ProgressPercent = 100;
+        LatestVersion = release.Version;
+        _release = release;
+        State = AppUpdateState.Ready;
+        AppLog.Append($"update: ready {release.Version}");
     }
 
     string? CachedFile(WindowsRelease release)
@@ -371,12 +397,8 @@ public sealed class AppUpdateService : NotifyBase
 
     static HttpClient CreateHttp()
     {
-        var client = new HttpClient(DemarHttp.CreateControlHandler(30_000))
-        {
-            Timeout = TimeSpan.FromMinutes(30),
-            DefaultRequestVersion = HttpVersion.Version11,
-            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
-        };
+        var handler = new HttpClientHandler { AutomaticDecompression = System.Net.DecompressionMethods.All };
+        var client = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(30) };
         client.DefaultRequestHeaders.TryAddWithoutValidation("X-Demar-Client", DemarHttp.ClientId);
         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", DemarHttp.UserAgent);
         return client;
