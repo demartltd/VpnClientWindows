@@ -77,8 +77,7 @@ public static class SocialLinks
         (SocialIcon.X, "https://x.com/demargames"),
         (SocialIcon.Bluesky, "https://bsky.app/profile/demargames.bsky.social"),
         (SocialIcon.Instagram, "https://www.instagram.com/demargames/"),
-        (SocialIcon.Facebook, "https://www.facebook.com/demargames/"),
-        (SocialIcon.Reddit, "https://reddit.com/r/demargames"),
+        (SocialIcon.TikTok, "https://www.tiktok.com/@demargames"),
         (SocialIcon.Telegram, "https://t.me/demargames"),
     ];
 }

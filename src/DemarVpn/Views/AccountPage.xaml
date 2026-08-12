@@ -5,11 +5,11 @@
     xmlns:controls="using:DemarVpn.Controls">
   <ScrollViewer Padding="{StaticResource TabScrollPadding}">
     <StackPanel Spacing="12" Padding="0,0,0,20">
-      <StackPanel HorizontalAlignment="Center" Spacing="8">
+      <StackPanel HorizontalAlignment="Center" Spacing="8" Margin="0,56,0,0">
         <FontIcon Glyph="&#xE77B;" FontSize="64" Foreground="{StaticResource DemarPrimaryBrush}"
                   HorizontalAlignment="Center" />
         <TextBlock x:Name="UserName" FontSize="24" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
-        <Button x:Name="UserIdButton" Background="Transparent" BorderThickness="0" Padding="8,4"
+        <Button x:Name="UserIdButton" Style="{StaticResource DemarQuietButtonStyle}"
                 HorizontalAlignment="Center" Click="OnCopyId">
           <TextBlock x:Name="UserIdText" Opacity="0.7" TextAlignment="Center" />
         </Button>

@@ -1,35 +1,29 @@
 using DemarVpn.Services.Account;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media.Animation;
 
 namespace DemarVpn.Controls;
 
 public sealed partial class TrafficBottomSheet : UserControl
 {
-    public TrafficBottomSheet() => InitializeComponent();
+    public TrafficBottomSheet()
+    {
+        InitializeComponent();
+        Chrome.Dismissed += () => Visibility = Visibility.Collapsed;
+    }
 
     public void Show()
     {
-        BindFromStore();
         Visibility = Visibility.Visible;
-        SheetSlide.Y = 420;
-        var anim = new DoubleAnimation
-        {
-            From = 420,
-            To = 0,
-            Duration = TimeSpan.FromMilliseconds(280),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-        };
-        Storyboard.SetTarget(anim, SheetSlide);
-        Storyboard.SetTargetProperty(anim, "Y");
-        var sb = new Storyboard();
-        sb.Children.Add(anim);
-        sb.Begin();
+        Chrome.Show();
+        BindFromStore();
     }
 
-    public void Dismiss() => Visibility = Visibility.Collapsed;
+    public void Dismiss()
+    {
+        Chrome.Dismiss();
+        Visibility = Visibility.Collapsed;
+    }
 
     public void BindFromStore()
     {
@@ -53,6 +47,4 @@ public sealed partial class TrafficBottomSheet : UserControl
         Pie.Visibility = Visibility.Visible;
         Pie.Bind(traffic.Servers, Strings.AccountTrafficOther, VpnAccountApi.FormatBytes(traffic.Total));
     }
-
-    private void OnScrimPressed(object sender, PointerRoutedEventArgs e) => Dismiss();
 }

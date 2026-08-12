@@ -9,10 +9,10 @@
                  FontWeight="SemiBold" FontSize="16" TextAlignment="Center" TextWrapping="Wrap"
                  MaxWidth="120" />
     </Grid>
-    <ItemsControl x:Name="LegendHost">
+    <ItemsControl x:Name="LegendHost" HorizontalAlignment="Center">
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
-          <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="3" />
+          <ItemsWrapGrid Orientation="Horizontal" HorizontalAlignment="Center" />
         </ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
     </ItemsControl>

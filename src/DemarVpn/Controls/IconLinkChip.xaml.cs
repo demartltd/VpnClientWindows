@@ -41,8 +41,7 @@ public sealed partial class IconLinkChip : UserControl
             SocialIcon.X => "\uE61B",
             SocialIcon.Bluesky => "\uE671",
             SocialIcon.Instagram => "\uF16D",
-            SocialIcon.Facebook => "\uF09A",
-            SocialIcon.Reddit => "\uF1A1",
+            SocialIcon.TikTok => "\uE07B",
             SocialIcon.Telegram => "\uF2C6",
             _ => string.Empty,
         };

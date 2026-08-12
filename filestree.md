@@ -23,8 +23,10 @@ src/DemarVpn/
 ├── Controls/
 │   ├── FloatingToolbar.xaml
 │   ├── OverlayChrome.xaml         # overlay ← + title + body slot
+│   ├── BottomSheetChrome.xaml     # scrim + handle + body slot (all sheets)
 │   ├── DemarSnackbarHost.xaml
 │   ├── IconLinkChip.xaml
+│   ├── DemarToggle.xaml           # compact ToggleSwitch (track only, right-aligned rows)
 │   ├── DemarKvRow.xaml             # key/value row (service menu)
 │   ├── LoginBottomSheet.xaml      # email OTP / TOTP / Telegram OAuth
 │   ├── DocumentsBottomSheet.xaml  # Terms / Privacy picker

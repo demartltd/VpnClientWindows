@@ -5,7 +5,6 @@ public enum SocialIcon
     X,
     Bluesky,
     Instagram,
-    Facebook,
-    Reddit,
+    TikTok,
     Telegram,
 }

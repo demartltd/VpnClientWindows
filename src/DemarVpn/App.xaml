@@ -9,6 +9,23 @@
         <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
         <ResourceDictionary Source="Theme/Styles.xaml" />
       </ResourceDictionary.MergedDictionaries>
+      <!-- Demar-tinted ToggleSwitch (Fluent default Off fill looks light on dark sheets). -->
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Default">
+          <StaticResource x:Key="ToggleSwitchFillOn" ResourceKey="DemarPrimaryBrush" />
+          <StaticResource x:Key="ToggleSwitchFillOnPointerOver" ResourceKey="DemarPrimaryBrush" />
+          <StaticResource x:Key="ToggleSwitchFillOnPressed" ResourceKey="DemarPrimaryBrush" />
+          <StaticResource x:Key="ToggleSwitchFillOnDisabled" ResourceKey="DemarPrimaryMutedBrush" />
+          <StaticResource x:Key="ToggleSwitchFillOff" ResourceKey="DemarOutlineVariantBrush" />
+          <StaticResource x:Key="ToggleSwitchFillOffPointerOver" ResourceKey="DemarOutlineBrush" />
+          <StaticResource x:Key="ToggleSwitchFillOffPressed" ResourceKey="DemarOutlineVariantBrush" />
+          <StaticResource x:Key="ToggleSwitchFillOffDisabled" ResourceKey="DemarSurfaceHighBrush" />
+          <StaticResource x:Key="ToggleSwitchKnobFillOn" ResourceKey="DemarBackgroundBrush" />
+          <StaticResource x:Key="ToggleSwitchKnobFillOff" ResourceKey="DemarSecondaryBrush" />
+          <StaticResource x:Key="ToggleSwitchKnobFillOnPointerOver" ResourceKey="DemarBackgroundBrush" />
+          <StaticResource x:Key="ToggleSwitchKnobFillOffPointerOver" ResourceKey="DemarSecondaryBrush" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
     </ResourceDictionary>
   </Application.Resources>
 </Application>

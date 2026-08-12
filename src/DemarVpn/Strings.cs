@@ -20,8 +20,10 @@ public static class Strings
     public const string AccountVpnUnknown = "—";
     public const string AccountNotifyTitle = "Уведомления";
     public const string AccountNotifySub = "Настройка уведомлений";
-    public const string AccountNotifyNews = "Новости и акции";
-    public const string AccountNotifyImportant = "Важные уведомления";
+    public const string AccountNotifyNews = "News";
+    public const string AccountNotifyNewsSub = "Product updates and announcements.";
+    public const string AccountNotifyImportant = "Important";
+    public const string AccountNotifyImportantSub = "Security alerts and critical account notices.";
     public const string AccountNotifyFailed = "Не удалось обновить уведомления";
     public const string AccountTrafficTitle = "Трафик за месяц";
     public const string AccountTrafficPreview = "{0} / {1} · {2}%";

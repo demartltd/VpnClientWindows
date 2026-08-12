@@ -3,8 +3,6 @@ using DemarVpn.Services.Account;
 using DemarVpn.Services.Auth;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media.Animation;
 
 namespace DemarVpn.Controls;
 
@@ -16,8 +14,11 @@ public sealed partial class NotifyBottomSheet : UserControl
     public NotifyBottomSheet()
     {
         InitializeComponent();
-        NewsLabel.Text = Strings.AccountNotifyNews;
-        ImportantLabel.Text = Strings.AccountNotifyImportant;
+        Chrome.Dismissed += () => Visibility = Visibility.Collapsed;
+        ImportantTitle.Text = Strings.AccountNotifyImportant;
+        ImportantSub.Text = Strings.AccountNotifyImportantSub;
+        NewsTitle.Text = Strings.AccountNotifyNews;
+        NewsSub.Text = Strings.AccountNotifyNewsSub;
         LoadingText.Text = Strings.Loading;
     }
 
@@ -25,22 +26,14 @@ public sealed partial class NotifyBottomSheet : UserControl
     {
         BindFromStore();
         Visibility = Visibility.Visible;
-        SheetSlide.Y = 320;
-        var anim = new DoubleAnimation
-        {
-            From = 320,
-            To = 0,
-            Duration = TimeSpan.FromMilliseconds(280),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-        };
-        Storyboard.SetTarget(anim, SheetSlide);
-        Storyboard.SetTargetProperty(anim, "Y");
-        var sb = new Storyboard();
-        sb.Children.Add(anim);
-        sb.Begin();
+        Chrome.Show();
     }
 
-    public void Dismiss() => Visibility = Visibility.Collapsed;
+    public void Dismiss()
+    {
+        Chrome.Dismiss();
+        Visibility = Visibility.Collapsed;
+    }
 
     public void BindFromStore()
     {
@@ -66,8 +59,6 @@ public sealed partial class NotifyBottomSheet : UserControl
         ImportantSwitch.IsEnabled = !_busy;
         _suppress = false;
     }
-
-    private void OnScrimPressed(object sender, PointerRoutedEventArgs e) => Dismiss();
 
     private async void OnNewsToggled(object sender, RoutedEventArgs e)
     {

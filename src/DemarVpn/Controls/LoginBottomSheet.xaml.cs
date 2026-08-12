@@ -2,8 +2,6 @@ using DemarVpn.Services.Auth;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media.Animation;
 
 namespace DemarVpn.Controls;
 
@@ -25,6 +23,11 @@ public sealed partial class LoginBottomSheet : UserControl
     public LoginBottomSheet()
     {
         InitializeComponent();
+        Chrome.Dismissed += () =>
+        {
+            Visibility = Visibility.Collapsed;
+            ResetSteps();
+        };
         TelegramChip.Icon = SocialIcon.Telegram;
         TelegramChip.Click += (_, _) => OpenTelegramOAuth();
     }
@@ -41,24 +44,13 @@ public sealed partial class LoginBottomSheet : UserControl
     {
         ResetSteps();
         Visibility = Visibility.Visible;
-        SheetSlide.Y = 400;
-        var anim = new DoubleAnimation
-        {
-            From = 400,
-            To = 0,
-            Duration = TimeSpan.FromMilliseconds(280),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-        };
-        Storyboard.SetTarget(anim, SheetSlide);
-        Storyboard.SetTargetProperty(anim, "Y");
-        var sb = new Storyboard();
-        sb.Children.Add(anim);
-        sb.Begin();
+        Chrome.Show();
         EmailBox.Focus(FocusState.Programmatic);
     }
 
     public void Dismiss()
     {
+        Chrome.Dismiss();
         Visibility = Visibility.Collapsed;
         ResetSteps();
     }
@@ -78,11 +70,6 @@ public sealed partial class LoginBottomSheet : UserControl
         TotpStep.Visibility = Visibility.Collapsed;
         VerifyOtp.Reset();
         TotpOtp.Reset();
-    }
-
-    private void OnScrimPressed(object sender, PointerRoutedEventArgs e)
-    {
-        if (!_busy) Dismiss();
     }
 
     private void OnEmailTextChanged(object sender, TextChangedEventArgs e)
@@ -246,6 +233,7 @@ public sealed partial class LoginBottomSheet : UserControl
     private void SetBusy(bool busy)
     {
         _busy = busy;
+        Chrome.BlockDismiss = busy;
         OnUi(() =>
         {
             BusyRing.IsActive = busy;

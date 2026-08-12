@@ -26,18 +26,6 @@ public sealed partial class TrafficPieChart : UserControl
         const double radius = (size - stroke) / 2;
         var center = new Point(size / 2, size / 2);
 
-        var track = new Ellipse
-        {
-            Width = radius * 2,
-            Height = radius * 2,
-            Stroke = TrackBrush(),
-            StrokeThickness = stroke,
-            Fill = null,
-        };
-        Canvas.SetLeft(track, (size - radius * 2) / 2);
-        Canvas.SetTop(track, (size - radius * 2) / 2);
-        RingCanvas.Children.Add(track);
-
         if (slices.Any(s => s.Bytes > 0))
         {
             var start = -90.0;
@@ -57,14 +45,13 @@ public sealed partial class TrafficPieChart : UserControl
     {
         var start = Polar(center, radius, startDeg);
         var end = Polar(center, radius, startDeg + sweepDeg);
-        var large = sweepDeg > 180;
         var fig = new PathFigure { StartPoint = start, IsClosed = false };
         fig.Segments.Add(new ArcSegment
         {
             Point = end,
             Size = new Size(radius, radius),
             SweepDirection = SweepDirection.Clockwise,
-            IsLargeArc = large,
+            IsLargeArc = sweepDeg > 180,
         });
         var geo = new PathGeometry();
         geo.Figures.Add(fig);
@@ -86,10 +73,16 @@ public sealed partial class TrafficPieChart : UserControl
 
     private static FrameworkElement LegendRow(Brush color, string name, string value)
     {
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 0, 16, 10) };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(8, 0, 8, 10) };
         row.Children.Add(new Ellipse { Width = 10, Height = 10, Fill = color, VerticalAlignment = VerticalAlignment.Center });
         var texts = new StackPanel();
-        texts.Children.Add(new TextBlock { Text = name, FontSize = 12 });
+        texts.Children.Add(new TextBlock
+        {
+            Text = name,
+            FontSize = 12,
+            MaxWidth = 120,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        });
         texts.Children.Add(new TextBlock { Text = value, FontSize = 11, Opacity = 0.7 });
         row.Children.Add(texts);
         return row;
@@ -115,6 +108,4 @@ public sealed partial class TrafficPieChart : UserControl
             Fade("DemarSecondaryBrush", 0x8C),
         ];
     }
-
-    private static Brush TrackBrush() => (Brush)Application.Current.Resources["DemarSurfaceHighBrush"];
 }

@@ -8,7 +8,7 @@
     <ScrollViewer Padding="{StaticResource OverlayBodyPadding}">
       <StackPanel Spacing="12">
         <Border Style="{StaticResource DemarCard}">
-          <Grid>
+          <Grid ColumnSpacing="12">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
@@ -17,13 +17,11 @@
               <TextBlock x:Name="StartupTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
               <TextBlock x:Name="StartupSub" Opacity="0.7" TextWrapping="Wrap" />
             </StackPanel>
-            <ToggleSwitch x:Name="StartupToggle" Grid.Column="1" VerticalAlignment="Center"
-                          MinWidth="0" OnContent="" OffContent=""
-                          Toggled="OnStartupToggled" />
+            <controls:DemarToggle x:Name="StartupToggle" Grid.Column="1" Toggled="OnStartupToggled" />
           </Grid>
         </Border>
         <Border Style="{StaticResource DemarCard}">
-          <Grid>
+          <Grid ColumnSpacing="12">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
@@ -32,9 +30,7 @@
               <TextBlock x:Name="BetaTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
               <TextBlock x:Name="BetaSub" Opacity="0.7" TextWrapping="Wrap" />
             </StackPanel>
-            <ToggleSwitch x:Name="BetaToggle" Grid.Column="1" VerticalAlignment="Center"
-                          MinWidth="0" OnContent="" OffContent=""
-                          Toggled="OnBetaToggled" />
+            <controls:DemarToggle x:Name="BetaToggle" Grid.Column="1" Toggled="OnBetaToggled" />
           </Grid>
         </Border>
         <Border Style="{StaticResource DemarCard}">

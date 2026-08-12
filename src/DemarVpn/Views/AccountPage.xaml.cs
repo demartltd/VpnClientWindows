@@ -136,7 +136,7 @@ public sealed partial class AccountPage : Page
         var n = Math.Abs(days) % 100;
         var n1 = n % 10;
         var unit = n is >= 11 and <= 14 ? "дней" : n1 == 1 ? "день" : n1 is >= 2 and <= 4 ? "дня" : "дней";
-        return $"через {days} {unit}";
+        return $"{days} {unit}";
     }
 
     private void BuildFamilySlots()
@@ -193,12 +193,12 @@ public sealed partial class AccountPage : Page
         {
             Title = Strings.SignOutConfirmTitle,
             Content = Strings.SignOutConfirmBody,
-            PrimaryButtonText = Strings.SignOut,
-            CloseButtonText = Strings.Cancel,
-            DefaultButton = ContentDialogButton.Close,
+            PrimaryButtonText = Strings.Cancel,
+            CloseButtonText = Strings.SignOut,
+            DefaultButton = ContentDialogButton.Primary,
             XamlRoot = XamlRoot,
         };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        if (await dialog.ShowAsync() != ContentDialogResult.None) return;
         _signingOut = true;
         Refresh();
         SignOutRequested?.Invoke();

@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <ScrollViewer Padding="{StaticResource TabScrollPadding}">
     <StackPanel>
-      <StackPanel HorizontalAlignment="Center" Spacing="8">
+      <StackPanel HorizontalAlignment="Center" Spacing="8" Margin="0,56,0,0">
         <FontIcon Glyph="&#xE705;" FontSize="64" Foreground="{StaticResource DemarPrimaryBrush}" HorizontalAlignment="Center" />
         <TextBlock Text="Demar VPN" Style="{StaticResource DemarTabTitleStyle}" />
         <TextBlock Text="Настройки подключения и приложения" TextAlignment="Center" Opacity="0.7" TextWrapping="Wrap" />

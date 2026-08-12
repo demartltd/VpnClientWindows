@@ -4,21 +4,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:DemarVpn.Controls"
     Visibility="Collapsed">
-  <Grid>
-    <Border Background="{StaticResource DemarScrimBrush}" PointerPressed="OnScrimPressed" />
-    <Border x:Name="Sheet" VerticalAlignment="Bottom"
-            Background="{StaticResource DemarBackgroundBrush}"
-            CornerRadius="28,28,0,0" RenderTransformOrigin="0.5,1">
-      <Border.RenderTransform>
-        <TranslateTransform x:Name="SheetSlide" Y="420" />
-      </Border.RenderTransform>
-      <StackPanel Padding="24,0,24,28" Spacing="12" HorizontalAlignment="Stretch">
-        <Border Width="36" Height="5" CornerRadius="2.5" Margin="0,20,0,8"
-                HorizontalAlignment="Center"
-                Background="{StaticResource DemarOutlineVariantBrush}" Opacity="0.6" />
-        <TextBlock x:Name="StatusText" Opacity="0.7" HorizontalAlignment="Center" Visibility="Collapsed" />
-        <controls:TrafficPieChart x:Name="Pie" Visibility="Collapsed" />
-      </StackPanel>
-    </Border>
-  </Grid>
+  <controls:BottomSheetChrome x:Name="Chrome">
+    <StackPanel Spacing="12" HorizontalAlignment="Stretch">
+      <TextBlock x:Name="StatusText" Opacity="0.7" HorizontalAlignment="Center" Visibility="Collapsed" />
+      <controls:TrafficPieChart x:Name="Pie" Visibility="Collapsed" />
+    </StackPanel>
+  </controls:BottomSheetChrome>
 </UserControl>
