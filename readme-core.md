@@ -154,7 +154,7 @@ Mixed `127.0.0.1:10808` (`SingBoxTags.diagInbound`):
 | `POST vpn.example.invalid/vpn/servers` | список hy2 по подписке; UI: SegmentBar + listTitle/`City #N` + DNS reachability |
 | `GET account.example.invalid/api/auth/client/me` | Telegram OAuth token |
 
-Headers: `X-Demar-Client: demar-vpn`, `User-Agent: DemarVPN/{ver} (windows)`. Protocol: `demar://auth/callback`.
+Headers: `X-Demar-Client: demar-vpn`, `User-Agent: DemarVPN/{ver} (windows)`. Protocol: `demarvpn://auth/callback`.
 
 ---
 

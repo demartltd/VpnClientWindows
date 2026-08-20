@@ -2,11 +2,13 @@ using Microsoft.Win32;
 
 namespace DemarVpn.Services;
 
-/// <summary>Registers demar:// and stages OAuth callback URI for single-instance handoff.</summary>
+/// <summary>Registers demarvpn:// and stages OAuth callback URI for single-instance handoff.</summary>
 public static class ProtocolRegistration
 {
-    const string Scheme = "demar";
+    public const string Scheme = DemarNavigation.Scheme;
+    const string LegacyScheme = "demar";
     static string KeyPath => $@"Software\Classes\{Scheme}";
+    static string LegacyKeyPath => $@"Software\Classes\{LegacyScheme}";
 
     public static string HandoffPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -25,9 +27,10 @@ public static class ProtocolRegistration
             using var icon = key.CreateSubKey("DefaultIcon");
             icon?.SetValue(null, $"\"{exe}\",0");
             using var cmd = key.CreateSubKey(@"shell\open\command");
-            // "%1" = full demar://… URI from browser handoff page
+            // "%1" = full demarvpn://… URI from browser handoff page
             cmd?.SetValue(null, $"\"{exe}\" \"%1\"");
-            AppLog.Append($"protocol: demar:// → {exe}");
+            DeleteKey(LegacyKeyPath);
+            AppLog.Append($"protocol: demarvpn:// → {exe}");
         }
         catch (Exception ex)
         {
@@ -37,7 +40,13 @@ public static class ProtocolRegistration
 
     public static void Unregister()
     {
-        try { Registry.CurrentUser.DeleteSubKeyTree(KeyPath, throwOnMissingSubKey: false); }
+        DeleteKey(KeyPath);
+        DeleteKey(LegacyKeyPath);
+    }
+
+    static void DeleteKey(string path)
+    {
+        try { Registry.CurrentUser.DeleteSubKeyTree(path, throwOnMissingSubKey: false); }
         catch { /* ignore */ }
     }
 
@@ -75,7 +84,7 @@ public static class ProtocolRegistration
         foreach (var arg in args)
         {
             var t = arg.Trim().Trim('"');
-            if (t.StartsWith("demar:", StringComparison.OrdinalIgnoreCase)
+            if (t.StartsWith($"{Scheme}:", StringComparison.OrdinalIgnoreCase)
                 && Uri.TryCreate(t, UriKind.Absolute, out var uri))
                 return uri;
         }

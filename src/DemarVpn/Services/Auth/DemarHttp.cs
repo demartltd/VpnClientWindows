@@ -100,7 +100,6 @@ public static class DemarHttp
             using var req = createRequest();
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
             linked.CancelAfter(ConnectTimeoutMs + ReadTimeoutMs);
-            AppLog.Append($"auth http: {req.Method} {req.RequestUri}");
             try
             {
                 using var res = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, linked.Token)
@@ -115,7 +114,6 @@ public static class DemarHttp
                     AppLog.Append($"auth http: {(int)res.StatusCode} {message} hint={hint}");
                     throw new AuthException(message, (int)res.StatusCode, retry > 0 ? retry : null, hint);
                 }
-                AppLog.Append($"auth http: {(int)res.StatusCode} ok");
                 return json;
             }
             catch (AuthException)

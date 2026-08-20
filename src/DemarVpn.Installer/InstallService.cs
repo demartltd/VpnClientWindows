@@ -268,12 +268,14 @@ public static class InstallService
     {
         try
         {
-            using var key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\demar");
+            using var key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\demarvpn");
             if (key is null) return;
             key.SetValue(null, "URL:Demar VPN");
             key.SetValue("URL Protocol", "");
             using var cmd = key.CreateSubKey(@"shell\open\command");
             cmd?.SetValue(null, $"\"{appExe}\" \"%1\"");
+            try { Registry.CurrentUser.DeleteSubKeyTree(@"Software\Classes\demar", throwOnMissingSubKey: false); }
+            catch { /* ignore */ }
         }
         catch { /* ignore */ }
     }
@@ -281,6 +283,8 @@ public static class InstallService
 
     static void UnregisterProtocol()
     {
+        try { Registry.CurrentUser.DeleteSubKeyTree(@"Software\Classes\demarvpn", throwOnMissingSubKey: false); }
+        catch { /* ignore */ }
         try { Registry.CurrentUser.DeleteSubKeyTree(@"Software\Classes\demar", throwOnMissingSubKey: false); }
         catch { /* ignore */ }
     }

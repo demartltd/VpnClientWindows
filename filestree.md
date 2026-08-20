@@ -58,7 +58,8 @@ src/DemarVpn/
 │   │   ├── PublicEgressDiagnostics.cs
 │   │   └── WindowsEgressRouteSnapshot.cs
 │   ├── AppLog.cs
-│   ├── ProtocolRegistration.cs    # demar:// HKCU
+│   ├── DemarNavigation.cs         # demarvpn:// auth + support deep links
+│   ├── ProtocolRegistration.cs    # demarvpn:// HKCU
 │   └── SnackbarService.cs
 ├── Models/
 ├── Assets/                        # AppIcon.ico, logos, BrandIcons.xaml, Flags/, singbox/
@@ -77,6 +78,7 @@ tests/DemarVpn.Tests/
 ├── RunAtStartupTest.cs          # run_at_startup prefs (default ON)
 ├── VpnAccountApiTest.cs         # account/traffic parse + promo + pieSlices + formatBytes
 ├── SupportApiTest.cs            # support ticket JSON parse / encode cache
+├── DemarNavigationTest.cs       # demarvpn:// auth + support deep links
 └── LegalDocumentTest.cs         # ToS/PP URLs + RawTextFetcher.Decode
 ```
 
@@ -88,7 +90,7 @@ src/DemarVpn.Installer/
 ├── App.xaml / App.xaml.cs
 ├── MainWindow.xaml / MainWindow.xaml.cs
 ├── InstallerMode.cs            # /silent /uninstall /launch /D=
-├── InstallService.cs           # install / uninstall / ARP / shortcut / demar://
+├── InstallService.cs           # install / uninstall / ARP / shortcut / demarvpn://
 ├── UninstallProgram.cs         # Native AOT Win32 Demar UI
 ├── app.manifest                # requireAdministrator
 └── Resources/                  # payload.zip + uninstall.exe — generated (gitignore)
