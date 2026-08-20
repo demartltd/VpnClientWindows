@@ -10,6 +10,10 @@ internal static class SingleInstance
     const string Key = "DemarVpn";
     const uint MbOkInfo = 0x40;
 
+    static string PidPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "DemarVpn", "instance.pid");
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     static extern int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
 
@@ -25,6 +29,10 @@ internal static class SingleInstance
             if (demarUri is not null)
                 ProtocolRegistration.WritePendingUri(demarUri);
 
+            // This process briefly owns FG (browser launched us) — unlock main instance.
+            if (TryReadOwnerPid(out var ownerPid))
+                WindowFocus.AllowForeground(ownerPid);
+
             instance.RedirectActivationToAsync(args).AsTask().GetAwaiter().GetResult();
             if (demarUri is null && !IsProtocolActivation(args))
                 MessageBoxW(IntPtr.Zero, Strings.AlreadyRunningMessage, Strings.AppName, MbOkInfo);
@@ -32,9 +40,34 @@ internal static class SingleInstance
             return false;
         }
 
+        WriteOwnerPid();
         if (onActivated != null)
             instance.Activated += (_, e) => onActivated(e);
         return true;
+    }
+
+    static void WriteOwnerPid()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(PidPath)!);
+            File.WriteAllText(PidPath, Environment.ProcessId.ToString());
+        }
+        catch { /* ignore */ }
+    }
+
+    static bool TryReadOwnerPid(out int pid)
+    {
+        pid = 0;
+        try
+        {
+            if (!File.Exists(PidPath)) return false;
+            return int.TryParse(File.ReadAllText(PidPath).Trim(), out pid) && pid > 0;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public static Uri? TryGetAuthUri(AppActivationArguments args)

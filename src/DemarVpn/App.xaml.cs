@@ -54,6 +54,7 @@ public partial class App : Application
         {
             _window?.AppWindow.Show(true);
             _window?.Activate();
+            WindowFocus.BringToFront(MainHwnd);
             var uri = SingleInstance.TryGetAuthUri(args)
                       ?? ProtocolRegistration.ConsumePendingUri();
             if (uri is not null && DemarNavigation.TryParseSupportRoute(uri, out var supportRoute))
