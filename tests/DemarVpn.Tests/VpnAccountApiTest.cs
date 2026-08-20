@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using DemarVpn;
 using DemarVpn.Services.Account;
 using Xunit;
 
@@ -69,5 +70,50 @@ public class VpnAccountApiTest
         Assert.Equal("512 B", VpnAccountApi.FormatBytes(512));
         Assert.Equal("1.5 KB", VpnAccountApi.FormatBytes(1536));
         Assert.Equal("1.0 MB", VpnAccountApi.FormatBytes(1024L * 1024));
+    }
+
+    [Fact]
+    public void ParsePromo_readsResultAndSubscription()
+    {
+        var json = JsonNode.Parse(
+            """
+            {
+              "result": "activated",
+              "message": "",
+              "subscription": "plus",
+              "expiresAt": "2026-12-31T00:00:00.000Z"
+            }
+            """) as JsonObject;
+        var promo = VpnAccountApi.ParsePromo(json!);
+        Assert.True(promo.IsActivated);
+        Assert.Equal("plus", promo.Subscription);
+        Assert.Equal("2026-12-31T00:00:00.000Z", promo.ExpiresAt);
+        Assert.Equal(Strings.PromoActivated, promo.LocalizedMessage);
+    }
+
+    [Fact]
+    public void ParsePromo_defaultsMissingResult()
+    {
+        var json = JsonNode.Parse("{}") as JsonObject;
+        var promo = VpnAccountApi.ParsePromo(json!);
+        Assert.False(promo.IsActivated);
+        Assert.Equal(Strings.PromoNotFound, promo.LocalizedMessage);
+    }
+
+    [Theory]
+    [InlineData("already_used")]
+    [InlineData("blocked_by_other")]
+    [InlineData("expired")]
+    public void ParsePromo_localizedMessages(string result)
+    {
+        var json = JsonNode.Parse($$"""{"result":"{{result}}","message":""}""") as JsonObject;
+        var expected = result switch
+        {
+            "already_used" => Strings.PromoAlreadyUsed,
+            "blocked_by_other" => Strings.PromoBlocked,
+            "expired" => Strings.PromoExpired,
+            _ => throw new ArgumentOutOfRangeException(nameof(result)),
+        };
+        Assert.Equal(expected, VpnAccountApi.ParsePromo(json!).LocalizedMessage);
     }
 }

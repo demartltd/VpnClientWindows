@@ -47,6 +47,16 @@ public static class Strings
     public const string SettingsFeedbackSub = "Отправить ошибку или предложение";
     public const string SettingsShare = "Пригласите друзей по ссылке";
     public const string SettingsShareSub = "Получите бесплатный премиум";
+    public const string SettingsPromo = "Промокод";
+    public const string SettingsPromoSub = "Активируйте промокод на подписку";
+    public const string PromoEnterTitle = "Введите промокод";
+    public const string PromoPlaceholder = "DEMARFREE";
+    public const string PromoActivate = "Активировать";
+    public const string PromoActivated = "Промокод активирован! Подписка применена.";
+    public const string PromoNotFound = "Промокод не найден.";
+    public const string PromoAlreadyUsed = "Промокод уже был использован.";
+    public const string PromoBlocked = "Вы не можете активировать этот промокод.";
+    public const string PromoExpired = "Срок действия промокода истёк.";
     public const string SettingsDocuments = "Документы";
     public const string SettingsDocumentsSub = "Условия использования и конфиденциальность";
     public const string SettingsTerms = "Условия использования";
@@ -129,5 +139,5 @@ public static class Strings
     public const string UpdateDownloadFail = "Не удалось скачать обновление";
     public const string UpdateHashMismatch = "Файл обновления повреждён (SHA-256). Попробуйте снова.";
     public const string UpdateDownloading = "Загрузка";
-    public const string VersionName = "1.0.14";
+    public const string VersionName = "1.0.16";
 }

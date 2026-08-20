@@ -16,3 +16,18 @@ public sealed record VpnTraffic(
     IReadOnlyList<VpnTrafficServer> Servers,
     long Total,
     long LimitBytes);
+
+public sealed record PromoResult(string Result, string Message, string? Subscription, string? ExpiresAt)
+{
+    public bool IsActivated => Result == "activated";
+
+    public string LocalizedMessage => Result switch
+    {
+        "activated" => Strings.PromoActivated,
+        "not_found" => Strings.PromoNotFound,
+        "already_used" => Strings.PromoAlreadyUsed,
+        "blocked_by_other" => Strings.PromoBlocked,
+        "expired" => Strings.PromoExpired,
+        _ => Message,
+    };
+}

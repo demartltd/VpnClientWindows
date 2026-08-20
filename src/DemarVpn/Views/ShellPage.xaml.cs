@@ -19,6 +19,7 @@ public sealed partial class ShellPage : Page
         SettingsTab.AppSettingsRequested += () => ShowOverlay(typeof(AppSettingsPage));
         SettingsTab.ServiceMenuRequested += () => ShowOverlay(typeof(ServiceMenuPage));
         SettingsTab.DocumentsRequested += () => DocumentsSheet.Show();
+        SettingsTab.SignInRequested += () => ShowLogin(2);
         DocumentsSheet.DocumentSelected += doc => ShowOverlay(typeof(DocumentPage), doc);
         AccountTab.SignOutRequested += OnSignOutRequested;
         AccountTab.NotifySheetRequested += () => NotifySheet.Show();

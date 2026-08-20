@@ -26,6 +26,23 @@ public static class VpnAccountApi
             DemarHttp.OptBool(json, "notifyImportant", true));
     }
 
+    public static async Task<PromoResult> ActivatePromoAsync(string userId, string loginAt, string code, CancellationToken ct = default)
+    {
+        var body = SessionBody(userId, loginAt);
+        body["code"] = code;
+        return ParsePromo(await PostAsync("/vpn/promo/activate", body, ct));
+    }
+
+    public static PromoResult ParsePromo(JsonObject json)
+    {
+        static string? Blank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
+        return new(
+            DemarHttp.OptString(json, "result") ?? "not_found",
+            DemarHttp.OptString(json, "message") ?? "",
+            Blank(DemarHttp.OptString(json, "subscription")),
+            Blank(DemarHttp.OptString(json, "expiresAt")));
+    }
+
     public static VpnAccount ParseAccount(JsonObject json) => new(
         DemarHttp.OptBool(json, "notifyNews", true),
         DemarHttp.OptBool(json, "notifyImportant", true),
