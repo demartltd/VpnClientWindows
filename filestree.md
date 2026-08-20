@@ -18,6 +18,7 @@ src/DemarVpn/
 │   ├── SettingsPage.xaml
 │   ├── AccountPage.xaml
 │   ├── AppSettingsPage.xaml
+│   ├── SupportPage.xaml           # ticket list + chat overlay (csapi)
 │   ├── DocumentPage.xaml          # ToS / PP Markdown viewer
 │   └── ServiceMenuPage.xaml
 ├── Controls/
@@ -35,6 +36,8 @@ src/DemarVpn/
 │   ├── TrafficPieChart.xaml
 │   ├── DemarSegmentBar.xaml       # protocol/tier filter (drag-scrub)
 │   ├── SettingsActionButton.xaml
+│   ├── SupportChatPane.xaml       # support chat composer + messages
+│   ├── SupportBubble.xaml         # message bubble + media
 │   └── ServerRow.xaml             # флаг + listTitle/subtitle + reachability dot
 ├── Services/
 │   ├── AppPackageInfo.cs
@@ -43,6 +46,7 @@ src/DemarVpn/
 │   ├── UpdateChannelStore.cs      # prefer_beta prefs
 │   ├── RunAtStartup.cs            # logon Task Scheduler autostart (default ON)
 │   ├── Account/                   # VpnAccountApi, AccountStore (account/traffic/notify/promo; refresh on start + servers)
+│   ├── Support/                   # SupportApi → csauth.example.invalid ticket chat (channel=windows)
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi (POST vpn.example.invalid/vpn/servers → hy2)
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
@@ -72,6 +76,7 @@ tests/DemarVpn.Tests/
 ├── AppUpdateTest.cs             # version parse + SHA256 + beta channel
 ├── RunAtStartupTest.cs          # run_at_startup prefs (default ON)
 ├── VpnAccountApiTest.cs         # account/traffic parse + promo + pieSlices + formatBytes
+├── SupportApiTest.cs            # support ticket JSON parse / encode cache
 └── LegalDocumentTest.cs         # ToS/PP URLs + RawTextFetcher.Decode
 ```
 

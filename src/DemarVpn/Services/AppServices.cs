@@ -1,6 +1,7 @@
 using DemarVpn.Models;
 using DemarVpn.Services.Account;
 using DemarVpn.Services.Auth;
+using DemarVpn.Services.Support;
 using DemarVpn.Services.Vpn;
 
 namespace DemarVpn.Services;
@@ -32,10 +33,14 @@ public static class AppServices
             if (!AuthRepository.IsSignedIn) return;
             var ok = await AuthRepository.RefreshSessionAsync();
             Auth.NotifyChanged();
-            if (ok) await Vpn.RefreshServersAsync();
+            if (ok)
+            {
+                await Vpn.RefreshServersAsync();
+            }
             else
             {
                 AccountStore.Clear();
+                SupportStore.ClearAll();
                 await Vpn.OnSignedOutAsync();
             }
         }
@@ -49,6 +54,7 @@ public static class AppServices
     {
         await Auth.SignOutAsync();
         AccountStore.Clear();
+        SupportStore.ClearAll();
         await Vpn.OnSignedOutAsync();
     }
 

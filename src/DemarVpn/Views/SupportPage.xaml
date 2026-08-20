@@ -1,0 +1,39 @@
+<local:OverlayPage
+    x:Class="DemarVpn.Views.SupportPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:DemarVpn.Views"
+    xmlns:controls="using:DemarVpn.Controls">
+  <controls:OverlayChrome x:Name="Chrome" Title="Поддержка">
+    <Grid>
+      <Grid x:Name="ListLayer">
+        <Grid x:Name="ShadowCast" Background="Transparent" IsHitTestVisible="False" />
+        <ScrollViewer Padding="{StaticResource OverlayBodyPadding}">
+          <StackPanel x:Name="ListHost" Spacing="10" Padding="0,0,0,80" />
+        </ScrollViewer>
+        <TextBlock x:Name="EmptyBlock" Text="Тикетов пока нет" Opacity="0.6"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
+        <ProgressRing x:Name="ListLoading" Width="36" Height="36" IsActive="False"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <Border x:Name="CreateFab" Width="64" Height="64"
+                Background="{StaticResource DemarOnTertiaryBrush}"
+                CornerRadius="20"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Margin="0,0,24,24" Canvas.ZIndex="10"
+                Translation="0,0,32">
+          <Border.Shadow>
+            <ThemeShadow x:Name="CreateShadow" />
+          </Border.Shadow>
+          <Button Click="OnCreate"
+                  Background="Transparent" BorderThickness="0"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                  CornerRadius="20" Padding="0">
+            <FontIcon Glyph="&#xE710;" FontSize="20"
+                      Foreground="{StaticResource DemarTertiaryBrush}" />
+          </Button>
+        </Border>
+      </Grid>
+      <controls:SupportChatPane x:Name="ChatPane" Visibility="Collapsed" />
+    </Grid>
+  </controls:OverlayChrome>
+</local:OverlayPage>

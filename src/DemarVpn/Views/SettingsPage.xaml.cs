@@ -2,6 +2,7 @@ using DemarVpn.Controls;
 using DemarVpn.Services;
 using DemarVpn.Services.Account;
 using DemarVpn.Services.Auth;
+using DemarVpn.Services.Support;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel.DataTransfer;
@@ -14,9 +15,11 @@ public sealed partial class SettingsPage : Page
     public event Action? ServiceMenuRequested;
     public event Action? DocumentsRequested;
     public event Action? SignInRequested;
+    public event Action? SupportRequested;
 
     private int _tapCount;
     private DateTimeOffset _tapWindow;
+    private SettingsActionButton? _supportRow;
 
     public SettingsPage()
     {
@@ -25,7 +28,17 @@ public sealed partial class SettingsPage : Page
         SingBoxLine.Text = $"sing-box - {AppServices.SingBoxLabel}";
         BuildSocialLinks();
         BuildMenu();
+        SupportStore.Changed += OnSupportUnreadChanged;
+        Unloaded += (_, _) => SupportStore.Changed -= OnSupportUnreadChanged;
+        OnSupportUnreadChanged();
     }
+
+    private void OnSupportUnreadChanged() =>
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_supportRow is not null)
+                _supportRow.ShowUnread = SupportStore.HasUnread;
+        });
 
     private void BuildSocialLinks()
     {
@@ -39,20 +52,22 @@ public sealed partial class SettingsPage : Page
     {
         AddRow("\uE713", Strings.SettingsApp, Strings.SettingsAppSub,
             (_, _) => AppSettingsRequested?.Invoke());
-        AddRow("\uE939", Strings.SettingsFeedback, Strings.SettingsFeedbackSub,
-            (_, _) => AppServices.Snackbar.ShowSoon());
+        _supportRow = AddRow("\uE939", Strings.SettingsFeedback, Strings.SettingsFeedbackSub, OnSupport);
         AddRow("\uE72D", Strings.SettingsShare, Strings.SettingsShareSub, OnShare);
         AddRow("\uE8EC", Strings.SettingsPromo, Strings.SettingsPromoSub, OnPromo);
         AddRow("\uE8B7", Strings.SettingsDocuments, Strings.SettingsDocumentsSub,
             (_, _) => DocumentsRequested?.Invoke());
     }
 
-    private void AddRow(string glyph, string title, string subtitle, EventHandler click)
+    private SettingsActionButton AddRow(string glyph, string title, string subtitle, EventHandler click)
     {
         var row = new SettingsActionButton { Glyph = glyph, Title = title, Subtitle = subtitle };
         row.Click += click;
         MenuHost.Children.Add(row);
+        return row;
     }
+
+    private void OnSupport(object? sender, EventArgs e) => SupportRequested?.Invoke();
 
     private void OnShare(object? sender, EventArgs e)
     {

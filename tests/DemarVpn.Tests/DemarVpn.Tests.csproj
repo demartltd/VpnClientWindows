@@ -29,6 +29,8 @@
     <Compile Include="..\..\src\DemarVpn\Services\Account\VpnAccountModels.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Account\VpnAccountApi.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Servers\ServersApi.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Support\SupportModels.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Support\SupportJson.cs" />
     <Compile Include="..\..\src\DemarVpn\Models\AppModels.cs" />
     <Compile Include="..\..\src\DemarVpn\Strings.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Vpn\TunnelPathProbe.cs" />

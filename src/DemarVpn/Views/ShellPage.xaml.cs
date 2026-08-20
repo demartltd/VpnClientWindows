@@ -1,6 +1,7 @@
 using DemarVpn.Controls;
 using DemarVpn.Services;
 using DemarVpn.Services.Account;
+using DemarVpn.Services.Support;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -11,6 +12,8 @@ public sealed partial class ShellPage : Page
     private readonly Page[] _tabs;
     private int _tab;
     private int _loginReturnTab = 3;
+    private bool _openSupportAfterLogin;
+    private SupportRoute? _pendingSupportRoute;
 
     public ShellPage()
     {
@@ -19,6 +22,7 @@ public sealed partial class ShellPage : Page
         SettingsTab.AppSettingsRequested += () => ShowOverlay(typeof(AppSettingsPage));
         SettingsTab.ServiceMenuRequested += () => ShowOverlay(typeof(ServiceMenuPage));
         SettingsTab.DocumentsRequested += () => DocumentsSheet.Show();
+        SettingsTab.SupportRequested += () => OpenSupport();
         SettingsTab.SignInRequested += () => ShowLogin(2);
         DocumentsSheet.DocumentSelected += doc => ShowOverlay(typeof(DocumentPage), doc);
         AccountTab.SignOutRequested += OnSignOutRequested;
@@ -35,6 +39,7 @@ public sealed partial class ShellPage : Page
         LoginSheet.Dismiss();
         GoToTab(_loginReturnTab);
         AccountTab.Refresh();
+        MaybeOpenPendingSupport();
     }
 
     public void ShowLogin(int returnTab = 3)
@@ -44,6 +49,28 @@ public sealed partial class ShellPage : Page
     }
 
     public void GoToServers() => GoToTab(1);
+
+    public void OpenSupport(SupportRoute? route = null)
+    {
+        if (!AppServices.Auth.SignedIn)
+        {
+            _pendingSupportRoute = route;
+            _openSupportAfterLogin = true;
+            ShowLogin(2);
+            return;
+        }
+        GoToTab(2);
+        ShowOverlay(typeof(SupportPage), route);
+    }
+
+    private void MaybeOpenPendingSupport()
+    {
+        if (!_openSupportAfterLogin && _pendingSupportRoute is null) return;
+        _openSupportAfterLogin = false;
+        var route = _pendingSupportRoute;
+        _pendingSupportRoute = null;
+        ShowOverlay(typeof(SupportPage), route);
+    }
 
     private void UpdateToolbarLayout()
     {
@@ -76,10 +103,12 @@ public sealed partial class ShellPage : Page
     private async void OnLoginSuccess(object? sender, EventArgs e)
     {
         var target = _loginReturnTab is 1 or 3 ? _loginReturnTab : 3;
+        if (_openSupportAfterLogin || _pendingSupportRoute is not null) target = 2;
         GoToTab(target);
         AccountTab.Refresh();
         await AppServices.Vpn.RefreshServersAsync();
         if (target == 1) ServersTab.OnTabVisible();
+        MaybeOpenPendingSupport();
     }
 
     private async void OnSignOutRequested()
@@ -122,8 +151,12 @@ public sealed partial class ShellPage : Page
 
 public abstract class OverlayPage : Page
 {
+    /// <summary>Return true if back was handled (e.g. chat → list).</summary>
+    protected virtual bool OnOverlayBack() => false;
+
     internal void GoBack()
     {
+        if (OnOverlayBack()) return;
         if (Frame?.Parent is FrameworkElement grid &&
             grid.Parent is ShellPage shell)
             shell.CloseOverlay();

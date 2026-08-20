@@ -26,6 +26,10 @@ public sealed partial class SettingsActionButton : UserControl
         DependencyProperty.Register(nameof(Progress), typeof(double), typeof(SettingsActionButton),
             new PropertyMetadata(double.NaN, OnVisualChanged));
 
+    public static readonly DependencyProperty ShowUnreadProperty =
+        DependencyProperty.Register(nameof(ShowUnread), typeof(bool), typeof(SettingsActionButton),
+            new PropertyMetadata(false, OnVisualChanged));
+
     public string Glyph
     {
         get => (string)GetValue(GlyphProperty);
@@ -57,6 +61,12 @@ public sealed partial class SettingsActionButton : UserControl
         set => SetValue(ProgressProperty, value);
     }
 
+    public bool ShowUnread
+    {
+        get => (bool)GetValue(ShowUnreadProperty);
+        set => SetValue(ShowUnreadProperty, value);
+    }
+
     public event EventHandler? Click;
 
     public SettingsActionButton() => InitializeComponent();
@@ -77,6 +87,7 @@ public sealed partial class SettingsActionButton : UserControl
         var muted = (Brush)res[IsDanger ? "DemarErrorMutedBrush" : "DemarPrimaryMutedBrush"];
         Icon.Foreground = accent;
         IconWell.Background = muted;
+        UnreadDot.Visibility = ShowUnread ? Visibility.Visible : Visibility.Collapsed;
         if (!double.IsNaN(Progress))
         {
             UsageBar.Visibility = Visibility.Visible;
