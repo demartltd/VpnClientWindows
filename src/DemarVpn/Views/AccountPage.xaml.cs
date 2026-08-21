@@ -142,31 +142,29 @@ public sealed partial class AccountPage : Page
     private void BuildFamilySlots()
     {
         FamilySlots.Children.Clear();
+        var outline = (SolidColorBrush)Application.Current.Resources["DemarOutlineBrush"];
+        var wellFill = new SolidColorBrush(outline.Color) { Opacity = 0.28 };
         for (var i = 0; i < 3; i++)
         {
-            var well = new Border
-            {
-                Width = 36,
-                Height = 36,
-                CornerRadius = new CornerRadius(18),
-                Background = (Brush)Application.Current.Resources["DemarSurfaceHighBrush"],
-            };
-            well.Child = new FontIcon
+            var well = new Grid { Width = 36, Height = 36 };
+            well.Children.Add(new Ellipse { Fill = wellFill });
+            well.Children.Add(new FontIcon
             {
                 Glyph = "\uE77B",
                 FontSize = 20,
                 Opacity = 0.55,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
-            };
+            });
             FamilySlots.Children.Add(well);
         }
         FamilySlots.Children.Add(new Ellipse
         {
             Width = 36,
             Height = 36,
-            Stroke = (Brush)Application.Current.Resources["DemarOutlineBrush"],
+            Stroke = outline,
             StrokeThickness = 1.5,
+            Opacity = 0.55,
             StrokeDashArray = new DoubleCollection { 3, 2.5 },
             Fill = null,
         });

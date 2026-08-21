@@ -15,10 +15,10 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Spacing="4" VerticalAlignment="Center">
-              <TextBlock x:Name="ImportantTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
-              <TextBlock x:Name="ImportantSub" Opacity="0.7" TextWrapping="Wrap" />
+              <TextBlock x:Name="NewsTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock x:Name="NewsSub" Opacity="0.7" TextWrapping="Wrap" />
             </StackPanel>
-            <controls:DemarToggle x:Name="ImportantSwitch" Grid.Column="1" Toggled="OnImportantToggled" />
+            <controls:DemarToggle x:Name="NewsSwitch" Grid.Column="1" Toggled="OnNewsToggled" />
           </Grid>
         </Border>
         <Border Style="{StaticResource DemarCard}">
@@ -28,10 +28,10 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Spacing="4" VerticalAlignment="Center">
-              <TextBlock x:Name="NewsTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
-              <TextBlock x:Name="NewsSub" Opacity="0.7" TextWrapping="Wrap" />
+              <TextBlock x:Name="ImportantTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock x:Name="ImportantSub" Opacity="0.7" TextWrapping="Wrap" />
             </StackPanel>
-            <controls:DemarToggle x:Name="NewsSwitch" Grid.Column="1" Toggled="OnNewsToggled" />
+            <controls:DemarToggle x:Name="ImportantSwitch" Grid.Column="1" Toggled="OnImportantToggled" />
           </Grid>
         </Border>
       </StackPanel>
