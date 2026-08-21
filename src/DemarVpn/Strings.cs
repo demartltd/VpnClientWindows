@@ -72,6 +72,7 @@ public static class Strings
     public const string SupportDeleted = "Сообщение удалено";
     public const string SupportAttachment = "Вложение";
     public const string SupportMediaTooLarge = "Файл не должен превышать 25 МБ";
+    public const string SupportAttachUnavailable = "Не удалось открыть выбор файла";
     public const string SupportErrorGeneric = "Не удалось связаться с api. Попробуйте снова";
     public const string SupportCopied = "Скопировано";
     public const string SettingsShare = "Пригласите друзей по ссылке";

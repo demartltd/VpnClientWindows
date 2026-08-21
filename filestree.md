@@ -46,7 +46,7 @@ src/DemarVpn/
 │   ├── UpdateChannelStore.cs      # prefer_beta prefs
 │   ├── RunAtStartup.cs            # logon Task Scheduler autostart (default ON)
 │   ├── Account/                   # VpnAccountApi, AccountStore (account/traffic/notify/promo; refresh on start + servers)
-│   ├── Support/                   # SupportApi → csauth.example.invalid ticket chat (channel=windows)
+│   ├── Support/                   # SupportApi → csauth.example.invalid ticket chat (channel=windows; album ≤10 WebP)
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi (POST vpn.example.invalid/vpn/servers → hy2)
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks

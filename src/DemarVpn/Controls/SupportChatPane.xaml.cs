@@ -374,7 +374,11 @@ public sealed partial class SupportChatPane : UserControl
             return;
         }
         var hwnd = App.MainHwnd;
-        if (hwnd == 0) return;
+        if (hwnd == 0)
+        {
+            Error?.Invoke(new AuthException(Strings.SupportAttachUnavailable, 400));
+            return;
+        }
 
         var picker = new FileOpenPicker();
         InitializeWithWindow.Initialize(picker, hwnd);
@@ -442,7 +446,11 @@ public sealed partial class SupportChatPane : UserControl
 
         if (body.Length == 0 && _pending.Count == 0) return;
         var creating = string.IsNullOrWhiteSpace(_ticketId) && _ticket is null;
-        if (creating && string.IsNullOrWhiteSpace(_themeId)) return;
+        if (creating && string.IsNullOrWhiteSpace(_themeId))
+        {
+            Error?.Invoke(new AuthException(Strings.SupportPickTheme, 400));
+            return;
+        }
 
         _sending = true;
         UpdateComposerState();
@@ -452,21 +460,20 @@ public sealed partial class SupportChatPane : UserControl
             SupportTicket fresh;
             if (creating)
             {
-                var (deviceText, logFile) = await SupportApi.BuildSilentDiagnosticsAsync();
+                var diagnostics = await SupportApi.BuildSilentDiagnosticsAsync();
                 fresh = await SupportApi.PostTicketCreateAsync(
                     session.UserId, session.LoginAt,
                     text: body.Length > 0 ? body : null,
-                    media: body.Length == 0 ? uploads : [],
-                    log: deviceText,
-                    logFile: logFile,
+                    log: diagnostics.LogText,
+                    logMedia: diagnostics.LogMedia,
                     themeId: _themeId,
                     forceNew: true);
                 _ticket = fresh;
                 _ticketId = fresh.Id;
                 SupportStore.SaveTicket(session.UserId, fresh);
-                if (body.Length > 0 && uploads.Count > 0)
+                if (uploads.Count > 0)
                 {
-                    fresh = await SupportApi.PostMediaSeparatedAsync(
+                    fresh = await SupportApi.PostMediaAlbumAsync(
                         session.UserId, session.LoginAt, uploads, fresh.Id);
                     _ticket = fresh;
                     SupportStore.SaveTicket(session.UserId, fresh);
@@ -484,7 +491,7 @@ public sealed partial class SupportChatPane : UserControl
                 }
                 if (uploads.Count > 0)
                 {
-                    fresh = await SupportApi.PostMediaSeparatedAsync(
+                    fresh = await SupportApi.PostMediaAlbumAsync(
                         session.UserId, session.LoginAt, uploads, id);
                 }
                 _ticket = fresh;

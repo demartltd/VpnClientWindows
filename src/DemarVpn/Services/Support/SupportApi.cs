@@ -1,14 +1,13 @@
 using System.Net;
 using System.Net.Http.Headers;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using DemarVpn.Services.Auth;
 using DemarVpn.Services.Device;
-using Windows.Graphics.Imaging;
-using Windows.Storage.Streams;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 
 namespace DemarVpn.Services.Support;
 
@@ -24,8 +23,8 @@ public static class SupportApi
     private const int ConnectTimeoutMs = 15_000;
     private const int ReadTimeoutMs = 25_000;
     private const int MediaTimeoutMs = 180_000;
-    private const int MaxPhotoEdge = 800;
-    private const int MaxPhotoBytes = 200 * 1024;
+    private const int MaxPhotoEdge = 1024;
+    private const int MaxPhotoBytes = 400 * 1024;
 
     private static readonly HttpClient Http = CreateClient(ConnectTimeoutMs + ReadTimeoutMs);
     private static readonly HttpClient MediaHttp = CreateClient(MediaTimeoutMs);
@@ -110,41 +109,27 @@ public static class SupportApi
         }, ct);
     }
 
-    /// <summary>Create/reply with optional silent log. Retries CS relay failures; falls back to text-only log.</summary>
-    public static async Task<SupportTicket> PostTicketCreateAsync(
+    /// <summary>Create ticket with silent diagnostics: device text + full journal.txt attach.</summary>
+    public static Task<SupportTicket> PostTicketCreateAsync(
         string userId,
         string loginAt,
         string? text = null,
-        IReadOnlyList<SupportUploadMedia>? media = null,
         string? log = null,
-        SupportUploadMedia? logFile = null,
+        IReadOnlyList<SupportUploadMedia>? logMedia = null,
         string? themeId = null,
         bool forceNew = false,
-        CancellationToken ct = default)
-    {
-        media ??= [];
-        var logMedia = logFile is null ? Array.Empty<SupportUploadMedia>() : new[] { logFile };
-        try
-        {
-            return await PostTicketWithRetryAsync(
-                userId, loginAt, text, media, log, logMedia, themeId, null, forceNew, ct).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (IsLogRelayFailure(ex) && logMedia.Length > 0)
-        {
-            AppLog.Append($"support create: log media failed ({ex.Message}), retry text log only");
-            return await PostTicketWithRetryAsync(
-                userId, loginAt, text, media, log, [], themeId, null, forceNew, ct).ConfigureAwait(false);
-        }
-    }
+        CancellationToken ct = default) =>
+        PostTicketWithRetryAsync(
+            userId, loginAt, text, [], log, logMedia ?? [], themeId, null, forceNew, ct, maxAttempts: 2);
 
     private static async Task<SupportTicket> PostTicketWithRetryAsync(
         string userId, string loginAt, string? text, IReadOnlyList<SupportUploadMedia> media,
         string? log, IReadOnlyList<SupportUploadMedia> logMedia, string? themeId, string? ticketId,
-        bool forceNew, CancellationToken ct)
+        bool forceNew, CancellationToken ct, int maxAttempts = 3)
     {
         var delayMs = 400;
         Exception last = new AuthException("ticket post failed", 500);
-        for (var attempt = 0; attempt < 3; attempt++)
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
             try
             {
@@ -158,7 +143,7 @@ public static class SupportApi
                 last = ex;
                 var msg = ex.Message ?? "";
                 AppLog.Append($"support ticket post try{attempt + 1}: {msg}");
-                if (attempt == 2 || !IsRetryableRelay(ex)) throw;
+                if (attempt == maxAttempts - 1 || !IsRetryableRelay(ex)) throw;
                 await Task.Delay(delayMs, ct).ConfigureAwait(false);
                 delayMs *= 2;
             }
@@ -176,40 +161,16 @@ public static class SupportApi
             || (ex is AuthException ae && ae.StatusCode == 502);
     }
 
-    private static bool IsLogRelayFailure(Exception ex)
-    {
-        var msg = ex.Message ?? "";
-        return msg.Contains("лог", StringComparison.OrdinalIgnoreCase)
-            || msg.Contains("log", StringComparison.OrdinalIgnoreCase)
-            || msg.Contains("fetch failed", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>Photos go in their own request — CS API forbids mixing text and media.</summary>
-    public static async Task<SupportTicket> PostMediaSeparatedAsync(
+    /// <summary>Album: one POST with media[1…10] → one ticket message.</summary>
+    public static Task<SupportTicket> PostMediaAlbumAsync(
         string userId, string loginAt, IReadOnlyList<SupportUploadMedia> media, string ticketId,
         CancellationToken ct = default)
     {
-        var delayMs = 400;
-        Exception last = new AuthException("media upload failed", 500);
-        for (var attempt = 0; attempt < 3; attempt++)
-        {
-            try
-            {
-                return await PostTicketAsync(userId, loginAt, media: media, ticketId: ticketId, ct: ct)
-                    .ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested) { throw; }
-            catch (Exception ex)
-            {
-                last = ex;
-                var msg = ex.Message ?? "";
-                AppLog.Append($"support media post try{attempt + 1}: {msg}");
-                if (attempt == 2 || !IsRetryableRelay(ex)) throw;
-                await Task.Delay(delayMs, ct).ConfigureAwait(false);
-                delayMs *= 2;
-            }
-        }
-        throw last;
+        if (media.Count == 0) throw new AuthException("media required", 400);
+        AppLog.Append($"support media album: {media.Count} files");
+        return PostTicketWithRetryAsync(
+            userId, loginAt, text: null, media: media, log: null, logMedia: [],
+            themeId: null, ticketId: ticketId, forceNew: false, ct, maxAttempts: 2);
     }
 
     public static Task<SupportTicket> PatchMessageAsync(
@@ -234,19 +195,33 @@ public static class SupportApi
         var bytes = await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
         if (bytes.Length == 0) throw new AuthException("empty media", 400);
         if (bytes.Length > MaxMediaBytes) throw new SupportMediaTooLargeException();
-        var jpeg = await CompressImageToJpegAsync(bytes).ConfigureAwait(false)
+        var webp = CompressImageToWebp(bytes)
                    ?? throw new AuthException("unsupported image", 400);
         var stem = Path.GetFileNameWithoutExtension(path);
         if (string.IsNullOrWhiteSpace(stem)) stem = "photo";
-        return new SupportUploadMedia(Convert.ToBase64String(jpeg), stem + ".jpg", "image/jpeg");
+        return new SupportUploadMedia(Convert.ToBase64String(webp), stem + ".webp", "image/webp");
     }
 
-    public static async Task<(string DeviceText, SupportUploadMedia LogFile)> BuildSilentDiagnosticsAsync()
+    public readonly record struct SilentDiagnostics(string LogText, IReadOnlyList<SupportUploadMedia> LogMedia);
+
+    /// <summary>Device summary as log text; full journal as journal.txt attach.</summary>
+    public static async Task<SilentDiagnostics> BuildSilentDiagnosticsAsync()
     {
         var device = await DeviceIdentity.LoadAsync().ConfigureAwait(false);
+        string? latestVer = null;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            var latest = await WindowsReleaseApi.FetchAsync(UpdateChannelStore.PreferBeta, cts.Token)
+                .ConfigureAwait(false);
+            latestVer = latest?.Version;
+        }
+        catch { /* optional */ }
+
         var ver = AssemblyVersion();
         var sb = new StringBuilder();
         sb.AppendLine($"Demar VPN {Strings.VersionName} ({ver})");
+        sb.AppendLine($"Latest: {latestVer ?? "—"}");
         sb.AppendLine($"UA: {DemarHttp.UserAgent}");
         sb.AppendLine("--- device ---");
         foreach (var (k, v) in device) sb.AppendLine($"{k}={v}");
@@ -255,14 +230,10 @@ public static class SupportApi
 
         var logBody = AppLog.ReadPersistedUtf8();
         if (string.IsNullOrWhiteSpace(logBody)) logBody = "(empty)";
-        // Keep journal small enough for CS Telegram relay (text+photos create path).
-        if (logBody.Length > 120_000) logBody = logBody[^120_000..];
-        var stamp = DateTime.UtcNow.ToString("yyyy-MM-dd-HH-mm-ss");
-        var upload = new SupportUploadMedia(
-            Convert.ToBase64String(Encoding.UTF8.GetBytes(logBody)),
-            $"demar_vpn_journal_{stamp}.txt",
-            "text/plain");
-        return (deviceText, upload);
+        var bytes = Encoding.UTF8.GetBytes(logBody);
+        var file = new SupportUploadMedia(
+            Convert.ToBase64String(bytes), "journal.txt", "text/plain");
+        return new SilentDiagnostics(deviceText, new[] { file });
     }
 
     public static async Task<byte[]> LoadMediaBytesAsync(
@@ -335,82 +306,39 @@ public static class SupportApi
         return dto.ToLocalTime().ToString("HH:mm");
     }
 
-    private static async Task<byte[]?> CompressImageToJpegAsync(byte[] raw)
+    private static byte[]? CompressImageToWebp(byte[] raw)
     {
         try
         {
-            using var input = new InMemoryRandomAccessStream();
-            await input.WriteAsync(raw.AsBuffer());
-            input.Seek(0);
-            var decoder = await BitmapDecoder.CreateAsync(input);
-            var w = (int)decoder.PixelWidth;
-            var h = (int)decoder.PixelHeight;
-            if (w <= 0 || h <= 0) return null;
-
-            var edge = Math.Max(w, h);
-            double scale = edge > MaxPhotoEdge ? (double)MaxPhotoEdge / edge : 1.0;
-            var nw = Math.Max(1, (uint)Math.Round(w * scale));
-            var nh = Math.Max(1, (uint)Math.Round(h * scale));
-
-            var transform = new BitmapTransform
+            using var image = SixLabors.ImageSharp.Image.Load(raw);
+            var edge = Math.Max(image.Width, image.Height);
+            if (edge > MaxPhotoEdge)
             {
-                ScaledWidth = nw,
-                ScaledHeight = nh,
-                InterpolationMode = BitmapInterpolationMode.Fant,
-            };
-            var soft = await decoder.GetSoftwareBitmapAsync(
-                BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, transform,
-                ExifOrientationMode.IgnoreExifOrientation, ColorManagementMode.DoNotColorManage);
+                var scale = (double)MaxPhotoEdge / edge;
+                var nw = Math.Max(1, (int)Math.Round(image.Width * scale));
+                var nh = Math.Max(1, (int)Math.Round(image.Height * scale));
+                image.Mutate(x => x.Resize(nw, nh));
+            }
 
-            var quality = 0.50f;
+            var quality = 75;
             byte[]? best = null;
-            var edgeCap = (uint)Math.Max(nw, nh);
             while (true)
             {
-                using var output = new InMemoryRandomAccessStream();
-                var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, output);
-                var props = new BitmapPropertySet
+                using var ms = new MemoryStream();
+                image.Save(ms, new WebpEncoder
                 {
-                    { "ImageQuality", new BitmapTypedValue(quality, Windows.Foundation.PropertyType.Single) },
-                };
-                await encoder.BitmapProperties.SetPropertiesAsync(props);
-                encoder.SetSoftwareBitmap(soft);
-                await encoder.FlushAsync();
-                output.Seek(0);
-                var buf = new byte[output.Size];
-                await output.ReadAsync(buf.AsBuffer(), (uint)buf.Length, InputStreamOptions.None);
-                best = buf;
-                if (buf.Length <= MaxPhotoBytes) break;
-                if (quality > 0.18f)
-                {
-                    quality -= 0.08f;
-                    continue;
-                }
-                // Still too big — shrink pixels further (CS relay prefers small base64).
-                if (edgeCap <= 400) break;
-                edgeCap = (uint)(edgeCap * 0.75);
-                var scale2 = (double)edgeCap / Math.Max(w, h);
-                var nw2 = Math.Max(1u, (uint)Math.Round(w * scale2));
-                var nh2 = Math.Max(1u, (uint)Math.Round(h * scale2));
-                soft.Dispose();
-                var transform2 = new BitmapTransform
-                {
-                    ScaledWidth = nw2,
-                    ScaledHeight = nh2,
-                    InterpolationMode = BitmapInterpolationMode.Fant,
-                };
-                input.Seek(0);
-                soft = await decoder.GetSoftwareBitmapAsync(
-                    BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, transform2,
-                    ExifOrientationMode.IgnoreExifOrientation, ColorManagementMode.DoNotColorManage);
-                quality = 0.45f;
+                    FileFormat = WebpFileFormatType.Lossy,
+                    Quality = quality,
+                });
+                best = ms.ToArray();
+                if (best.Length <= MaxPhotoBytes || quality <= 25) break;
+                quality -= 10;
             }
-            soft.Dispose();
             return best is { Length: > 0 } ? best : null;
         }
         catch (Exception ex)
         {
-            AppLog.Append($"support jpeg: {ex.Message}");
+            AppLog.Append($"support webp: {ex.Message}");
             return null;
         }
     }
