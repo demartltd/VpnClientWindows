@@ -141,6 +141,8 @@ public sealed partial class ShellPage : Page
 
     public void CloseOverlay()
     {
+        if (OverlayFrame.Content is OverlayPage overlay)
+            overlay.PrepareClose();
         OverlayFrame.Content = null;
         OverlayFrame.Visibility = Visibility.Collapsed;
         MainLayer.Visibility = Visibility.Visible;
@@ -153,6 +155,9 @@ public abstract class OverlayPage : Page
 {
     /// <summary>Return true if back was handled (e.g. chat → list).</summary>
     protected virtual bool OnOverlayBack() => false;
+
+    /// <summary>Called before shell clears overlay content (Frame.Content=null may skip OnNavigatedFrom).</summary>
+    internal virtual void PrepareClose() { }
 
     internal void GoBack()
     {

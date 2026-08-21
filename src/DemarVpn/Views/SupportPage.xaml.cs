@@ -25,6 +25,7 @@ public sealed partial class SupportPage : OverlayPage
             if (!CreateShadow.Receivers.Contains(ShadowCast))
                 CreateShadow.Receivers.Add(ShadowCast);
         };
+        Unloaded += (_, _) => StopPolling();
         ChatPane.Error += OnChatError;
         ChatPane.TicketGone += () =>
         {
@@ -47,6 +48,7 @@ public sealed partial class SupportPage : OverlayPage
         var session = AuthSessionStore.Current;
         if (session is null) { GoBack(); return; }
 
+        StopPolling();
         _tickets = SupportStore.LoadList(session.UserId)?.ToList() ?? [];
         SupportStore.Apply(_tickets);
         if (_tickets.Count > 0) _loadingList = false;
@@ -61,7 +63,15 @@ public sealed partial class SupportPage : OverlayPage
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
+        StopPolling();
+    }
+
+    internal override void PrepareClose() => StopPolling();
+
+    private void StopPolling()
+    {
         _listPoll?.Cancel();
+        _listPoll = null;
         ChatPane.Stop();
     }
 

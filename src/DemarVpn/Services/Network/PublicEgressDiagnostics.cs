@@ -79,7 +79,7 @@ public static class PublicEgressDiagnostics
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(3500);
+            cts.CancelAfter(8_000);
 
             Func<CancellationToken, Task<PublicEgressInfo?>>[] fetches = useTunnel
                 ? [ct => FetchCloudflareTraceAsync(useTunnel: true, ct)]
@@ -91,7 +91,7 @@ public static class PublicEgressDiagnostics
                     FetchIpifyThenWhoIsAsync,
                 ];
 
-            return await RaceFirstGeoAsync(fetches, cts.Token) ?? Fallback;
+            return await FirstGeoAsync(fetches, cts.Token) ?? Fallback;
         }
         catch
         {
@@ -232,19 +232,27 @@ public static class PublicEgressDiagnostics
         return client;
     }
 
-    private static async Task<PublicEgressInfo?> RaceFirstGeoAsync(
+    /// <summary>Try providers one-by-one; next only after previous failed. Never parallel.</summary>
+    private static async Task<PublicEgressInfo?> FirstGeoAsync(
         IReadOnlyList<Func<CancellationToken, Task<PublicEgressInfo?>>> fetches,
         CancellationToken cancellationToken)
     {
-        var pending = fetches.Select(f => f(cancellationToken)).ToList();
-        while (pending.Count > 0)
+        foreach (var fetch in fetches)
         {
-            var done = await Task.WhenAny(pending);
-            PublicEgressInfo? result;
-            try { result = await done; }
-            catch { result = null; }
-            if (result is not null) return result;
-            pending.Remove(done);
+            if (cancellationToken.IsCancellationRequested) break;
+            try
+            {
+                var result = await fetch(cancellationToken).ConfigureAwait(false);
+                if (result is not null) return result;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch
+            {
+                // try next provider
+            }
         }
         return null;
     }

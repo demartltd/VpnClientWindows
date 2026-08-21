@@ -27,10 +27,17 @@ public sealed partial class DocumentPage : OverlayPage
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
+        CancelLoad();
+        base.OnNavigatedFrom(e);
+    }
+
+    internal override void PrepareClose() => CancelLoad();
+
+    private void CancelLoad()
+    {
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = null;
-        base.OnNavigatedFrom(e);
     }
 
     private async Task LoadLoopAsync(LegalDocument doc, CancellationToken ct)
