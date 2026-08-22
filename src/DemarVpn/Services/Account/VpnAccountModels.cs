@@ -15,7 +15,10 @@ public sealed record VpnTraffic(
     int M,
     IReadOnlyList<VpnTrafficServer> Servers,
     long Total,
-    long LimitBytes);
+    long LimitBytes)
+{
+    public bool IsBlocked => LimitBytes > 0 && Total >= LimitBytes;
+}
 
 public sealed record PromoResult(string Result, string Message, string? Subscription, string? ExpiresAt)
 {

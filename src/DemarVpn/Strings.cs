@@ -157,6 +157,7 @@ public static class Strings
     public const string Soon = "Скоро";
     public const string ServerSelected = "Сервер {0}";
     public const string VpnConnectFailed = "Не удалось подключиться";
+    public const string VpnTrafficExceeded = "Лимит трафика исчерпан. Оформите подписку для продолжения.";
     public const string VpnTunnelLost = "Соединение потеряно";
     public const string VpnServerUnreachable = "Сервер недоступен";
     public const string VpnUacCancelled = "Подключение отменено (UAC)";

@@ -248,6 +248,20 @@ public class VpnPipelineTest
     }
 
     [Fact]
+    public void ServersApi_previewWithoutClientConfig()
+    {
+        var item = JsonNode.Parse("""
+            {"id":"s3","name":"DE-PLUS-1","city":"Berlin","protocol":"hysteria2"}
+            """)!.AsObject();
+        var profile = ServersApi.ParseServerItem(item);
+        Assert.NotNull(profile);
+        Assert.Equal("s3", profile!.Id);
+        Assert.Equal("DE-PLUS-1", profile.DisplayName);
+        Assert.Equal("", profile.Profile.Password);
+        Assert.Equal("Germany | PLUS", profile.ListTitle);
+    }
+
+    [Fact]
     public void ServersApi_parseBandwidthAndRuleSets()
     {
         var config = """

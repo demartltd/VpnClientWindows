@@ -33,6 +33,7 @@ public sealed class VpnController : NotifyBase
     }
     public bool ServersLoading { get; private set; }
     public string? ServersError { get; private set; }
+    public bool TrafficExceeded { get; private set; }
 
     public event Action<string>? ErrorRaised;
 
@@ -43,6 +44,7 @@ public sealed class VpnController : NotifyBase
         _reachability = new();
         Selected = null;
         ServersError = null;
+        TrafficExceeded = false;
         Raise(nameof(Servers));
         Raise(nameof(Selected));
         Raise(nameof(ServersError));
@@ -78,6 +80,8 @@ public sealed class VpnController : NotifyBase
             var accountTask = AccountStore.RefreshAsync(ct);
             var result = await serversTask;
             ApplyServerList(result.Servers);
+            TrafficExceeded = result.TrafficExceeded;
+            Raise(nameof(TrafficExceeded));
             AppLog.Append($"servers: loaded {result.Servers.Count} (sub={result.VpnSubscription})");
             await accountTask;
             _ = SupportStore.RefreshUnreadAsync(ct);
@@ -142,6 +146,13 @@ public sealed class VpnController : NotifyBase
         if (Selected is null)
         {
             AppServices.Snackbar.ShowError(Strings.ServerNotSelected);
+            return;
+        }
+        if (TrafficExceeded)
+        {
+            AppServices.Snackbar.ShowError(Strings.VpnTrafficExceeded);
+            SetState(VpnState.Error(Strings.VpnTrafficExceeded));
+            ErrorRaised?.Invoke(Strings.VpnTrafficExceeded);
             return;
         }
 

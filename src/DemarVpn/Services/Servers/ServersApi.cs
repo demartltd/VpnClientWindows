@@ -8,7 +8,8 @@ namespace DemarVpn.Services.Servers;
 public sealed record ServersListResult(
     string? VpnSubscription,
     string? VpnExpiresAt,
-    IReadOnlyList<ServerProfile> Servers);
+    IReadOnlyList<ServerProfile> Servers,
+    bool TrafficExceeded = false);
 
 /// <summary>VPN servers — parity Android ServersApi (POST vpn.example.invalid/vpn/servers).</summary>
 public static class ServersApi
@@ -38,7 +39,8 @@ public static class ServersApi
         return new(
             DemarHttp.OptString(json, "vpnSubscription"),
             DemarHttp.OptString(json, "vpnExpiresAt"),
-            profiles);
+            profiles,
+            json["trafficExceeded"]?.GetValueKind() == JsonValueKind.True);
     }
 
     public static ServerProfile? ParseServerItem(JsonObject item)
@@ -48,20 +50,28 @@ public static class ServersApi
         if (id is null || name is null) return null;
 
         var protocol = DemarHttp.OptString(item, "protocol")?.ToLowerInvariant();
+        if (protocol is not null and not "" and not "hysteria2") return null;
+
+        var city = DemarHttp.OptString(item, "city");
         var configRaw = DemarHttp.OptString(item, "clientConfigJson");
-        if (configRaw is null) return null;
+        // No credentials (traffic exceeded / preview): show in UI, block connect separately.
+        if (string.IsNullOrWhiteSpace(configRaw))
+            return PreviewHysteria2(id, name, city);
 
         JsonObject? config;
         try { config = JsonNode.Parse(configRaw) as JsonObject; }
         catch (JsonException) { return null; }
         if (config is null) return null;
 
-        return protocol switch
-        {
-            "hysteria2" => ParseHysteria2(id, name, DemarHttp.OptString(item, "city"), config),
-            _ => null,
-        };
+        return ParseHysteria2(id, name, city, config);
     }
+
+    /// <summary>Metadata-only row when API omits <c>clientConfigJson</c> (parity Android/Apple).</summary>
+    private static ServerProfile PreviewHysteria2(string id, string name, string? city) =>
+        ServerProfile.Hysteria2FromTag(
+            new Hysteria2Profile(name, "", 443, "", name),
+            city: city,
+            id: id);
 
     private static ServerProfile? ParseHysteria2(string id, string name, string? city, JsonObject config)
     {
@@ -72,8 +82,8 @@ public static class ServersApi
 
         var server = DemarHttp.OptString(hy2, "server");
         var port = DemarHttp.OptInt(hy2, "server_port");
-        var password = DemarHttp.OptString(hy2, "password");
-        if (server is null || port <= 0 || password is null) return null;
+        var password = DemarHttp.OptString(hy2, "password") ?? "";
+        if (server is null || port <= 0) return null;
 
         var tls = hy2["tls"] as JsonObject;
         var tlsName = (tls is not null ? DemarHttp.OptString(tls, "server_name") : null) ?? server;
