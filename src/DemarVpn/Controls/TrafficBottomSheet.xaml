@@ -5,9 +5,14 @@
     xmlns:controls="using:DemarVpn.Controls"
     Visibility="Collapsed">
   <controls:BottomSheetChrome x:Name="Chrome">
-    <StackPanel Spacing="12" HorizontalAlignment="Stretch">
-      <TextBlock x:Name="StatusText" Opacity="0.7" HorizontalAlignment="Center" Visibility="Collapsed" />
+    <StackPanel Spacing="16" HorizontalAlignment="Stretch">
+      <TextBlock x:Name="TitleText" FontWeight="SemiBold" FontSize="20" TextWrapping="Wrap"
+                 Visibility="Collapsed" />
+      <TextBlock x:Name="StatusText" Opacity="0.7" Visibility="Collapsed" />
       <controls:TrafficPieChart x:Name="Pie" Visibility="Collapsed" />
+      <Button x:Name="IncreaseButton" Style="{StaticResource DemarAccentButtonStyle}"
+              HorizontalAlignment="Stretch" Height="48" Visibility="Collapsed"
+              Click="OnIncreaseLimits" />
     </StackPanel>
   </controls:BottomSheetChrome>
 </UserControl>

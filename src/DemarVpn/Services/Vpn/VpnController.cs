@@ -36,6 +36,10 @@ public sealed class VpnController : NotifyBase
     public bool TrafficExceeded { get; private set; }
 
     public event Action<string>? ErrorRaised;
+    public event Action? TrafficLimitReached;
+
+    /// <summary>Open account traffic sheet (connect block + demarvpn://settings/traffic).</summary>
+    public void RaiseTrafficLimitReached() => TrafficLimitReached?.Invoke();
 
     public void ClearServers()
     {
@@ -150,9 +154,8 @@ public sealed class VpnController : NotifyBase
         }
         if (TrafficExceeded)
         {
-            AppServices.Snackbar.ShowError(Strings.VpnTrafficExceeded);
-            SetState(VpnState.Error(Strings.VpnTrafficExceeded));
-            ErrorRaised?.Invoke(Strings.VpnTrafficExceeded);
+            AppLog.Append("[vpn] connect blocked: traffic limit");
+            RaiseTrafficLimitReached();
             return;
         }
 

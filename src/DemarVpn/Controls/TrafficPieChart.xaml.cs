@@ -10,21 +10,43 @@ namespace DemarVpn.Controls;
 
 public sealed partial class TrafficPieChart : UserControl
 {
+    private const double ChartSize = 144;
+    private const double Stroke = 26;
+
     public TrafficPieChart() => InitializeComponent();
 
-    public void Bind(IReadOnlyList<VpnTrafficServer> servers, string otherLabel, string centerPrimary)
+    public void Bind(IReadOnlyList<VpnTrafficServer> servers, string otherLabel, string centerPrimary, string accountId)
     {
-        CenterLabel.Text = centerPrimary;
-        RingCanvas.Children.Clear();
-        LegendHost.Items.Clear();
+        Flow.Children.Clear();
+
+        var id = new TextBlock
+        {
+            Text = accountId,
+            FontSize = 14,
+            Opacity = 0.7,
+            TextWrapping = TextWrapping.Wrap,
+        };
+        FloatEndPanel.SetFullRow(id, true);
+        Flow.Children.Add(id);
 
         var slices = VpnAccountApi.PieSlices(servers, otherLabel);
-        var total = Math.Max(1L, slices.Sum(s => s.Bytes));
         var palette = BuildPalette();
-        const double size = 200;
-        const double stroke = 36;
-        const double radius = (size - stroke) / 2;
-        var center = new Point(size / 2, size / 2);
+        if (slices.Any(s => s.Bytes > 0))
+        {
+            for (var i = 0; i < slices.Count; i++)
+                Flow.Children.Add(LegendRow(palette[i % palette.Count], slices[i].Name, VpnAccountApi.FormatBytes(slices[i].Bytes)));
+        }
+
+        Flow.Children.Add(BuildChart(slices, palette, centerPrimary));
+    }
+
+    private static FrameworkElement BuildChart(
+        IReadOnlyList<VpnTrafficServer> slices, List<Brush> palette, string centerPrimary)
+    {
+        var canvas = new Canvas { Width = ChartSize, Height = ChartSize };
+        var total = Math.Max(1L, slices.Sum(s => s.Bytes));
+        var radius = (ChartSize - Stroke) / 2;
+        var center = new Point(ChartSize / 2, ChartSize / 2);
 
         if (slices.Any(s => s.Bytes > 0))
         {
@@ -33,15 +55,29 @@ public sealed partial class TrafficPieChart : UserControl
             {
                 var sweep = slices[i].Bytes / (double)total * 360.0;
                 if (sweep > 0.01)
-                    RingCanvas.Children.Add(ArcPath(center, radius, start, Math.Min(359.9, Math.Max(0.5, sweep)), palette[i % palette.Count], stroke));
+                    canvas.Children.Add(ArcPath(center, radius, start, Math.Min(359.9, Math.Max(0.5, sweep)), palette[i % palette.Count]));
                 start += sweep;
-                LegendHost.Items.Add(LegendRow(palette[i % palette.Count], slices[i].Name, VpnAccountApi.FormatBytes(slices[i].Bytes)));
             }
         }
+
+        var host = new Grid { Width = ChartSize, Height = ChartSize };
+        host.Children.Add(canvas);
+        host.Children.Add(new TextBlock
+        {
+            Text = centerPrimary,
+            FontSize = 12,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextAlignment = TextAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
+            MaxWidth = ChartSize - 28,
+        });
+        return host;
     }
 
     private static Microsoft.UI.Xaml.Shapes.Path ArcPath(
-        Point center, double radius, double startDeg, double sweepDeg, Brush stroke, double thickness)
+        Point center, double radius, double startDeg, double sweepDeg, Brush stroke)
     {
         var start = Polar(center, radius, startDeg);
         var end = Polar(center, radius, startDeg + sweepDeg);
@@ -59,7 +95,7 @@ public sealed partial class TrafficPieChart : UserControl
         {
             Data = geo,
             Stroke = stroke,
-            StrokeThickness = thickness,
+            StrokeThickness = Stroke,
             StrokeStartLineCap = PenLineCap.Flat,
             StrokeEndLineCap = PenLineCap.Flat,
         };
@@ -73,14 +109,14 @@ public sealed partial class TrafficPieChart : UserControl
 
     private static FrameworkElement LegendRow(Brush color, string name, string value)
     {
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(8, 0, 8, 10) };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         row.Children.Add(new Ellipse { Width = 10, Height = 10, Fill = color, VerticalAlignment = VerticalAlignment.Center });
         var texts = new StackPanel();
         texts.Children.Add(new TextBlock
         {
             Text = name,
             FontSize = 12,
-            MaxWidth = 120,
+            MaxWidth = 140,
             TextTrimming = TextTrimming.CharacterEllipsis,
         });
         texts.Children.Add(new TextBlock { Text = value, FontSize = 11, Opacity = 0.7 });

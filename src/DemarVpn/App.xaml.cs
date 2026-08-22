@@ -35,10 +35,7 @@ public partial class App : Application
         var launchArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
         var uri = SingleInstance.TryGetAuthUri(launchArgs)
                   ?? ProtocolRegistration.ConsumePendingUri();
-        if (uri is not null && DemarNavigation.TryParseSupportRoute(uri, out var supportRoute))
-            _main.Shell?.OpenSupport(supportRoute);
-        else
-            _ = HandleAuthUriAsync(uri);
+        HandleIncomingUri(uri);
         _ = BootstrapAsync();
     }
 
@@ -57,11 +54,24 @@ public partial class App : Application
             WindowFocus.BringToFront(MainHwnd);
             var uri = SingleInstance.TryGetAuthUri(args)
                       ?? ProtocolRegistration.ConsumePendingUri();
-            if (uri is not null && DemarNavigation.TryParseSupportRoute(uri, out var supportRoute))
-                _main?.Shell?.OpenSupport(supportRoute);
-            else
-                _ = HandleAuthUriAsync(uri);
+            HandleIncomingUri(uri);
         });
+    }
+
+    private void HandleIncomingUri(Uri? uri)
+    {
+        if (uri is null) return;
+        if (DemarNavigation.TryParseTrafficRoute(uri))
+        {
+            AppServices.Vpn.RaiseTrafficLimitReached();
+            return;
+        }
+        if (DemarNavigation.TryParseSupportRoute(uri, out var supportRoute))
+        {
+            _main?.Shell?.OpenSupport(supportRoute);
+            return;
+        }
+        _ = HandleAuthUriAsync(uri);
     }
 
     private async Task HandleAuthUriAsync(Uri? uri)

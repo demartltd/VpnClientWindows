@@ -27,8 +27,10 @@ public static class Strings
     public const string AccountNotifyFailed = "Не удалось обновить уведомления";
     public const string AccountTrafficTitle = "Трафик за месяц";
     public const string AccountTrafficPreview = "{0} / {1} · {2}%";
+    public const string AccountTrafficRemaining = "Осталось трафика: {0}";
     public const string AccountTrafficOther = "Другое";
     public const string AccountTrafficUnavailable = "Трафик недоступен";
+    public const string AccountIncreaseLimits = "Увеличить лимиты";
     public const string AccountFamilyTitle = "Добавьте близких в семейную подписку";
     public const string AccountFamilySub = "Вашей подпиской можно пользоваться вчетвером";
     public const string AccountFamilyFree = "Есть 1 свободное место";
@@ -157,7 +159,6 @@ public static class Strings
     public const string Soon = "Скоро";
     public const string ServerSelected = "Сервер {0}";
     public const string VpnConnectFailed = "Не удалось подключиться";
-    public const string VpnTrafficExceeded = "Лимит трафика исчерпан. Оформите подписку для продолжения.";
     public const string VpnTunnelLost = "Соединение потеряно";
     public const string VpnServerUnreachable = "Сервер недоступен";
     public const string VpnUacCancelled = "Подключение отменено (UAC)";

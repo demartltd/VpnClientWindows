@@ -50,4 +50,21 @@ public class DemarNavigationTest
         Assert.False(DemarNavigation.TryParseSupportRoute(
             new Uri("demar://settings/support"), out _));
     }
+
+    [Theory]
+    [InlineData("demarvpn://settings/traffic")]
+    [InlineData("demarvpn://open/settings/traffic")]
+    public void Traffic_accepts_settings_traffic(string raw)
+    {
+        Assert.True(DemarNavigation.TryParseTrafficRoute(new Uri(raw)));
+    }
+
+    [Theory]
+    [InlineData("demarvpn://settings/support")]
+    [InlineData("demarvpn://settings/traffic/extra")]
+    [InlineData("demar://settings/traffic")]
+    public void Traffic_rejects_bad_uris(string raw)
+    {
+        Assert.False(DemarNavigation.TryParseTrafficRoute(new Uri(raw)));
+    }
 }

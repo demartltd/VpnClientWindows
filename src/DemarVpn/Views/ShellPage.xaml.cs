@@ -28,6 +28,7 @@ public sealed partial class ShellPage : Page
         AccountTab.SignOutRequested += OnSignOutRequested;
         AccountTab.NotifySheetRequested += () => NotifySheet.Show();
         AccountTab.TrafficSheetRequested += () => TrafficSheet.Show();
+        AppServices.Vpn.TrafficLimitReached += () => DispatcherQueue.TryEnqueue(OpenTrafficSheet);
         AccountStore.Changed += OnAccountStoreChanged;
         LoginSheet.SignedIn += OnLoginSuccess;
         Loaded += (_, _) => UpdateToolbarLayout();
@@ -49,6 +50,17 @@ public sealed partial class ShellPage : Page
     }
 
     public void GoToServers() => GoToTab(1);
+
+    private void OpenTrafficSheet()
+    {
+        if (!AppServices.Auth.SignedIn)
+        {
+            ShowLogin(3);
+            return;
+        }
+        GoToTab(3);
+        TrafficSheet.Show();
+    }
 
     public void OpenSupport(SupportRoute? route = null)
     {

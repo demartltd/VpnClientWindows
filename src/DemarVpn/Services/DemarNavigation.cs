@@ -45,6 +45,25 @@ public static class DemarNavigation
         return false;
     }
 
+    /// <summary>
+    /// demarvpn://settings/traffic (optional open/ prefix).
+    /// </summary>
+    public static bool TryParseTrafficRoute(Uri uri)
+    {
+        if (!uri.Scheme.Equals(Scheme, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(uri.Host))
+            parts.Add(uri.Host);
+        parts.AddRange(uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries));
+        if (parts.Count > 0 && parts[0].Equals("open", StringComparison.OrdinalIgnoreCase))
+            parts.RemoveAt(0);
+        return parts.Count == 2
+            && parts[0].Equals("settings", StringComparison.OrdinalIgnoreCase)
+            && parts[1].Equals("traffic", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static bool TryParseAuthHandoff(Uri uri, out string? token, out string? code)
     {
         token = null;
