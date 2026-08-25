@@ -17,13 +17,20 @@ public sealed record VpnTraffic(
     long Total,
     long LimitBytes);
 
-public sealed record PromoResult(string Result, string Message, string? Subscription, string? ExpiresAt)
+public sealed record PromoResult(
+    string Result,
+    string Message,
+    string? Subscription,
+    string? ExpiresAt,
+    int? DiscountPercent = null)
 {
     public bool IsActivated => Result == "activated";
+    public bool IsApplied => Result == "applied";
 
     public string LocalizedMessage => Result switch
     {
         "activated" => Strings.PromoActivated,
+        "applied" => Strings.PromoApplied,
         "not_found" => Strings.PromoNotFound,
         "already_used" => Strings.PromoAlreadyUsed,
         "blocked_by_other" => Strings.PromoBlocked,

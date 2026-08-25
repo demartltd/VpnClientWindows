@@ -1,0 +1,19 @@
+<UserControl
+    x:Class="DemarVpn.Controls.PlanCompareSheet"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DemarVpn.Controls"
+    Visibility="Collapsed">
+  <controls:BottomSheetChrome x:Name="Chrome">
+    <ScrollViewer MaxHeight="560">
+      <StackPanel Spacing="12">
+        <TextBlock x:Name="TitleText" FontSize="22" FontWeight="SemiBold" />
+        <Border x:Name="TableHost" CornerRadius="14" Padding="0"
+                Background="{StaticResource DemarSurfaceHighBrush}" />
+        <TextBlock x:Name="FootnoteText" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
+        <Button x:Name="BuyButton" Style="{StaticResource DemarAccentButtonStyle}"
+                HorizontalAlignment="Stretch" Height="48" Click="OnBuy" />
+      </StackPanel>
+    </ScrollViewer>
+  </controls:BottomSheetChrome>
+</UserControl>

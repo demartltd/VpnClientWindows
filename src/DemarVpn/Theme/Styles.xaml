@@ -204,21 +204,39 @@
                   CornerRadius="{TemplateBinding CornerRadius}"
                   Padding="{TemplateBinding Padding}"
                   MinHeight="{TemplateBinding MinHeight}">
-            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+            <ContentPresenter x:Name="ContentPresenter"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
                               Content="{TemplateBinding Content}"
                               Foreground="{TemplateBinding Foreground}" />
             <VisualStateManager.VisualStateGroups>
               <VisualStateGroup x:Name="CommonStates">
-                <VisualState x:Name="Normal" />
+                <VisualState x:Name="Normal">
+                  <Storyboard>
+                    <DoubleAnimation Storyboard.TargetName="Root"
+                                     Storyboard.TargetProperty="Opacity"
+                                     To="1" Duration="0" />
+                  </Storyboard>
+                </VisualState>
                 <VisualState x:Name="PointerOver" />
                 <VisualState x:Name="Pressed" />
-                <VisualState x:Name="Disabled" />
+                <VisualState x:Name="Disabled">
+                  <Storyboard>
+                    <DoubleAnimation Storyboard.TargetName="Root"
+                                     Storyboard.TargetProperty="Opacity"
+                                     To="0.42" Duration="0" />
+                  </Storyboard>
+                </VisualState>
               </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
           </Border>
         </ControlTemplate>
       </Setter.Value>
     </Setter>
+  </Style>
+
+  <Style x:Key="DemarOutlineButtonStyle" TargetType="Button" BasedOn="{StaticResource DemarAccentButtonStyle}">
+    <Setter Property="Background" Value="{StaticResource DemarSurfaceHighBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource DemarOnPrimaryContainerBrush}" />
   </Style>
 
   <Style x:Key="DemarCard" TargetType="Border">

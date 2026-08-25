@@ -33,10 +33,24 @@ public partial class App : Application
         _window.Activate();
 
         var launchArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
-        var uri = SingleInstance.TryGetAuthUri(launchArgs)
-                  ?? ProtocolRegistration.ConsumePendingUri();
+        var uri = ResolveLaunchUri(launchArgs);
         HandleIncomingUri(uri);
         _ = BootstrapAsync();
+    }
+
+    /** Cold start: only handle URI from activation args; never replay stale oauth_handoff.uri. */
+    private static Uri? ResolveLaunchUri(AppActivationArguments launchArgs)
+    {
+        var uri = SingleInstance.TryGetAuthUri(launchArgs);
+        if (uri is not null)
+        {
+            ProtocolRegistration.ClearPendingUri();
+            return uri;
+        }
+        if (SingleInstance.IsProtocolActivation(launchArgs))
+            return ProtocolRegistration.ConsumePendingUri();
+        ProtocolRegistration.ClearPendingUri();
+        return null;
     }
 
     private async Task BootstrapAsync()
@@ -54,6 +68,7 @@ public partial class App : Application
             WindowFocus.BringToFront(MainHwnd);
             var uri = SingleInstance.TryGetAuthUri(args)
                       ?? ProtocolRegistration.ConsumePendingUri();
+            ProtocolRegistration.ClearPendingUri();
             HandleIncomingUri(uri);
         });
     }
@@ -61,6 +76,16 @@ public partial class App : Application
     private void HandleIncomingUri(Uri? uri)
     {
         if (uri is null) return;
+        if (DemarNavigation.TryParsePayReturn(uri, out var payOk))
+        {
+            _main?.Shell?.HandlePayReturn(payOk);
+            return;
+        }
+        if (DemarNavigation.TryParseAccountSheet(uri, out var accountSheet))
+        {
+            _main?.Shell?.OpenAccountSheet(accountSheet);
+            return;
+        }
         if (DemarNavigation.TryParseTrafficRoute(uri))
         {
             AppServices.Vpn.RaiseTrafficLimitReached();

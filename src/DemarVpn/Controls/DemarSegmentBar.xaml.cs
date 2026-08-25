@@ -76,6 +76,7 @@ public sealed partial class DemarSegmentBar : UserControl
         var primary = ((SolidColorBrush)res["DemarSeedBrush"]).Color;
         var onSel = (Brush)res["DemarOnPrimaryContainerBrush"];
         var onNorm = (Brush)res["DemarSecondaryBrush"];
+        const double r = 8;
         for (var i = 0; i < Segments.Children.Count; i++)
         {
             if (Segments.Children[i] is not Border cell || cell.Child is not TextBlock label) continue;
@@ -83,12 +84,21 @@ public sealed partial class DemarSegmentBar : UserControl
             cell.Background = selected
                 ? new SolidColorBrush(Color.FromArgb(46, primary.R, primary.G, primary.B))
                 : new SolidColorBrush(Colors.Transparent);
+            cell.CornerRadius = selected ? SegmentCornerRadius(i, Segments.Children.Count, r) : new CornerRadius(0);
             label.FontWeight = selected
                 ? Microsoft.UI.Text.FontWeights.SemiBold
                 : Microsoft.UI.Text.FontWeights.Medium;
             label.Foreground = selected ? onSel : onNorm;
         }
     }
+
+    private static CornerRadius SegmentCornerRadius(int index, int count, double radius) => count switch
+    {
+        1 => new CornerRadius(radius),
+        _ when index == 0 => new CornerRadius(radius, 0, 0, radius),
+        _ when index == count - 1 => new CornerRadius(0, radius, radius, 0),
+        _ => new CornerRadius(0),
+    };
 
     private void OnPointer(object sender, PointerRoutedEventArgs e)
     {

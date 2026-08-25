@@ -60,11 +60,34 @@ public class DemarNavigationTest
     }
 
     [Theory]
-    [InlineData("demarvpn://settings/support")]
-    [InlineData("demarvpn://settings/traffic/extra")]
-    [InlineData("demar://settings/traffic")]
-    public void Traffic_rejects_bad_uris(string raw)
+    [InlineData("demarvpn://pay/ok", true)]
+    [InlineData("demarvpn://pay/fail", false)]
+    [InlineData("demarvpn://open/pay/ok", true)]
+    public void Pay_accepts_ok_fail(string raw, bool success)
     {
-        Assert.False(DemarNavigation.TryParseTrafficRoute(new Uri(raw)));
+        Assert.True(DemarNavigation.TryParsePayReturn(new Uri(raw), out var ok));
+        Assert.Equal(success, ok);
     }
+
+    [Theory]
+    [InlineData("demarvpn://pay/other")]
+    [InlineData("demarvpn://settings/pay/ok")]
+    [InlineData("https://pay/ok")]
+    public void Pay_rejects_bad_uris(string raw) =>
+        Assert.False(DemarNavigation.TryParsePayReturn(new Uri(raw), out _));
+
+    [Theory]
+    [InlineData("demarvpn://account/buy", DemarNavigation.AccountSheet.Buy)]
+    [InlineData("demarvpn://account/plans", DemarNavigation.AccountSheet.Plans)]
+    [InlineData("demarvpn://account/traffic", DemarNavigation.AccountSheet.Traffic)]
+    [InlineData("demarvpn://open/account/buy", DemarNavigation.AccountSheet.Buy)]
+    public void Account_accepts_sheet_routes(string raw, DemarNavigation.AccountSheet sheet)
+    {
+        Assert.True(DemarNavigation.TryParseAccountSheet(new Uri(raw), out var parsed));
+        Assert.Equal(sheet, parsed);
+    }
+
+    [Fact]
+    public void Account_rejects_unknown() =>
+        Assert.False(DemarNavigation.TryParseAccountSheet(new Uri("demarvpn://account/family"), out _));
 }

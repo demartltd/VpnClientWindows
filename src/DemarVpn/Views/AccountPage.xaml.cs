@@ -16,6 +16,7 @@ public sealed partial class AccountPage : Page
     public event Action? SignOutRequested;
     public event Action? NotifySheetRequested;
     public event Action? TrafficSheetRequested;
+    public event Action<CheckoutIntent>? CheckoutRequested;
 
     private bool _signingOut;
     private string? _userId;
@@ -179,7 +180,14 @@ public sealed partial class AccountPage : Page
         AppServices.Snackbar.ShowInfo(Strings.AccountIdCopied);
     }
 
-    private void OnPurchase(object sender, RoutedEventArgs e) => AppServices.Snackbar.ShowSoon();
+    private void OnPurchase(object sender, RoutedEventArgs e)
+    {
+        var rawPlan = AccountStore.Account?.VpnSubscription ?? AuthSessionStore.Current?.VpnSubscription;
+        var isFree = string.Equals(rawPlan, "free", StringComparison.OrdinalIgnoreCase)
+                     || string.IsNullOrWhiteSpace(rawPlan);
+        CheckoutRequested?.Invoke(isFree ? CheckoutIntent.Buy : CheckoutIntent.Renew);
+    }
+
     private void OnFamily(object sender, TappedRoutedEventArgs e) => AppServices.Snackbar.ShowSoon();
     private void OnTraffic(object? sender, EventArgs e) => TrafficSheetRequested?.Invoke();
     private void OnNotify(object? sender, EventArgs e) => NotifySheetRequested?.Invoke();

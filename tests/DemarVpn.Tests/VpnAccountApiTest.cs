@@ -92,6 +92,23 @@ public class VpnAccountApiTest
     }
 
     [Fact]
+    public void ParsePromo_readsAppliedDiscount()
+    {
+        var json = JsonNode.Parse(
+            """
+            {
+              "result": "applied",
+              "message": "",
+              "discountPercent": 15
+            }
+            """) as JsonObject;
+        var promo = VpnAccountApi.ParsePromo(json!);
+        Assert.True(promo.IsApplied);
+        Assert.Equal(15, promo.DiscountPercent);
+        Assert.Equal(Strings.PromoApplied, promo.LocalizedMessage);
+    }
+
+    [Fact]
     public void ParsePromo_defaultsMissingResult()
     {
         var json = JsonNode.Parse("{}") as JsonObject;

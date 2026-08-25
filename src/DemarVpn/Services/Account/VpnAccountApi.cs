@@ -26,21 +26,36 @@ public static class VpnAccountApi
             DemarHttp.OptBool(json, "notifyImportant", true));
     }
 
-    public static async Task<PromoResult> ActivatePromoAsync(string userId, string loginAt, string code, CancellationToken ct = default)
-    {
-        var body = SessionBody(userId, loginAt);
-        body["code"] = code;
-        return ParsePromo(await PostAsync("/vpn/promo/activate", body, ct));
-    }
+    public static async Task<PromoResult> ActivatePromoAsync(string userId, string loginAt, string code, CancellationToken ct = default) =>
+        await PostPromoAsync("/vpn/promo/activate", userId, loginAt, code, ct);
+
+    /** Discount preview for checkout (does not consume the code). */
+    public static Task<PromoResult> ApplyPromoAsync(string userId, string loginAt, string code, CancellationToken ct = default) =>
+        PostPromoAsync("/vpn/promo/apply", userId, loginAt, code, ct);
 
     public static PromoResult ParsePromo(JsonObject json)
     {
         static string? Blank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
+        int? discount = null;
+        if (json.ContainsKey("discountPercent"))
+        {
+            var d = DemarHttp.OptInt(json, "discountPercent");
+            if (d >= 0) discount = d;
+        }
         return new(
             DemarHttp.OptString(json, "result") ?? "not_found",
             DemarHttp.OptString(json, "message") ?? "",
             Blank(DemarHttp.OptString(json, "subscription")),
-            Blank(DemarHttp.OptString(json, "expiresAt")));
+            Blank(DemarHttp.OptString(json, "expiresAt")),
+            discount);
+    }
+
+    private static async Task<PromoResult> PostPromoAsync(
+        string path, string userId, string loginAt, string code, CancellationToken ct)
+    {
+        var body = SessionBody(userId, loginAt);
+        body["code"] = code.Trim().ToUpperInvariant();
+        return ParsePromo(await PostAsync(path, body, ct));
     }
 
     public static VpnAccount ParseAccount(JsonObject json) => new(

@@ -33,6 +33,9 @@ src/DemarVpn/
 │   ├── DocumentsBottomSheet.xaml  # Terms / Privacy picker
 │   ├── NotifyBottomSheet.xaml     # account notify toggles
 │   ├── TrafficBottomSheet.xaml    # monthly traffic pie
+│   ├── SubscriptionCheckoutSheet.xaml  # pay checkout (narrow≈iOS / wide≈macOS @ 800)
+│   ├── PlanCompareSheet.xaml      # Free/Plus/VIP compare
+│   ├── PayResultSheet.xaml        # pay/ok|fail result
 │   ├── TrafficPieChart.xaml
 │   ├── DemarSegmentBar.xaml       # protocol/tier filter (drag-scrub)
 │   ├── SettingsActionButton.xaml
@@ -45,7 +48,7 @@ src/DemarVpn/
 │   ├── WindowsReleaseApi.cs       # GET /windows/version (+ beta channel pick)
 │   ├── UpdateChannelStore.cs      # prefer_beta prefs
 │   ├── RunAtStartup.cs            # logon Task Scheduler autostart (default ON)
-│   ├── Account/                   # VpnAccountApi, AccountStore (account/traffic/notify/promo; refresh on start + servers)
+│   ├── Account/                   # VpnAccountApi, AccountStore, PayApi (plans/create + promo/apply)
 │   ├── Support/                   # SupportApi → csauth.example.invalid ticket chat (channel=windows; album ≤10 WebP)
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi (POST vpn.example.invalid/vpn/servers → hy2)
@@ -58,7 +61,7 @@ src/DemarVpn/
 │   │   ├── PublicEgressDiagnostics.cs
 │   │   └── WindowsEgressRouteSnapshot.cs
 │   ├── AppLog.cs
-│   ├── DemarNavigation.cs         # demarvpn:// auth + support deep links
+│   ├── DemarNavigation.cs         # demarvpn:// auth + support + pay + account deep links
 │   ├── ProtocolRegistration.cs    # demarvpn:// HKCU
 │   └── SnackbarService.cs
 ├── Models/
@@ -77,8 +80,9 @@ tests/DemarVpn.Tests/
 ├── AppUpdateTest.cs             # version parse + SHA256 + beta channel
 ├── RunAtStartupTest.cs          # run_at_startup prefs (default ON)
 ├── VpnAccountApiTest.cs         # account/traffic parse + promo + pieSlices + formatBytes
+├── PayApiParseTest.cs           # pay catalog/checkout/formatPrice + CheckoutIntent
 ├── SupportApiTest.cs            # support ticket JSON parse / encode cache
-├── DemarNavigationTest.cs       # demarvpn:// auth + support deep links
+├── DemarNavigationTest.cs       # demarvpn:// auth + support + pay + account deep links
 └── LegalDocumentTest.cs         # ToS/PP URLs + RawTextFetcher.Decode
 ```
 

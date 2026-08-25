@@ -1,6 +1,7 @@
 using DemarVpn.Controls;
 using DemarVpn.Services;
 using DemarVpn.Services.Account;
+using DemarVpn.Services.Auth;
 using DemarVpn.Services.Support;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -14,6 +15,8 @@ public sealed partial class ShellPage : Page
     private int _loginReturnTab = 3;
     private bool _openSupportAfterLogin;
     private SupportRoute? _pendingSupportRoute;
+    private CheckoutIntent? _pendingCheckout;
+    private long _lastPayRefreshAt;
 
     public ShellPage()
     {
@@ -28,6 +31,10 @@ public sealed partial class ShellPage : Page
         AccountTab.SignOutRequested += OnSignOutRequested;
         AccountTab.NotifySheetRequested += () => NotifySheet.Show();
         AccountTab.TrafficSheetRequested += () => TrafficSheet.Show();
+        AccountTab.CheckoutRequested += OpenCheckout;
+        TrafficSheet.UpgradeTrafficRequested += OnUpgradeTraffic;
+        CheckoutSheet.CompareRequested += OpenPlanCompare;
+        CompareSheet.BuyRequested += () => OpenCheckout(CheckoutIntent.Buy);
         AppServices.Vpn.TrafficLimitReached += () => DispatcherQueue.TryEnqueue(OpenTrafficSheet);
         AccountStore.Changed += OnAccountStoreChanged;
         LoginSheet.SignedIn += OnLoginSuccess;
@@ -41,6 +48,7 @@ public sealed partial class ShellPage : Page
         GoToTab(_loginReturnTab);
         AccountTab.Refresh();
         MaybeOpenPendingSupport();
+        MaybeOpenPendingCheckout();
     }
 
     public void ShowLogin(int returnTab = 3)
@@ -50,6 +58,81 @@ public sealed partial class ShellPage : Page
     }
 
     public void GoToServers() => GoToTab(1);
+
+    public void OpenAccountSheet(DemarNavigation.AccountSheet sheet)
+    {
+        if (!AppServices.Auth.SignedIn)
+        {
+            if (sheet == DemarNavigation.AccountSheet.Buy)
+                _pendingCheckout = CheckoutIntent.Buy;
+            ShowLogin(3);
+            return;
+        }
+        switch (sheet)
+        {
+            case DemarNavigation.AccountSheet.Buy:
+                OpenCheckout(CheckoutIntent.Buy);
+                break;
+            case DemarNavigation.AccountSheet.Plans:
+                OpenPlanCompare();
+                break;
+            case DemarNavigation.AccountSheet.Traffic:
+                OpenTrafficSheet();
+                break;
+        }
+    }
+
+    public void OpenCheckout(CheckoutIntent intent)
+    {
+        if (!AppServices.Auth.SignedIn)
+        {
+            _pendingCheckout = intent;
+            ShowLogin(3);
+            return;
+        }
+        GoToTab(3);
+        CompareSheet.Dismiss();
+        PayResultSheet.Dismiss();
+        var plan = AccountStore.Account?.VpnSubscription ?? AuthSessionStore.Current?.VpnSubscription;
+        CheckoutSheet.Show(intent, plan);
+    }
+
+    public void OpenPlanCompare()
+    {
+        if (!AppServices.Auth.SignedIn)
+        {
+            ShowLogin(3);
+            return;
+        }
+        GoToTab(3);
+        CheckoutSheet.Dismiss();
+        CompareSheet.Show();
+    }
+
+    public void HandlePayReturn(bool success)
+    {
+        GoToTab(3);
+        CheckoutSheet.Dismiss();
+        CompareSheet.Dismiss();
+        PayResultSheet.Show(success);
+        if (!success) return;
+        var now = Environment.TickCount64;
+        if (now - _lastPayRefreshAt < 5_000) return;
+        _lastPayRefreshAt = now;
+        _ = AppServices.Vpn.RefreshServersAsync();
+    }
+
+    private void OnUpgradeTraffic()
+    {
+        TrafficSheet.Dismiss();
+        _ = OpenCheckoutDelayedAsync(CheckoutIntent.UpgradeTraffic);
+    }
+
+    private async Task OpenCheckoutDelayedAsync(CheckoutIntent intent)
+    {
+        await Task.Delay(400);
+        OpenCheckout(intent);
+    }
 
     private void OpenTrafficSheet()
     {
@@ -84,11 +167,19 @@ public sealed partial class ShellPage : Page
         ShowOverlay(typeof(SupportPage), route);
     }
 
+    private void MaybeOpenPendingCheckout()
+    {
+        if (_pendingCheckout is not { } intent) return;
+        _pendingCheckout = null;
+        OpenCheckout(intent);
+    }
+
     private void UpdateToolbarLayout()
     {
         var wide = ActualWidth >= (double)Application.Current.Resources["ToolbarWideBreakpoint"];
         Toolbar.SetWideLayout(wide);
         Snackbar.SetWideLayout(wide);
+        CheckoutSheet.SetWideLayout(wide);
     }
 
     private void OnAccountStoreChanged() =>
@@ -121,12 +212,16 @@ public sealed partial class ShellPage : Page
         await AppServices.Vpn.RefreshServersAsync();
         if (target == 1) ServersTab.OnTabVisible();
         MaybeOpenPendingSupport();
+        MaybeOpenPendingCheckout();
     }
 
     private async void OnSignOutRequested()
     {
         NotifySheet.Dismiss();
         TrafficSheet.Dismiss();
+        CheckoutSheet.Dismiss();
+        CompareSheet.Dismiss();
+        PayResultSheet.Dismiss();
         await AppServices.SignOutFullyAsync();
         AccountTab.Refresh();
         GoToTab(0);

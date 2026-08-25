@@ -1,4 +1,3 @@
-using DemarVpn.Services;
 using DemarVpn.Services.Account;
 using DemarVpn.Services.Auth;
 using Microsoft.UI.Xaml;
@@ -8,6 +7,8 @@ namespace DemarVpn.Controls;
 
 public sealed partial class TrafficBottomSheet : UserControl
 {
+    public event Action? UpgradeTrafficRequested;
+
     public TrafficBottomSheet()
     {
         InitializeComponent();
@@ -65,5 +66,5 @@ public sealed partial class TrafficBottomSheet : UserControl
         IncreaseButton.Visibility = Visibility.Collapsed;
     }
 
-    private void OnIncreaseLimits(object sender, RoutedEventArgs e) => AppServices.Snackbar.ShowSoon();
+    private void OnIncreaseLimits(object sender, RoutedEventArgs e) => UpgradeTrafficRequested?.Invoke();
 }

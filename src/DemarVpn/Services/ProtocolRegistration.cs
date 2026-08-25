@@ -79,6 +79,17 @@ public static class ProtocolRegistration
         }
     }
 
+    /** Drop staged demarvpn:// URI (e.g. stale pay/auth callback from a prior session). */
+    public static void ClearPendingUri()
+    {
+        try
+        {
+            if (File.Exists(HandoffPath))
+                File.Delete(HandoffPath);
+        }
+        catch { /* ignore */ }
+    }
+
     public static Uri? FindDemarUri(IEnumerable<string> args)
     {
         foreach (var arg in args)

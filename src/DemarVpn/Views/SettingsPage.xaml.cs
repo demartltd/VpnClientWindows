@@ -86,35 +86,9 @@ public sealed partial class SettingsPage : Page
         }
         if (XamlRoot is null) return;
 
-        var input = new TextBox
-        {
-            PlaceholderText = Strings.PromoPlaceholder,
-            CharacterCasing = CharacterCasing.Upper,
-        };
-        input.TextChanged += (_, _) =>
-        {
-            var filtered = FilterPromoCode(input.Text);
-            if (filtered != input.Text)
-            {
-                var sel = input.SelectionStart;
-                input.Text = filtered;
-                input.SelectionStart = Math.Min(sel, filtered.Length);
-            }
-        };
-
-        var dialog = new ContentDialog
-        {
-            Title = Strings.PromoEnterTitle,
-            Content = input,
-            PrimaryButtonText = Strings.PromoActivate,
-            CloseButtonText = Strings.Cancel,
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = XamlRoot,
-        };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
-
-        var code = input.Text.Trim();
-        if (code.Length == 0) return;
+        var code = await DemarDialog.PromptPromoCodeAsync(
+            XamlRoot, Strings.PromoActivate, Strings.PromoPlaceholder);
+        if (code is null) return;
 
         var session = AuthSessionStore.Current;
         if (session is null) return;
@@ -134,9 +108,6 @@ public sealed partial class SettingsPage : Page
             AppServices.Snackbar.ShowError(ex.Message);
         }
     }
-
-    private static string FilterPromoCode(string raw) =>
-        string.Concat(raw.ToUpperInvariant().Where(c => c is >= 'A' and <= 'Z' or >= '0' and <= '9'));
 
     private void OnVersionTap(object sender, RoutedEventArgs e)
     {

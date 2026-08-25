@@ -7,6 +7,53 @@ public static class DemarNavigation
 {
     public const string Scheme = "demarvpn";
 
+    public enum AccountSheet
+    {
+        Buy,
+        Plans,
+        Traffic,
+    }
+
+    /// <summary>demarvpn://pay/ok · demarvpn://pay/fail</summary>
+    public static bool TryParsePayReturn(Uri uri, out bool success)
+    {
+        success = false;
+        if (!TryPathParts(uri, out var parts) || parts.Count != 2) return false;
+        if (!parts[0].Equals("pay", StringComparison.OrdinalIgnoreCase)) return false;
+        if (parts[1].Equals("ok", StringComparison.OrdinalIgnoreCase))
+        {
+            success = true;
+            return true;
+        }
+        if (parts[1].Equals("fail", StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    /// <summary>demarvpn://account/buy|plans|traffic</summary>
+    public static bool TryParseAccountSheet(Uri uri, out AccountSheet sheet)
+    {
+        sheet = default;
+        if (!TryPathParts(uri, out var parts) || parts.Count != 2) return false;
+        if (!parts[0].Equals("account", StringComparison.OrdinalIgnoreCase)) return false;
+        if (parts[1].Equals("buy", StringComparison.OrdinalIgnoreCase))
+        {
+            sheet = AccountSheet.Buy;
+            return true;
+        }
+        if (parts[1].Equals("plans", StringComparison.OrdinalIgnoreCase))
+        {
+            sheet = AccountSheet.Plans;
+            return true;
+        }
+        if (parts[1].Equals("traffic", StringComparison.OrdinalIgnoreCase))
+        {
+            sheet = AccountSheet.Traffic;
+            return true;
+        }
+        return false;
+    }
+
     /// <summary>
     /// demarvpn://settings/support · …/ticket/{id} · …/new/{themeId}
     /// (optional open/ prefix).
@@ -14,16 +61,7 @@ public static class DemarNavigation
     public static bool TryParseSupportRoute(Uri uri, out SupportRoute? route)
     {
         route = null;
-        if (!uri.Scheme.Equals(Scheme, StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        var parts = new List<string>();
-        if (!string.IsNullOrWhiteSpace(uri.Host))
-            parts.Add(uri.Host);
-        parts.AddRange(uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries));
-        if (parts.Count > 0 && parts[0].Equals("open", StringComparison.OrdinalIgnoreCase))
-            parts.RemoveAt(0);
-        if (parts.Count < 2) return false;
+        if (!TryPathParts(uri, out var parts) || parts.Count < 2) return false;
         if (!parts[0].Equals("settings", StringComparison.OrdinalIgnoreCase)) return false;
         if (!parts[1].Equals("support", StringComparison.OrdinalIgnoreCase)) return false;
 
@@ -50,18 +88,23 @@ public static class DemarNavigation
     /// </summary>
     public static bool TryParseTrafficRoute(Uri uri)
     {
+        if (!TryPathParts(uri, out var parts)) return false;
+        return parts.Count == 2
+            && parts[0].Equals("settings", StringComparison.OrdinalIgnoreCase)
+            && parts[1].Equals("traffic", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryPathParts(Uri uri, out List<string> parts)
+    {
+        parts = [];
         if (!uri.Scheme.Equals(Scheme, StringComparison.OrdinalIgnoreCase))
             return false;
-
-        var parts = new List<string>();
         if (!string.IsNullOrWhiteSpace(uri.Host))
             parts.Add(uri.Host);
         parts.AddRange(uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries));
         if (parts.Count > 0 && parts[0].Equals("open", StringComparison.OrdinalIgnoreCase))
             parts.RemoveAt(0);
-        return parts.Count == 2
-            && parts[0].Equals("settings", StringComparison.OrdinalIgnoreCase)
-            && parts[1].Equals("traffic", StringComparison.OrdinalIgnoreCase);
+        return true;
     }
 
     public static bool TryParseAuthHandoff(Uri uri, out string? token, out string? code)
