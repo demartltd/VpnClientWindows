@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using DemarVpn.Domain.Vpn;
+using DemarVpn.Domain.Vpn.Tun;
 using DemarVpn.Services.Network;
 using DemarVpn.Services.Servers;
 using DemarVpn.Services.Vpn;
@@ -117,6 +118,29 @@ public class VpnPipelineTest
         var plan = Fixture(server: "vpn.example.com").ConnectPlan;
         Assert.Contains("vpn.example.com", plan.Tun.BootstrapDomains);
         Assert.Empty(plan.DirectIPs);
+    }
+
+    [Fact]
+    public void TunBypass_addsProcessAndDomainRules()
+    {
+        var plan = Fixture().ConnectPlan;
+        var bypass = new TunBypassOptions(["steam.exe"], ["store.steampowered.com"]);
+        var cfg = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass))!.AsObject();
+        var rules = cfg["route"]!["rules"]!.AsArray();
+
+        Assert.Contains(rules, r =>
+            r!["process_name"]?.AsArray().Any(p => p!.GetValue<string>() == "steam.exe") == true &&
+            r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
+        Assert.Contains(rules, r =>
+            r!["domain"]?.AsArray().Any(d => d!.GetValue<string>() == "store.steampowered.com") == true &&
+            r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
+        Assert.Contains(rules, r =>
+            r!["process_name"]?.AsArray().Any(p => p!.GetValue<string>() == TunExeNames.SingBox) == true);
+
+        var dnsRules = cfg["dns"]!["rules"]!.AsArray();
+        Assert.Contains(dnsRules, r =>
+            r!["domain"]?.AsArray().Any(d => d!.GetValue<string>() == "store.steampowered.com") == true &&
+            r!["server"]?.GetValue<string>() == SingBoxTags.DnsDirect);
     }
 
     [Fact]

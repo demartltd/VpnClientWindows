@@ -1,0 +1,19 @@
+<local:OverlayPage
+    x:Class="DemarVpn.Views.TunSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:DemarVpn.Views"
+    xmlns:controls="using:DemarVpn.Controls"
+    Loaded="OnLoaded"
+    Unloaded="OnUnloaded">
+  <local:OverlayPage.Resources>
+    <ItemsPanelTemplate x:Key="TunChipWrapPanel">
+      <controls:TunChipWrapPanel ItemSpacing="6" LineSpacing="6" />
+    </ItemsPanelTemplate>
+  </local:OverlayPage.Resources>
+  <controls:OverlayChrome x:Name="Chrome">
+    <ScrollViewer Padding="{StaticResource OverlayBodyPadding}">
+      <StackPanel x:Name="RootPanel" Spacing="12" Opacity="1" />
+    </ScrollViewer>
+  </controls:OverlayChrome>
+</local:OverlayPage>

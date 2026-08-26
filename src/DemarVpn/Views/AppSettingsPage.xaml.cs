@@ -15,6 +15,8 @@ public sealed partial class AppSettingsPage : OverlayPage
     {
         InitializeComponent();
         Chrome.Title = Strings.AppSettingsTitle;
+        TunRow.Title = Strings.SettingsTun;
+        TunRow.Subtitle = Strings.SettingsTunSub;
         StartupTitle.Text = Strings.SettingsRunAtStartup;
         StartupSub.Text = Strings.SettingsRunAtStartupSub;
         StartupToggle.IsOn = RunAtStartup.Enabled;
@@ -27,6 +29,8 @@ public sealed partial class AppSettingsPage : OverlayPage
         RefreshJournal();
         UpdateExpandLabel();
     }
+
+    private void OnTunSettings(object? sender, EventArgs e) => Frame?.Navigate(typeof(TunSettingsPage));
 
     private void OnStartupToggled(object sender, RoutedEventArgs e)
     {

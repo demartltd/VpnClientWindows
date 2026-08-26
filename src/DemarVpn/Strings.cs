@@ -140,6 +140,23 @@ public static class Strings
     public const string SettingsPrivacy = "Конфиденциальность";
     public const string SettingsPrivacySub = "Как обрабатываются данные";
     public const string AppSettingsTitle = "Настройки приложения";
+    public const string SettingsTun = "Настройки TUN";
+    public const string SettingsTunSub = "Исключения приложений и сайтов из туннеля";
+    public const string SettingsTunTitle = "Настройки TUN";
+    public const string SettingsTunRulesTitle = "Настройки TUN";
+    public const string SettingsTunRulesSub = "Исключать выбранные приложения и группы из VPN";
+    public const string SettingsTunCustomTitle = "Свои приложения";
+    public const string SettingsTunCustomFreeSub = "Доступно с подпиской Plus или VIP";
+    public const string SettingsTunAppsAdd = "Добавить приложение";
+    public const string SettingsTunAppsAddSub = "Добавьте .exe в список исключений";
+    public const string SettingsTunAppsPickExplorer = "В Проводнике";
+    public const string SettingsTunAppsTypeName = "Имя .exe";
+    public const string SettingsTunAppsTypeHint = "msedge.exe";
+    public const string SettingsTunAppsMustExe = "Имя должно заканчиваться на .exe";
+    public const string SettingsTunAppsPickUnavailable = "Не удалось открыть проводник";
+    public const string SettingsTunGroupsTitle = "Готовые группы приложений";
+    public const string SettingsTunSiteGroupsTitle = "Готовые группы сайтов";
+    public const string SettingsTunGroupsFreeHint = "На Free все группы включены";
     public const string SettingsRunAtStartup = "Запускать при включении ПК";
     public const string SettingsRunAtStartupSub = "Автоматически открывать Demar VPN после входа в Windows";
     public const string SettingsBeta = "Устанавливать бета-версии";
@@ -215,5 +232,5 @@ public static class Strings
     public const string UpdateDownloadFail = "Не удалось скачать обновление";
     public const string UpdateHashMismatch = "Файл обновления повреждён (SHA-256). Попробуйте снова.";
     public const string UpdateDownloading = "Загрузка";
-    public const string VersionName = "1.0.16";
+    public const string VersionName = "1.0.17";
 }

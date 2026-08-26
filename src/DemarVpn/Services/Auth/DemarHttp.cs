@@ -93,6 +93,30 @@ public static class DemarHttp
             return req;
         }, ct);
 
+    public static Task<string?> GetStringAsync(string url, CancellationToken ct = default) =>
+        SendStringAsync(() => new HttpRequestMessage(HttpMethod.Get, url) { Version = HttpVersion.Version11 }, ct);
+
+    private static async Task<string?> SendStringAsync(Func<HttpRequestMessage> createRequest, CancellationToken ct)
+    {
+        try
+        {
+            return await Task.Run(async () =>
+            {
+                using var req = createRequest();
+                using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                linked.CancelAfter(ConnectTimeoutMs + ReadTimeoutMs);
+                using var res = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, linked.Token)
+                    .ConfigureAwait(false);
+                var raw = await res.Content.ReadAsStringAsync(linked.Token).ConfigureAwait(false);
+                return res.IsSuccessStatusCode ? raw : null;
+            }, ct).ConfigureAwait(true);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static async Task<JsonObject> SendAsync(Func<HttpRequestMessage> createRequest, CancellationToken ct)
     {
         return await Task.Run(async () =>

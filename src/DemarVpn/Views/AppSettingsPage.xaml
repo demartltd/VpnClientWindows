@@ -8,6 +8,9 @@
     <ScrollViewer Padding="{StaticResource OverlayBodyPadding}">
       <StackPanel Spacing="12">
         <Border Style="{StaticResource DemarCard}">
+          <controls:SettingsActionButton x:Name="TunRow" Glyph="&#xE705;" Click="OnTunSettings" />
+        </Border>
+        <Border Style="{StaticResource DemarCard}">
           <Grid ColumnSpacing="12">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />

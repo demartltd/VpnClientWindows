@@ -1,4 +1,5 @@
 using DemarVpn.Domain.Vpn;
+using DemarVpn.Domain.Vpn.Tun;
 using DemarVpn.Models;
 using DemarVpn.Services.Account;
 using DemarVpn.Services.Auth;
@@ -19,6 +20,7 @@ public sealed class VpnController : NotifyBase
     private readonly object _reachLock = new();
     private CancellationTokenSource? _reachCts;
     private CancellationTokenSource? _trafficCts;
+    private bool _reconnectAfterDisconnect;
     private static readonly string LastProfilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "DemarVpn", "last_profile_id");
@@ -37,6 +39,56 @@ public sealed class VpnController : NotifyBase
 
     public event Action<string>? ErrorRaised;
     public event Action? TrafficLimitReached;
+
+    public static bool IsFreeSubscription()
+    {
+        var sub = AuthSessionStore.Current?.VpnSubscription ?? AccountStore.Account?.VpnSubscription;
+        return sub is null || sub.Equals("free", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public async Task RefreshTunGroupsAsync(CancellationToken ct = default)
+    {
+        var payload = await TunGroupsApi.FetchAsync(ct);
+        if (payload is null) return;
+        TunSettingsStore.CacheGroups(payload.Catalog, payload.Raw);
+        AppLog.Append($"tun_groups: loaded {payload.Catalog.AppGroups.Count} app + {payload.Catalog.SiteGroups.Count} site");
+    }
+
+    public void AddBypassExe(string exe)
+    {
+        if (IsFreeSubscription()) return;
+        TunSettingsStore.AddBypassExe(exe);
+        AppLog.Append($"tun_apps=add {TunExeNames.Normalize(exe)}");
+    }
+
+    public void RemoveBypassExe(string exe)
+    {
+        TunSettingsStore.RemoveBypassExe(exe);
+        AppLog.Append($"tun_apps=remove {TunExeNames.Normalize(exe)}");
+    }
+
+    public void SetAppGroupEnabled(string groupId, bool enabled)
+    {
+        if (IsFreeSubscription()) return;
+        TunSettingsStore.SetAppGroupEnabled(groupId, enabled);
+        AppLog.Append($"tun_groups={(enabled ? "on" : "off")} {groupId}");
+    }
+
+    public void SetSiteGroupEnabled(string groupId, bool enabled)
+    {
+        if (IsFreeSubscription()) return;
+        TunSettingsStore.SetSiteGroupEnabled(groupId, enabled);
+        AppLog.Append($"tun_sites={(enabled ? "on" : "off")} {groupId}");
+    }
+
+    public void SetTunRulesEnabled(bool enabled)
+    {
+        if (IsFreeSubscription()) return;
+        TunSettingsStore.SetRulesEnabled(enabled);
+        AppLog.Append($"tun_rules={(enabled ? "on" : "off")}");
+    }
+
+    private string TunSettingsFingerprint() => TunSettingsStore.SettingsFingerprint(IsFreeSubscription());
 
     /// <summary>Open account traffic sheet (connect block + demarvpn://settings/traffic).</summary>
     public void RaiseTrafficLimitReached() => TrafficLimitReached?.Invoke();
@@ -82,12 +134,13 @@ public sealed class VpnController : NotifyBase
         {
             var serversTask = ServersApi.FetchServersAsync(session.UserId, session.LoginAt, ct);
             var accountTask = AccountStore.RefreshAsync(ct);
+            var tunTask = RefreshTunGroupsAsync(ct);
             var result = await serversTask;
             ApplyServerList(result.Servers);
             TrafficExceeded = result.TrafficExceeded;
             Raise(nameof(TrafficExceeded));
             AppLog.Append($"servers: loaded {result.Servers.Count} (sub={result.VpnSubscription})");
-            await accountTask;
+            await Task.WhenAll(accountTask, tunTask);
             _ = SupportStore.RefreshUnreadAsync(ct);
             await RefreshServerReachabilityAsync(ct);
         }
@@ -192,9 +245,11 @@ public sealed class VpnController : NotifyBase
             }
 
             var port = Selected.UplinkPort;
-            var configJson = SingBoxConfigBuilder.BuildTunConfigJson(plan);
+            var bypass = TunSettingsStore.EffectiveBypass(IsFreeSubscription());
+            var configJson = SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass);
             AppLog.Append(
-                $"connect uplinkHost={plan.UplinkHost} uplinkPort={port} target={connectTarget} resolved={string.Join(",", resolved)} rs={plan.BypassRuleSets.Count}");
+                $"connect uplinkHost={plan.UplinkHost} uplinkPort={port} target={connectTarget} resolved={string.Join(",", resolved)} " +
+                $"tun={TunSettingsFingerprint()} exes={bypass.BypassExes.Count} hosts={bypass.BypassHosts.Count} rs={plan.BypassRuleSets.Count}");
 
             _watchdog = CancellationTokenSource.CreateLinkedTokenSource(token);
             _ = WatchdogAsync(_watchdog.Token);
@@ -232,13 +287,15 @@ public sealed class VpnController : NotifyBase
         }
     }
 
-    public async Task DisconnectAsync()
+    public async Task DisconnectAsync(bool reconnectAfter = false)
     {
-        if (State.Kind is VpnStateKind.Disconnected or VpnStateKind.Disconnecting) return;
+        if (!reconnectAfter && State.Kind is VpnStateKind.Disconnected or VpnStateKind.Disconnecting) return;
+        if (reconnectAfter && State.Kind is VpnStateKind.Disconnecting) return;
         _op?.Cancel();
         _watchdog?.Cancel();
         _health?.Cancel();
         StopTraffic();
+        if (!reconnectAfter) _reconnectAfterDisconnect = false;
         SetState(VpnState.Disconnecting);
         AppLog.Append("[ui] windows home: disconnect");
         try
@@ -247,12 +304,24 @@ public sealed class VpnController : NotifyBase
             ClearThroughput();
             SetState(VpnState.Disconnected);
             AppLog.Append("[vpn] disconnected");
+            if (_reconnectAfterDisconnect)
+            {
+                _reconnectAfterDisconnect = false;
+                await Task.Delay(ConnectTimeouts.SwitchSettleMs);
+                await ConnectAsync();
+            }
         }
         catch (Exception ex)
         {
             AppLog.Append($"[vpn] disconnect error: {ex.Message}");
             ClearThroughput();
             SetState(VpnState.Disconnected);
+            if (_reconnectAfterDisconnect)
+            {
+                _reconnectAfterDisconnect = false;
+                await Task.Delay(ConnectTimeouts.SwitchSettleMs);
+                await ConnectAsync();
+            }
         }
     }
 

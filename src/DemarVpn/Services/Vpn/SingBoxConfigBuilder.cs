@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DemarVpn.Domain.Vpn;
+using DemarVpn.Domain.Vpn.Tun;
 
 namespace DemarVpn.Services.Vpn;
 
@@ -11,15 +12,24 @@ public static class SingBoxConfigBuilder
 
     public static string BuildTunConfigJson(
         SingBoxConnectPlan plan,
+        TunBypassOptions? bypass = null,
         string tunName = "DemarVPN",
         int mtu = 1492,
         string logLevel = "warning") =>
-        BuildTunConfig(plan, tunName, mtu, logLevel).ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        BuildTunConfig(plan, bypass ?? TunBypassOptions.Empty, tunName, mtu, logLevel)
+            .ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 
-    private static JsonObject BuildTunConfig(SingBoxConnectPlan plan, string tunName, int mtu, string logLevel)
+    private static JsonObject BuildTunConfig(
+        SingBoxConnectPlan plan,
+        TunBypassOptions bypass,
+        string tunName,
+        int mtu,
+        string logLevel)
     {
         var bootstrap = plan.Tun.BootstrapDomains.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var ruleSets = plan.BypassRuleSets.DistinctBy(rs => rs.Tag).ToList();
+        var bypassExes = SelfBypassExes(bypass.BypassExes);
+        var bypassHosts = bypass.BypassHosts.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var experimental = new JsonObject
         {
             ["clash_api"] = new JsonObject
@@ -33,7 +43,7 @@ public static class SingBoxConfigBuilder
         return new JsonObject
         {
             ["log"] = new JsonObject { ["level"] = logLevel, ["timestamp"] = true },
-            ["dns"] = MakeDns(plan.Tun.DnsFinal, bootstrap, ruleSets),
+            ["dns"] = MakeDns(plan.Tun.DnsFinal, bootstrap, ruleSets, bypassHosts),
             ["inbounds"] = new JsonArray(MakeTunInbound(tunName, mtu, plan.DirectIPs, plan.Tun.StrictRoute), new JsonObject
             {
                 ["type"] = "mixed",
@@ -41,7 +51,7 @@ public static class SingBoxConfigBuilder
                 ["listen"] = SingBoxTags.DiagListenHost,
                 ["listen_port"] = SingBoxTags.DiagListenPort,
             }),
-            ["route"] = MakeRoute(SingBoxTags.TunInbound, plan.DirectIPs, bootstrap, ruleSets),
+            ["route"] = MakeRoute(SingBoxTags.TunInbound, plan.DirectIPs, bootstrap, ruleSets, bypassExes, bypassHosts),
             ["outbounds"] = new JsonArray(ToJson(plan.ProxyOutbound), new JsonObject
             {
                 ["type"] = "direct",
@@ -54,7 +64,8 @@ public static class SingBoxConfigBuilder
     private static JsonObject MakeDns(
         string dnsFinal,
         IReadOnlyList<string> bootstrapDomains,
-        IReadOnlyList<ApiBypassRuleSet> ruleSets)
+        IReadOnlyList<ApiBypassRuleSet> ruleSets,
+        IReadOnlyList<string> bypassHosts)
     {
         var rules = new JsonArray(
             new JsonObject { ["query_type"] = Arr("PTR"), ["action"] = "reject", ["method"] = "drop" },
@@ -64,7 +75,7 @@ public static class SingBoxConfigBuilder
                 ["action"] = "predefined",
                 ["answer"] = Arr("localhost. IN A 127.0.0.1"),
             });
-        foreach (var domain in bootstrapDomains)
+        foreach (var domain in bootstrapDomains.Concat(bypassHosts).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (CleanedDomain(domain) is not { } clean) continue;
             rules.Add(new JsonObject
@@ -105,7 +116,9 @@ public static class SingBoxConfigBuilder
         string inboundTag,
         IReadOnlyList<string> directIPs,
         IReadOnlyList<string> bootstrapDomains,
-        IReadOnlyList<ApiBypassRuleSet> ruleSets)
+        IReadOnlyList<ApiBypassRuleSet> ruleSets,
+        IReadOnlyList<string> bypassExes,
+        IReadOnlyList<string> bypassHosts)
     {
         var rules = new JsonArray(
             new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "sniff" },
@@ -113,6 +126,14 @@ public static class SingBoxConfigBuilder
             new JsonObject { ["network"] = Arr("udp"), ["port"] = Arr(443), ["action"] = "reject" },
             new JsonObject { ["ip_cidr"] = Arr("127.0.0.0/8"), ["action"] = "route", ["outbound"] = SingBoxTags.Direct },
             new JsonObject { ["ip_is_private"] = true, ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
+
+        foreach (var exe in bypassExes)
+            rules.Add(new JsonObject
+            {
+                ["process_name"] = Arr(exe),
+                ["action"] = "route",
+                ["outbound"] = SingBoxTags.Direct,
+            });
 
         foreach (var rs in ruleSets)
             rules.Add(new JsonObject
@@ -124,6 +145,12 @@ public static class SingBoxConfigBuilder
 
         foreach (var ip in directIPs)
             rules.Add(new JsonObject { ["ip_cidr"] = Arr($"{ip}/32"), ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
+
+        foreach (var domain in bypassHosts)
+        {
+            if (CleanedDomain(domain) is not { } clean) continue;
+            rules.Add(new JsonObject { ["domain"] = Arr(clean), ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
+        }
 
         foreach (var domain in bootstrapDomains)
         {
@@ -184,6 +211,19 @@ public static class SingBoxConfigBuilder
         foreach (var ip in directIPs) exclude.Add($"{ip}/32");
         tun["route_exclude_address"] = exclude;
         return tun;
+    }
+
+    private static List<string> SelfBypassExes(IReadOnlyList<string> bypassExes)
+    {
+        var self = TunExeNames.Normalize(Environment.ProcessPath);
+        if (self.Length == 0) self = TunExeNames.AppExe.ToLowerInvariant();
+        return bypassExes
+            .Select(TunExeNames.Normalize)
+            .Where(x => x.Length > 0)
+            .Append(TunExeNames.SingBox)
+            .Append(self)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private static string? CleanedDomain(string raw)

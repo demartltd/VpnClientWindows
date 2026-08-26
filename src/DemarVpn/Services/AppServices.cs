@@ -21,6 +21,7 @@ public static class AppServices
         UpdateChannelStore.Init();
         RunAtStartup.Init();
         RunAtStartup.Sync();
+        TunSettingsStore.Init();
         AuthSessionStore.Load();
         Auth.NotifyChanged();
         SingBoxLabel = ReadBundledVersion();
@@ -30,7 +31,11 @@ public static class AppServices
     {
         try
         {
-            if (!AuthRepository.IsSignedIn) return;
+            if (!AuthRepository.IsSignedIn)
+            {
+                await Vpn.RefreshTunGroupsAsync();
+                return;
+            }
             var ok = await AuthRepository.RefreshSessionAsync();
             Auth.NotifyChanged();
             if (ok)
