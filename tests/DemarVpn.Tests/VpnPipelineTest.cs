@@ -132,14 +132,14 @@ public class VpnPipelineTest
             r!["process_name"]?.AsArray().Any(p => p!.GetValue<string>() == "steam.exe") == true &&
             r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
         Assert.Contains(rules, r =>
-            r!["domain"]?.AsArray().Any(d => d!.GetValue<string>() == "store.steampowered.com") == true &&
+            r!["domain_suffix"]?.AsArray().Any(d => d!.GetValue<string>() == "store.steampowered.com") == true &&
             r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
         Assert.Contains(rules, r =>
             r!["process_name"]?.AsArray().Any(p => p!.GetValue<string>() == TunExeNames.SingBox) == true);
 
         var dnsRules = cfg["dns"]!["rules"]!.AsArray();
         Assert.Contains(dnsRules, r =>
-            r!["domain"]?.AsArray().Any(d => d!.GetValue<string>() == "store.steampowered.com") == true &&
+            r!["domain_suffix"]?.AsArray().Any(d => d!.GetValue<string>() == "store.steampowered.com") == true &&
             r!["server"]?.GetValue<string>() == SingBoxTags.DnsDirect);
     }
 

@@ -75,16 +75,20 @@ public static class SingBoxConfigBuilder
                 ["action"] = "predefined",
                 ["answer"] = Arr("localhost. IN A 127.0.0.1"),
             });
-        foreach (var domain in bootstrapDomains.Concat(bypassHosts).Distinct(StringComparer.OrdinalIgnoreCase))
-        {
-            if (CleanedDomain(domain) is not { } clean) continue;
+        if (CleanedDomains(bootstrapDomains) is { Count: > 0 } exact)
             rules.Add(new JsonObject
             {
-                ["domain"] = Arr(clean),
+                ["domain"] = Arr(exact),
                 ["action"] = "route",
                 ["server"] = SingBoxTags.DnsDirect,
             });
-        }
+        if (CleanedDomains(bypassHosts) is { Count: > 0 } suffixes)
+            rules.Add(new JsonObject
+            {
+                ["domain_suffix"] = Arr(suffixes),
+                ["action"] = "route",
+                ["server"] = SingBoxTags.DnsDirect,
+            });
         foreach (var rs in ruleSets.Where(r => r.IsGeosite))
         {
             rules.Add(new JsonObject
@@ -146,17 +150,20 @@ public static class SingBoxConfigBuilder
         foreach (var ip in directIPs)
             rules.Add(new JsonObject { ["ip_cidr"] = Arr($"{ip}/32"), ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
 
-        foreach (var domain in bypassHosts)
-        {
-            if (CleanedDomain(domain) is not { } clean) continue;
-            rules.Add(new JsonObject { ["domain"] = Arr(clean), ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
-        }
-
-        foreach (var domain in bootstrapDomains)
-        {
-            if (CleanedDomain(domain) is not { } clean) continue;
-            rules.Add(new JsonObject { ["domain"] = Arr(clean), ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
-        }
+        if (CleanedDomains(bypassHosts) is { Count: > 0 } suffixes)
+            rules.Add(new JsonObject
+            {
+                ["domain_suffix"] = Arr(suffixes),
+                ["action"] = "route",
+                ["outbound"] = SingBoxTags.Direct,
+            });
+        if (CleanedDomains(bootstrapDomains) is { Count: > 0 } exact)
+            rules.Add(new JsonObject
+            {
+                ["domain"] = Arr(exact),
+                ["action"] = "route",
+                ["outbound"] = SingBoxTags.Direct,
+            });
 
         rules.Add(new JsonObject { ["ip_version"] = 6, ["action"] = "reject" });
         rules.Add(new JsonObject { ["inbound"] = Arr(SingBoxTags.DiagInbound), ["action"] = "route", ["outbound"] = SingBoxTags.Proxy });
@@ -226,9 +233,15 @@ public static class SingBoxConfigBuilder
             .ToList();
     }
 
+    private static List<string> CleanedDomains(IEnumerable<string> raw) =>
+        raw.Select(CleanedDomain)
+            .OfType<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
     private static string? CleanedDomain(string raw)
     {
-        var trimmed = raw.Trim();
+        var trimmed = raw.Trim().Trim('.');
         return trimmed.Length == 0 ? null : trimmed;
     }
 
@@ -260,7 +273,9 @@ public static class SingBoxConfigBuilder
         return arr;
     }
 
-    private static JsonArray Arr(params object?[] items)
+    private static JsonArray Arr(params object?[] items) => Arr((IEnumerable<object?>)items);
+
+    private static JsonArray Arr(IEnumerable<object?> items)
     {
         var arr = new JsonArray();
         foreach (var item in items) arr.Add(ToNode(item));
