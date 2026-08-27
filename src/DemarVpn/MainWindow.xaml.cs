@@ -44,6 +44,13 @@ public sealed partial class MainWindow : Window
                     WindowLayoutStore.Save(AppWindow.Size.Width, AppWindow.Size.Height);
             };
         }
+        AppWindow.Changed += (_, e) =>
+        {
+            if (!e.DidSizeChange && !e.DidVisibilityChange) return;
+            if (AppWindow.Presenter is OverlappedPresenter { State: not OverlappedPresenterState.Restored })
+                return;
+            DispatcherQueue.TryEnqueue(() => Root.InvalidateArrange());
+        };
         TryMicaBackdrop();
         Root.Navigate(typeof(Views.ShellPage));
     }
