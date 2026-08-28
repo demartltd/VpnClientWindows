@@ -11,14 +11,21 @@ namespace DemarVpn.Services.Vpn;
 
 public sealed class SingBoxProcessEngine : IVpnEngine
 {
-    private const int StartupPollMs = 100;
+    private const int StartupPollMs = 200;
+    private const int StartupWaitMs = 20_000;
     private const int UacCancelledHResult = unchecked((int)0x800704C7);
+
+    private readonly SemaphoreSlim _gate = new(1, 1);
 
     private Process? _process;
     private int? _ownedPid;
+    private ProcessJobLink? _job;
     private readonly StringBuilder _stderr = new();
     private readonly string _configPath;
     private readonly string _logPath;
+    private readonly string _startupLogPath;
+
+    public event Action? CoreExited;
 
     public SingBoxProcessEngine()
     {
@@ -28,172 +35,292 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         Directory.CreateDirectory(dir);
         _configPath = Path.Combine(dir, "config.json");
         _logPath = Path.Combine(dir, "sing-box.log");
+        _startupLogPath = CoreWatchEntry.StartupLogPath;
     }
-
-    public bool IsRunning => TryGetProcess() is { HasExited: false };
 
     public async Task StartAsync(string configJson, CancellationToken cancellationToken)
     {
-        await StopAsync();
-        _stderr.Clear();
-        if (File.Exists(_logPath)) File.Delete(_logPath);
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            await StopLocalAsync();
+            _stderr.Clear();
+            TryDelete(_logPath);
+            TryDelete(_startupLogPath);
 
-        configJson = InjectLogOutput(configJson, _logPath);
-        await File.WriteAllTextAsync(_configPath, configJson, cancellationToken);
+            configJson = InjectLogOutput(configJson, _logPath);
+            await File.WriteAllTextAsync(_configPath, configJson, cancellationToken);
 
-        var exe = FindSingBoxExe();
-        if (exe is null)
-            throw new InvalidOperationException(
-                "sing-box.exe not found. Run: py -3 scripts/for_builds/singbox-build-windows.py");
+            var exe = FindSingBoxExe();
+            if (exe is null)
+                throw new InvalidOperationException(
+                    "sing-box.exe not found. Run: py -3 scripts/for_builds/singbox-build-windows.py");
 
-        var workDir = Path.GetDirectoryName(exe) ?? AppContext.BaseDirectory;
-        var args = $"run -c \"{_configPath}\"";
-        _process = IsAdmin()
-            ? StartDirect(exe, args, workDir)
-            : StartElevated(exe, args, workDir);
+            var workDir = Path.GetDirectoryName(exe) ?? AppContext.BaseDirectory;
+            var coreArgv = new[] { "run", "-c", _configPath };
+            if (IsAdmin())
+            {
+                _process = StartDirect(exe, coreArgv, workDir);
+                _ownedPid = _process.Id;
+                WireExited(_process);
+            }
+            else
+            {
+                StartElevatedWatch(exe, coreArgv);
+                _ownedPid = null;
+            }
 
-        if (_process is { HasExited: false })
-            _ownedPid = _process.Id;
+            AppLog.Append($"[vpn] sing-box pid={DescribePid()}");
+            if (_process?.StartInfo.RedirectStandardError == true)
+                _ = ReadStderrAsync(_process, cancellationToken);
 
-        AppLog.Append($"[vpn] sing-box pid={_ownedPid?.ToString() ?? "elevated"}");
-        if (_process?.StartInfo.RedirectStandardError == true)
-            _ = ReadStderrAsync(_process, cancellationToken);
-
-        await WaitForStartupAsync(cancellationToken);
+            await WaitForDiagPortAsync(cancellationToken);
+            _ownedPid ??= CoreProcess.FirstPid();
+            if (_ownedPid is int pid && _process is null && CoreProcess.IsRunning(pid))
+            {
+                try
+                {
+                    _process = Process.GetProcessById(pid);
+                    WireExited(_process);
+                }
+                catch
+                {
+                    _ownedPid = pid;
+                }
+            }
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     public async Task StopAsync()
     {
-        TryAssignOwnedProcess();
+        await _gate.WaitAsync();
+        try
+        {
+            await StopLocalAsync();
+            await StopElevatedIfNeededAsync();
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private async Task StopLocalAsync()
+    {
         if (_ownedPid is int pid)
         {
             try
             {
                 using var proc = Process.GetProcessById(pid);
-                if (!proc.HasExited) proc.Kill(entireProcessTree: true);
+                proc.Kill(entireProcessTree: true);
             }
             catch (Exception ex)
             {
                 AppLog.Append($"[vpn] stop pid={pid}: {ex.Message}");
             }
         }
-        _process?.Dispose();
-        _process = null;
-        _ownedPid = null;
-        await UplinkProbe.WaitForDiagPortClosedAsync();
+
+        CoreProcess.KillAll();
+        ReleaseProcessHandle();
+        _job?.Dispose();
+        _job = null;
     }
 
-    private static Process StartDirect(string exe, string args, string workDir)
+    private static async Task StopElevatedIfNeededAsync()
+    {
+        await UplinkProbe.WaitForDiagPortClosedAsync();
+        if (!CoreProcess.AnyRunning()
+            && !await UplinkProbe.TcpReachableAsync(
+                SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 200))
+            return;
+
+        TryElevatedStop();
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(6);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            if (!CoreProcess.AnyRunning()
+                && !await UplinkProbe.TcpReachableAsync(
+                    SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 200))
+                return;
+            await Task.Delay(200);
+        }
+
+        AppLog.Append("[vpn] elevated stop: timeout");
+    }
+
+    private static void TryElevatedStop()
+    {
+        if (IsAdmin())
+        {
+            CoreProcess.KillAll();
+            WintunCleanup.RemoveAll();
+            return;
+        }
+
+        var appExe = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(appExe)) return;
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = appExe,
+                Arguments = CoreStopEntry.Flag,
+                UseShellExecute = true,
+                Verb = "runas",
+                WindowStyle = ProcessWindowStyle.Hidden,
+            });
+        }
+        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223 || ex.HResult == UacCancelledHResult) { }
+        catch (Exception ex)
+        {
+            AppLog.Append($"[vpn] elevated stop: {ex.Message}");
+        }
+    }
+
+    private void ReleaseProcessHandle()
+    {
+        DropProcessHandle();
+        _ownedPid = null;
+    }
+
+    private void DropProcessHandle()
+    {
+        if (_process is null) return;
+        try { _process.Dispose(); }
+        catch (InvalidOperationException) { }
+        _process = null;
+    }
+
+    private Process StartDirect(string exe, IReadOnlyList<string> coreArgv, string workDir)
     {
         var psi = new ProcessStartInfo
         {
             FileName = exe,
-            Arguments = args,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardError = true,
             WorkingDirectory = workDir,
         };
+        foreach (var arg in coreArgv)
+            psi.ArgumentList.Add(arg);
         psi.Environment["PATH"] = $"{workDir}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
-        return Process.Start(psi) ?? throw new InvalidOperationException("Failed to start sing-box");
-    }
 
-    private static Process? StartElevated(string exe, string args, string workDir)
-    {
+        var process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start sing-box");
         try
         {
-            var psi = new ProcessStartInfo
-            {
-                FileName = exe,
-                Arguments = args,
-                WorkingDirectory = workDir,
-                UseShellExecute = true,
-                Verb = "runas",
-                WindowStyle = ProcessWindowStyle.Hidden,
-            };
-            return Process.Start(psi);
+            _job?.Dispose();
+            _job = new ProcessJobLink();
+            _job.Assign(process);
         }
-        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223 || ex.HResult == UacCancelledHResult)
+        catch (Exception ex)
         {
-            throw new InvalidOperationException(Strings.VpnUacCancelled);
+            AppLog.Append($"[vpn] job link: {ex.Message}");
         }
+
+        return process;
     }
 
-    private Process? TryGetProcess()
+    private static void StartElevatedWatch(string exe, IReadOnlyList<string> coreArgv)
     {
-        if (_ownedPid is not int pid) return null;
-        if (_process is { Id: var id, HasExited: false } && id == pid) return _process;
-        _process?.Dispose();
+        var appExe = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(appExe))
+            throw new InvalidOperationException("Process path unknown");
+
+        var parts = new List<string>
+        {
+            CoreWatchArgs.Flag,
+            Environment.ProcessId.ToString(),
+            "--",
+            QuoteArg(exe),
+        };
+        foreach (var arg in coreArgv)
+            parts.Add(QuoteArg(arg));
+
         try
         {
-            var proc = Process.GetProcessById(pid);
-            if (proc.HasExited) { proc.Dispose(); return null; }
-            _process = proc;
-            return proc;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private void TryAssignOwnedProcess()
-    {
-        if (_ownedPid is not null) return;
-        if (_process is { HasExited: false })
-        {
-            _ownedPid = _process.Id;
-            return;
-        }
-        foreach (var proc in Process.GetProcessesByName("sing-box"))
-        {
-            try
-            {
-                if (!proc.HasExited)
+            if (Process.Start(new ProcessStartInfo
                 {
-                    _ownedPid = proc.Id;
-                    _process = proc;
-                    return;
-                }
-                proc.Dispose();
-            }
-            catch
-            {
-                proc.Dispose();
-            }
+                    FileName = appExe,
+                    Arguments = string.Join(' ', parts),
+                    UseShellExecute = true,
+                    Verb = "runas",
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                }) is null)
+                throw new InvalidOperationException("Failed to start elevated core watch");
+        }
+        catch (Win32Exception ex)
+        {
+            AppLog.Append($"[vpn] elevate watch: {ex.NativeErrorCode} {ex.Message}");
+            if (ex.NativeErrorCode == 1223 || ex.HResult == UacCancelledHResult)
+                throw new InvalidOperationException(Strings.VpnUacCancelled);
+            throw new InvalidOperationException(Strings.VpnTunAccessDenied);
         }
     }
 
-    private async Task WaitForStartupAsync(CancellationToken cancellationToken)
+    private string DescribePid() => _ownedPid?.ToString() ?? "watch";
+
+    private static string QuoteArg(string arg)
     {
-        var deadline = DateTimeOffset.UtcNow.AddMilliseconds(ConnectTimeouts.StartupMs);
+        if (!arg.Contains(' ') && !arg.Contains('"'))
+            return arg;
+        return $"\"{arg.Replace("\"", "\\\"")}\"";
+    }
+
+    private void WireExited(Process process)
+    {
+        if (!process.EnableRaisingEvents)
+        {
+            process.EnableRaisingEvents = true;
+            process.Exited += (_, _) => CoreExited?.Invoke();
+        }
+    }
+
+    private async Task WaitForDiagPortAsync(CancellationToken cancellationToken)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddMilliseconds(StartupWaitMs);
         while (DateTimeOffset.UtcNow < deadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            TryAssignOwnedProcess();
-            var proc = TryGetProcess();
-            if (proc is { HasExited: true })
-                throw new InvalidOperationException(FormatStartupError());
 
-            var err = _stderr.Length > 0 ? _stderr.ToString() : ReadLogTail();
+            var err = CollectStartupErrors();
             if (ContainsFatal(err))
                 throw new InvalidOperationException(FormatStartupError(err));
 
+            if (_ownedPid is int pid && !CoreProcess.IsRunning(pid) && CoreProcess.AnyRunning())
+                _ownedPid = CoreProcess.FirstPid();
+
             if (await UplinkProbe.TcpReachableAsync(
                     SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 500, cancellationToken))
+            {
+                AppLog.Append("[vpn] diag port ready");
                 return;
+            }
 
             await Task.Delay(StartupPollMs, cancellationToken);
         }
-        throw new InvalidOperationException(FormatStartupError());
+
+        throw new InvalidOperationException(FormatStartupError(CollectStartupErrors()));
     }
 
     private async Task ReadStderrAsync(Process process, CancellationToken cancellationToken)
     {
         try
         {
-            while (!cancellationToken.IsCancellationRequested && !process.HasExited)
+            while (!cancellationToken.IsCancellationRequested)
             {
+                try
+                {
+                    if (process.HasExited) break;
+                }
+                catch
+                {
+                    break;
+                }
+
                 var line = await process.StandardError.ReadLineAsync(cancellationToken);
                 if (line is null) break;
                 lock (_stderr)
@@ -202,6 +329,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
                     if (_stderr.Length > 8192)
                         _stderr.Remove(0, _stderr.Length - 4096);
                 }
+
                 AppLog.Append($"[sing-box] {line}");
             }
         }
@@ -212,18 +340,38 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         }
     }
 
-    private string ReadLogTail()
+    private string CollectStartupErrors()
+    {
+        lock (_stderr)
+        {
+            if (_stderr.Length > 0)
+                return _stderr.ToString();
+        }
+
+        return ReadFileTail(_logPath) + ReadFileTail(_startupLogPath);
+    }
+
+    private static string ReadFileTail(string path)
     {
         try
         {
-            if (!File.Exists(_logPath)) return "";
-            var text = File.ReadAllText(_logPath);
+            if (!File.Exists(path)) return "";
+            var text = File.ReadAllText(path);
             return text.Length > 4096 ? text[^4096..] : text;
         }
         catch
         {
             return "";
         }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+        catch { /* ignore */ }
     }
 
     private static bool IsAdmin()
@@ -245,11 +393,12 @@ public sealed class SingBoxProcessEngine : IVpnEngine
 
     private static bool ContainsFatal(string err) =>
         err.Contains("FATAL", StringComparison.OrdinalIgnoreCase)
-        || err.Contains("panic:", StringComparison.OrdinalIgnoreCase);
+        || err.Contains("panic:", StringComparison.OrdinalIgnoreCase)
+        || err.Contains("access is denied", StringComparison.OrdinalIgnoreCase);
 
     private string FormatStartupError(string? err = null)
     {
-        err ??= _stderr.Length > 0 ? _stderr.ToString() : ReadLogTail();
+        err ??= CollectStartupErrors();
         if (err.Contains("wintun", StringComparison.OrdinalIgnoreCase))
             return "wintun.dll not found. Run: py -3 scripts/for_builds/singbox-build-windows.py";
         if (err.Contains("libcronet", StringComparison.OrdinalIgnoreCase)
@@ -260,7 +409,9 @@ public sealed class SingBoxProcessEngine : IVpnEngine
             return Strings.VpnTunAccessDenied;
         var tail = err.Trim();
         if (tail.Length > 200) tail = tail[^200..];
-        return string.IsNullOrWhiteSpace(tail) ? "sing-box exited during startup" : tail;
+        return string.IsNullOrWhiteSpace(tail)
+            ? $"{Strings.VpnConnectFailed}: diag port unreachable"
+            : tail;
     }
 
     private static string? FindSingBoxExe()
@@ -280,6 +431,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
             var full = Path.Combine(dir.Trim(), "sing-box.exe");
             if (File.Exists(full)) return full;
         }
+
         return null;
     }
 }

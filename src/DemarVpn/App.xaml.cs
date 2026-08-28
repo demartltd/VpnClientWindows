@@ -1,5 +1,6 @@
 using DemarVpn.Services;
 using DemarVpn.Services.Auth;
+using DemarVpn.Services.Vpn;
 using DemarVpn.Theme;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
@@ -30,6 +31,7 @@ public partial class App : Application
         _main = new MainWindow();
         _window = _main;
         MainHwnd = WindowNative.GetWindowHandle(_main);
+        VpnLifecycle.Attach(_main);
         _window.Activate();
 
         var launchArgs = AppInstance.GetCurrent().GetActivatedEventArgs();

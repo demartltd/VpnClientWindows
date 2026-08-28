@@ -175,9 +175,7 @@ public class VpnPipelineTest
         Assert.Equal(ConnectTimeouts.ConnectMs + 2_000, ConnectTimeouts.WatchdogMs);
         Assert.Equal(25_000, ConnectTimeouts.HealthIntervalMs);
         Assert.Equal(2, ConnectTimeouts.HealthFailLimit);
-        Assert.Equal(3_000, ConnectTimeouts.PreflightMs);
-        Assert.Equal(6_000, ConnectTimeouts.PreflightRaceMs);
-        Assert.Equal(2_000, ConnectTimeouts.ProxyWarmupMs);
+        Assert.Equal(2_000, ConnectTimeouts.DiagPortCloseMs);
     }
 
     [Fact]

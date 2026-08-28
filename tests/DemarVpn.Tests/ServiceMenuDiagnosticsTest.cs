@@ -18,7 +18,7 @@ public class ServiceMenuDiagnosticsTest
     {
         var route = PublicEgressDiagnostics.ClassifyRoute(
             VpnState.Disconnected,
-            new EgressRouteSnapshot(OsVpnActive: true, DemarConnected: false, DiagProxyReady: false));
+            new EgressRouteSnapshot(OsVpnActive: true, DemarConnected: false));
         Assert.Equal(EgressRouteKind.OtherVpn, route);
     }
 

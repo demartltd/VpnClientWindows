@@ -27,7 +27,7 @@ public static class PublicEgressDiagnostics
         "github.com", "bing.com", "ya.ru", "vk.ru", "x.com", "bbc.com", "www.gov.cn",
     ];
 
-    private static readonly HttpClient DirectHttp = CreateHttpClient(useTunnel: false);
+    private static readonly HttpClient DirectHttp = CreateDirectClient();
 
     public static EgressRouteKind ClassifyRoute(VpnState state, EgressRouteSnapshot? snapshot = null)
     {
@@ -222,9 +222,8 @@ public static class PublicEgressDiagnostics
         }
     }
 
-    private static HttpClient CreateHttpClient(bool useTunnel)
+    private static HttpClient CreateDirectClient()
     {
-        if (useTunnel) return TunnelPathProbe.DiagClient;
         var handler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All };
         var client = new HttpClient(handler) { Timeout = TimeSpan.FromMilliseconds(ProbeTimeoutMs) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("DemarVpn/1.0");

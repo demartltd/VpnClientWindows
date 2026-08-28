@@ -2,55 +2,18 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using DemarVpn.Domain.Vpn;
-using DemarVpn.Services.Network;
 
 namespace DemarVpn.Services.Vpn;
 
 public static class TunnelPathProbe
 {
     public const string TraceIpUrl = "https://1.1.1.1/cdn-cgi/trace";
-    public const string TraceHostUrl = "https://www.cloudflare.com/cdn-cgi/trace";
 
     private const int HttpTimeoutMs = 3_600;
 
-    private static readonly HttpClient DiagHttp = CreateClient(useProxy: true);
-    private static readonly HttpClient TunHttp = CreateClient(useProxy: false);
+    private static readonly HttpClient DiagHttp = CreateDiagClient();
 
     public static HttpClient DiagClient => DiagHttp;
-    public static HttpClient TunClient => TunHttp;
-
-    public static async Task<bool> TraceOkAsync(HttpClient client, string url, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(HttpTimeoutMs);
-            using var response = await client.GetAsync(url, cts.Token);
-            if (!response.IsSuccessStatusCode) return false;
-            var body = await response.Content.ReadAsStringAsync(cts.Token);
-            return PublicEgressDiagnostics.ParseCloudflareTrace(body) is not null;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    public static async Task<bool> TcpDiagOpenAsync(int timeoutMs, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var client = new TcpClient();
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(timeoutMs);
-            await client.ConnectAsync(SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, cts.Token);
-            return client.Connected;
-        }
-        catch
-        {
-            return false;
-        }
-    }
 
     public static async Task<int> Tcp443ViaDiagAsync(string host, CancellationToken cancellationToken = default)
     {
@@ -75,14 +38,14 @@ public static class TunnelPathProbe
         }
     }
 
-    private static HttpClient CreateClient(bool useProxy)
+    private static HttpClient CreateDiagClient()
     {
-        var handler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All };
-        if (useProxy)
+        var handler = new HttpClientHandler
         {
-            handler.Proxy = new WebProxy(SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort);
-            handler.UseProxy = true;
-        }
+            AutomaticDecompression = DecompressionMethods.All,
+            Proxy = new WebProxy(SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort),
+            UseProxy = true,
+        };
         return new HttpClient(handler) { Timeout = TimeSpan.FromMilliseconds(HttpTimeoutMs) };
     }
 }

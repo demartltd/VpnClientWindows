@@ -86,9 +86,12 @@ public sealed partial class ServersPage : Page
         }
         finally
         {
-            StopSpin();
-            _refreshing = false;
-            RefreshButton.IsEnabled = true;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                StopSpin();
+                _refreshing = false;
+                RefreshButton.IsEnabled = true;
+            });
         }
     }
 

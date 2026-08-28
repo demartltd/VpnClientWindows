@@ -12,6 +12,7 @@ namespace DemarVpn.Services.Vpn;
 public sealed class VpnController : NotifyBase
 {
     private readonly IVpnEngine _engine = new SingBoxProcessEngine();
+    private int _ensureStopGate;
     private CancellationTokenSource? _op;
     private CancellationTokenSource? _watchdog;
     private CancellationTokenSource? _health;
@@ -20,7 +21,6 @@ public sealed class VpnController : NotifyBase
     private readonly object _reachLock = new();
     private CancellationTokenSource? _reachCts;
     private CancellationTokenSource? _trafficCts;
-    private bool _reconnectAfterDisconnect;
     private static readonly string LastProfilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "DemarVpn", "last_profile_id");
@@ -39,6 +39,8 @@ public sealed class VpnController : NotifyBase
 
     public event Action<string>? ErrorRaised;
     public event Action? TrafficLimitReached;
+
+    public VpnController() => _engine.CoreExited += OnCoreExited;
 
     public static bool IsFreeSubscription()
     {
@@ -255,18 +257,6 @@ public sealed class VpnController : NotifyBase
             _ = WatchdogAsync(_watchdog.Token);
 
             await _engine.StartAsync(configJson, ct);
-            var probe = await VpnTunnelProbe.WaitForTunnelReadyAsync(ConnectTimeouts.ProbeMs, ct);
-            if (probe != TunnelReadyResult.Ok)
-            {
-                var reason = probe switch
-                {
-                    TunnelReadyResult.TcpFail => "diag proxy unreachable",
-                    TunnelReadyResult.ProxyFail => "proxy path fail",
-                    TunnelReadyResult.TunFail => "tun/dns path fail",
-                    _ => "upstream fail",
-                };
-                throw new InvalidOperationException($"{Strings.VpnConnectFailed}: {reason}");
-            }
             SetState(VpnState.Connected);
             AppLog.Append("[vpn] connected");
         }
@@ -277,7 +267,8 @@ public sealed class VpnController : NotifyBase
         }
         catch (Exception ex)
         {
-            await _engine.StopAsync();
+            try { await _engine.StopAsync(); }
+            catch (Exception stopEx) { AppLog.Append($"[vpn] stop after fail: {stopEx.Message}"); }
             ClearThroughput();
             var msg = ex.Message;
             SetState(VpnState.Error(msg));
@@ -287,15 +278,45 @@ public sealed class VpnController : NotifyBase
         }
     }
 
-    public async Task DisconnectAsync(bool reconnectAfter = false)
+    public async Task EnsureStoppedAsync()
     {
-        if (!reconnectAfter && State.Kind is VpnStateKind.Disconnected or VpnStateKind.Disconnecting) return;
-        if (reconnectAfter && State.Kind is VpnStateKind.Disconnecting) return;
+        if (Interlocked.CompareExchange(ref _ensureStopGate, 1, 0) != 0) return;
+        try
+        {
+            _op?.Cancel();
+            _watchdog?.Cancel();
+            _health?.Cancel();
+            StopTraffic();
+            if (State.Kind is VpnStateKind.Disconnected) return;
+
+            try
+            {
+                await _engine.StopAsync();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Append($"[vpn] ensure stop: {ex.Message}");
+            }
+
+            ClearThroughput();
+            SetState(VpnState.Disconnected);
+            AppLog.Append("[vpn] stopped on app exit");
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _ensureStopGate, 0);
+        }
+    }
+
+    public void EnsureStoppedSync() => EnsureStoppedAsync().GetAwaiter().GetResult();
+
+    public async Task DisconnectAsync()
+    {
+        if (State.Kind is VpnStateKind.Disconnected or VpnStateKind.Disconnecting) return;
         _op?.Cancel();
         _watchdog?.Cancel();
         _health?.Cancel();
         StopTraffic();
-        if (!reconnectAfter) _reconnectAfterDisconnect = false;
         SetState(VpnState.Disconnecting);
         AppLog.Append("[ui] windows home: disconnect");
         try
@@ -304,24 +325,12 @@ public sealed class VpnController : NotifyBase
             ClearThroughput();
             SetState(VpnState.Disconnected);
             AppLog.Append("[vpn] disconnected");
-            if (_reconnectAfterDisconnect)
-            {
-                _reconnectAfterDisconnect = false;
-                await Task.Delay(ConnectTimeouts.SwitchSettleMs);
-                await ConnectAsync();
-            }
         }
         catch (Exception ex)
         {
             AppLog.Append($"[vpn] disconnect error: {ex.Message}");
             ClearThroughput();
             SetState(VpnState.Disconnected);
-            if (_reconnectAfterDisconnect)
-            {
-                _reconnectAfterDisconnect = false;
-                await Task.Delay(ConnectTimeouts.SwitchSettleMs);
-                await ConnectAsync();
-            }
         }
     }
 
@@ -391,8 +400,8 @@ public sealed class VpnController : NotifyBase
                 await Task.Delay(ConnectTimeouts.HealthIntervalMs, token);
                 if (State.Kind != VpnStateKind.Connected) return;
 
-                var ok = _engine.IsRunning && await TunnelPathProbe.TraceOkAsync(
-                    TunnelPathProbe.TunClient, TunnelPathProbe.TraceHostUrl, token);
+                var ok = await UplinkProbe.TcpReachableAsync(
+                    SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 500, token);
                 if (ok)
                 {
                     fails = 0;
@@ -414,6 +423,19 @@ public sealed class VpnController : NotifyBase
             }
         }
         catch (OperationCanceledException) { }
+    }
+
+    private void OnCoreExited()
+    {
+        if (State.Kind is VpnStateKind.Disconnected or VpnStateKind.Disconnecting or VpnStateKind.Connecting)
+            return;
+        _op?.Cancel();
+        _watchdog?.Cancel();
+        _health?.Cancel();
+        StopTraffic();
+        ClearThroughput();
+        SetState(VpnState.Disconnected);
+        AppLog.Append("[vpn] core exited");
     }
 
     private void SetState(VpnState state)

@@ -1,20 +1,17 @@
 using System.Net.NetworkInformation;
-using DemarVpn.Domain.Vpn;
 using DemarVpn.Models;
 
 namespace DemarVpn.Services.Network;
 
-public sealed record EgressRouteSnapshot(bool OsVpnActive, bool DemarConnected, bool DiagProxyReady);
+public sealed record EgressRouteSnapshot(bool OsVpnActive, bool DemarConnected);
 
 public static class WindowsEgressRouteSnapshot
 {
-    public static async Task<EgressRouteSnapshot> CaptureAsync(VpnState state)
+    public static Task<EgressRouteSnapshot> CaptureAsync(VpnState state)
     {
         var demar = state.Kind == VpnStateKind.Connected;
-        var diag = demar && await UplinkProbe.TcpReachableAsync(
-            SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 800);
         var osVpn = !demar && NetworkInterface.GetAllNetworkInterfaces().Any(LooksLikeVpn);
-        return new(osVpn, demar, diag);
+        return Task.FromResult(new EgressRouteSnapshot(osVpn, demar));
     }
 
     private static bool LooksLikeVpn(NetworkInterface n)

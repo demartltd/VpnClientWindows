@@ -371,6 +371,7 @@ public sealed class AppUpdateService : NotifyBase
                 UseShellExecute = true,
             });
             AppLog.Append("update: launched Updater /silent /launch");
+            AppServices.Vpn.EnsureStoppedSync();
             Environment.Exit(0);
             return true;
         }
