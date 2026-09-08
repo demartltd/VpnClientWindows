@@ -8,17 +8,14 @@ internal static class WintunCleanup
     {
         try
         {
-            using var ps = Process.Start(new ProcessStartInfo
+            using var p = Process.Start(new ProcessStartInfo
             {
-                FileName = "powershell.exe",
-                Arguments =
-                    "-NoProfile -NonInteractive -Command " +
-                    "\"Get-NetAdapter | Where-Object { $_.InterfaceDescription -like '*Wintun*' } " +
-                    "| Remove-NetAdapter -Confirm:$false -ErrorAction SilentlyContinue\"",
+                FileName = "netsh.exe",
+                Arguments = "interface delete interface name=\"DemarVPN\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,
             });
-            ps?.WaitForExit(8_000);
+            p?.WaitForExit(1_000);
         }
         catch
         {

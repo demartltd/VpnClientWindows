@@ -185,10 +185,11 @@ public static class PublicEgressDiagnostics
 
     private static async Task<EgressHostProbe> ProbeViaTunnelAsync(string host, CancellationToken cancellationToken)
     {
-        var tcp = TunnelPathProbe.Tcp443ViaDiagAsync(host, cancellationToken);
-        var https = HttpsMs(host, useTunnel: true, cancellationToken);
-        await Task.WhenAll(tcp, https);
-        return new(await tcp, await https);
+        var tcpTask = TunnelPathProbe.Tcp443ViaDiagAsync(host, cancellationToken);
+        var httpsTask = HttpsMs(host, useTunnel: true, cancellationToken);
+        await Task.WhenAll(tcpTask, httpsTask);
+        var tcp = await tcpTask;
+        return new(tcp.Ok ? tcp.ElapsedMs : 0, await httpsTask);
     }
 
     private static async Task<int> Tcp443Ms(string host, CancellationToken cancellationToken)

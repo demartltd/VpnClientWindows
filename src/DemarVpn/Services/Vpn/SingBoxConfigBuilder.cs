@@ -187,7 +187,7 @@ public static class SingBoxConfigBuilder
                     ["type"] = "remote",
                     ["format"] = "binary",
                     ["url"] = rs.Url,
-                    ["download_detour"] = SingBoxTags.Proxy,
+                    ["download_detour"] = SingBoxTags.Direct,
                 });
             }
             route["rule_set"] = sets;
@@ -209,9 +209,8 @@ public static class SingBoxConfigBuilder
             ["stack"] = "system",
             ["udp_timeout"] = "5m",
             ["endpoint_independent_nat"] = false,
+            ["route_address"] = Arr("0.0.0.0/1", "128.0.0.0/1"),
         };
-        if (directIPs.Count > 0)
-            tun["route_address"] = Arr("0.0.0.0/1", "128.0.0.0/1");
 
         var exclude = new JsonArray();
         foreach (var cidr in TunExcludeCidrs) exclude.Add(cidr);

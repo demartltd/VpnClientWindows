@@ -11,8 +11,6 @@ namespace DemarVpn.Services.Vpn;
 
 public sealed class SingBoxProcessEngine : IVpnEngine
 {
-    private const int StartupPollMs = 200;
-    private const int StartupWaitMs = 20_000;
     private const int UacCancelledHResult = unchecked((int)0x800704C7);
 
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -44,6 +42,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         try
         {
             await StopLocalAsync();
+            await StopElevatedIfNeededAsync();
             _stderr.Clear();
             TryDelete(_logPath);
             TryDelete(_startupLogPath);
@@ -132,21 +131,21 @@ public sealed class SingBoxProcessEngine : IVpnEngine
 
     private static async Task StopElevatedIfNeededAsync()
     {
-        await UplinkProbe.WaitForDiagPortClosedAsync();
-        if (!CoreProcess.AnyRunning()
-            && !await UplinkProbe.TcpReachableAsync(
-                SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 200))
+        var diagUp = await UplinkProbe.TcpReachableAsync(
+            SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 150);
+        if (!CoreProcess.AnyRunning() && !diagUp)
             return;
 
         TryElevatedStop();
-        var deadline = DateTimeOffset.UtcNow.AddSeconds(6);
+        await UplinkProbe.WaitForDiagPortClosedAsync();
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(4);
         while (DateTimeOffset.UtcNow < deadline)
         {
             if (!CoreProcess.AnyRunning()
                 && !await UplinkProbe.TcpReachableAsync(
-                    SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 200))
+                    SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 150))
                 return;
-            await Task.Delay(200);
+            await Task.Delay(100);
         }
 
         AppLog.Append("[vpn] elevated stop: timeout");
@@ -281,7 +280,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
 
     private async Task WaitForDiagPortAsync(CancellationToken cancellationToken)
     {
-        var deadline = DateTimeOffset.UtcNow.AddMilliseconds(StartupWaitMs);
+        var deadline = DateTimeOffset.UtcNow.AddMilliseconds(ConnectTimeouts.StartupMs);
         while (DateTimeOffset.UtcNow < deadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -300,7 +299,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
                 return;
             }
 
-            await Task.Delay(StartupPollMs, cancellationToken);
+            await Task.Delay(ConnectTimeouts.StartupPollMs, cancellationToken);
         }
 
         throw new InvalidOperationException(FormatStartupError(CollectStartupErrors()));

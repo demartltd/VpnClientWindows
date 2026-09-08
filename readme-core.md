@@ -13,27 +13,29 @@
 
 **Итерация:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine`). Auth — `auth.example.invalid`; servers — `vpn.example.invalid` (parity Android).
 
-Connect pipeline: `UplinkIpv4` (retry) → DNS resolve success → config → subprocess → `VpnTunnelProbe.WaitForTunnelReadyAsync` (diag IP ×2 + TUN hostname ×1). Hysteria2 = QUIC/UDP — **без TCP preflight**.
+Connect pipeline: `UplinkIpv4` (attempts=2) → DNS resolve success → config → subprocess (full stop before start) → diag `:10808` → `TunnelPathProbe` (poll CONNECT). Hysteria2 = QUIC/UDP — **без TCP preflight**.
 
 ### Таймауты (`ConnectTimeouts`)
 
 | Константа | Значение | Назначение |
 |-----------|----------|------------|
-| `PreflightMs` | 3 000 | TCP timeout (diag helpers) |
-| `PreflightRaceMs` | 6 000 | parallel race budget |
-| `StartupMs` | 4 000 | старт sing-box + diag-port 10808 |
-| `ProxyWarmupMs` | 2 000 | handshake before proxy probe |
-| `ProbeMs` | 15 000 | двухфазный probe (proxy + TUN/DNS) |
-| `ConnectMs` | 40 000 | единый deadline pipeline |
-| `WatchdogMs` | 42 000 | аварийный стоп при зависании в Connecting |
-| `HealthIntervalMs` | 25 000 | post-connect health check |
+| `StartupMs` | 10 000 | старт sing-box + diag-port 10808 |
+| `StartupPollMs` | 100 | poll diag |
+| `ProbeMs` | 3 000 | budget CONNECT через diag после старта |
+| `ProbeAttemptMs` | 900 | один attempt внутри ProbeMs |
+| `ConnectMs` | 35 000 | единый deadline pipeline |
+| `WatchdogMs` | 37 000 | аварийный стоп при зависании в Connecting |
+| `HealthIntervalMs` | 25 000 | post-connect health (diag TCP) |
 | `HealthFailLimit` | 2 | подряд fail → auto Error |
+| `SwitchSettleMs` | 100 | пауза stop→connect при смене сервера |
+| `DiagPortCloseMs` | 1 200 | ожидание закрытия diag при stop |
 
 ### Смена сервера (`VpnController.Select`)
 
 - **Disconnected**: только обновление `Selected`
-- **Connected / Connecting / Error**: `SwitchServerAsync` — cancel → stop → connect к новому `Selected`
-- Быстрые переключения: каждый `Select` отменяет предыдущую операцию через `_op.Cancel()`
+- **Connected / Connecting / Error**: coalesce switch (latest-wins) через serial `_ops` gate — cancel → полный stop → connect к текущему `Selected`
+- Быстрые переключения: `_switchPending` + `_op.Cancel()`; overlapping Connect/Disconnect сериализуются
+- `StartAsync` всегда делает полный stop (local + elevated/Wintun) перед новым стартом
 
 ---
 
@@ -93,7 +95,7 @@ Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); bootstrap domai
 ## Route и TUN
 
 - TUN: **Wintun** (Windows), `strict_route: false`, `172.19.0.1/30`
-- Split `0.0.0.0/1` + `128.0.0.0/1` — только при literal IPv4 uplink
+- Split `0.0.0.0/1` + `128.0.0.0/1` — всегда в `route_address`
 - `route_exclude_address` **всегда**: `127.0.0.0/8`, RFC1918 (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`) + uplink IPs
 - Route: sniff (`timeout: 300ms`) → hijack-dns → QUIC reject (`method: default`) → `127.0.0.0/8` direct → private direct → **API rule-sets** → uplink IPs → bootstrap → IPv6 reject (`method: default`) → proxy
 - `default_domain_resolver`: `dns-direct`, `ipv4_only`
@@ -107,7 +109,7 @@ Servermaster кладёт remote `route.rule_set` (RU/IR/CN) в `clientConfigJso
 - geosite → DNS `dns-direct` + route `direct`
 - geoip → route `direct`
 - **не** эмитить TUN `route_exclude_address_set` (parity Android)
-- `download_detour` → `proxy`
+- `download_detour` → `direct` (bootstrap без chicken-egg через proxy)
 - при непустых rule-sets: `experimental.cache_file.enabled`
 ---
 
@@ -138,8 +140,8 @@ Loopback и LAN не проходят через TUN — напрямую на �
 
 Mixed `127.0.0.1:10808` (`SingBoxTags.diagInbound`):
 
-- Post-connect: `VpnTunnelProbe` — Phase 1: diag-proxy IP trace ×2; Phase 2: TUN hostname trace ×1
-- Post-connect health: `VpnController.HealthLoopAsync` (TUN trace каждые 25с)
+- Post-connect: `TunnelPathProbe.Tcp443ViaDiagAsync("1.1.1.1")` перед `Connected`
+- Post-connect health: `VpnController.HealthLoopAsync` (diag TCP каждые 25с)
 - Egress: `PublicEgressDiagnostics` (Service Menu)
 - Clash API `127.0.0.1:19090` (`experimental.clash_api`) — Home throughput via `GET /traffic`
 

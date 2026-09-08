@@ -180,11 +180,27 @@ public class VpnPipelineTest
     [Fact]
     public void ConnectTimeouts_healthBudget()
     {
-        Assert.Equal(42_000, ConnectTimeouts.WatchdogMs);
+        Assert.Equal(37_000, ConnectTimeouts.WatchdogMs);
         Assert.Equal(ConnectTimeouts.ConnectMs + 2_000, ConnectTimeouts.WatchdogMs);
+        Assert.Equal(10_000, ConnectTimeouts.StartupMs);
+        Assert.Equal(100, ConnectTimeouts.StartupPollMs);
+        Assert.Equal(3_000, ConnectTimeouts.ProbeMs);
+        Assert.Equal(900, ConnectTimeouts.ProbeAttemptMs);
         Assert.Equal(25_000, ConnectTimeouts.HealthIntervalMs);
         Assert.Equal(2, ConnectTimeouts.HealthFailLimit);
-        Assert.Equal(2_000, ConnectTimeouts.DiagPortCloseMs);
+        Assert.Equal(1_200, ConnectTimeouts.DiagPortCloseMs);
+        Assert.Equal(100, ConnectTimeouts.SwitchSettleMs);
+    }
+
+    [Fact]
+    public void HostnameServer_alwaysEmitsRouteAddressSplit()
+    {
+        var plan = Fixture(server: "vpn.example.com").ConnectPlan;
+        Assert.Empty(plan.DirectIPs);
+        var tun = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan))!["inbounds"]!.AsArray()
+            .First(i => i!["type"]!.GetValue<string>() == "tun")!.AsObject();
+        var routes = tun["route_address"]!.AsArray().Select(x => x!.GetValue<string>()).ToList();
+        Assert.Equal(["0.0.0.0/1", "128.0.0.0/1"], routes);
     }
 
     [Fact]
@@ -385,6 +401,9 @@ public class VpnPipelineTest
             cfg["route"]!["rules"]!.AsArray(),
             r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == "geoip-ru") == true &&
                  r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
+        Assert.All(
+            cfg["route"]!["rule_set"]!.AsArray(),
+            rs => Assert.Equal(SingBoxTags.Direct, rs!["download_detour"]!.GetValue<string>()));
     }
 
     [Fact]
