@@ -44,7 +44,7 @@ public static class SingBoxConfigBuilder
         {
             ["log"] = new JsonObject { ["level"] = logLevel, ["timestamp"] = true },
             ["dns"] = MakeDns(plan.Tun.DnsFinal, bootstrap, ruleSets, bypassHosts),
-            ["inbounds"] = new JsonArray(MakeTunInbound(tunName, mtu, plan.DirectIPs, plan.Tun.StrictRoute), new JsonObject
+            ["inbounds"] = new JsonArray(MakeTunInbound(tunName, mtu, plan.DirectIPs), new JsonObject
             {
                 ["type"] = "mixed",
                 ["tag"] = SingBoxTags.DiagInbound,
@@ -125,9 +125,9 @@ public static class SingBoxConfigBuilder
         IReadOnlyList<string> bypassHosts)
     {
         var rules = new JsonArray(
-            new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "sniff" },
+            new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "sniff", ["timeout"] = "300ms" },
             new JsonObject { ["protocol"] = "dns", ["action"] = "hijack-dns" },
-            new JsonObject { ["network"] = Arr("udp"), ["port"] = Arr(443), ["action"] = "reject" },
+            new JsonObject { ["network"] = Arr("udp"), ["port"] = Arr(443), ["action"] = "reject", ["method"] = "default" },
             new JsonObject { ["ip_cidr"] = Arr("127.0.0.0/8"), ["action"] = "route", ["outbound"] = SingBoxTags.Direct },
             new JsonObject { ["ip_is_private"] = true, ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
 
@@ -165,7 +165,7 @@ public static class SingBoxConfigBuilder
                 ["outbound"] = SingBoxTags.Direct,
             });
 
-        rules.Add(new JsonObject { ["ip_version"] = 6, ["action"] = "reject" });
+        rules.Add(new JsonObject { ["ip_version"] = 6, ["action"] = "reject", ["method"] = "default" });
         rules.Add(new JsonObject { ["inbound"] = Arr(SingBoxTags.DiagInbound), ["action"] = "route", ["outbound"] = SingBoxTags.Proxy });
         rules.Add(new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "route", ["outbound"] = SingBoxTags.Proxy });
 
@@ -195,7 +195,7 @@ public static class SingBoxConfigBuilder
         return route;
     }
 
-    private static JsonObject MakeTunInbound(string tunName, int mtu, IReadOnlyList<string> directIPs, bool strictRoute)
+    private static JsonObject MakeTunInbound(string tunName, int mtu, IReadOnlyList<string> directIPs)
     {
         var tun = new JsonObject
         {
@@ -204,7 +204,7 @@ public static class SingBoxConfigBuilder
             ["interface_name"] = tunName,
             ["mtu"] = Math.Min(mtu, 1400),
             ["auto_route"] = true,
-            ["strict_route"] = strictRoute,
+            ["strict_route"] = false,
             ["address"] = Arr("172.19.0.1/30"),
             ["stack"] = "system",
             ["udp_timeout"] = "5m",

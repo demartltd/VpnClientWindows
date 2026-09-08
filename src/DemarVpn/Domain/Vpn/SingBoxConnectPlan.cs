@@ -1,6 +1,6 @@
 namespace DemarVpn.Domain.Vpn;
 
-public sealed record SingBoxTunOptions(string DnsFinal, IReadOnlyList<string> BootstrapDomains, bool StrictRoute);
+public sealed record SingBoxTunOptions(string DnsFinal, IReadOnlyList<string> BootstrapDomains);
 
 public sealed record SingBoxConnectPlan
 {
@@ -34,6 +34,7 @@ public sealed record SingBoxConnectPlan
             ["server"] = profile.Server,
             ["server_port"] = profile.Port,
             ["password"] = profile.Password,
+            ["udp_fragment"] = true,
             ["tls"] = tls,
             ["domain_resolver"] = new Dictionary<string, object?>
             {
@@ -57,7 +58,7 @@ public sealed record SingBoxConnectPlan
             UplinkHost = profile.Server,
             ProxyOutbound = outbound,
             DirectIPs = DirectIps(profile.Server),
-            Tun = new SingBoxTunOptions(SingBoxTags.DnsRemote, BootstrapDomains(profile.Server, profile.TlsServerName), true),
+            Tun = new SingBoxTunOptions(SingBoxTags.DnsRemote, BootstrapDomains(profile.Server, profile.TlsServerName)),
             BypassRuleSets = bypassRuleSets ?? [],
         };
     }

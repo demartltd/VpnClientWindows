@@ -46,12 +46,21 @@ public class VpnPipelineTest
         Assert.Equal("pass", hy2["password"]!.GetValue<string>());
         Assert.Equal("h3", hy2["tls"]!["alpn"]![0]!.GetValue<string>());
         Assert.Equal("salamander", hy2["obfs"]!["type"]!.GetValue<string>());
+        Assert.True(hy2["udp_fragment"]!.GetValue<bool>());
 
         Assert.True(cfg["log"]!.AsObject()["timestamp"]!.GetValue<bool>());
 
         var route = cfg["route"]!.AsObject();
         Assert.Equal(SingBoxTags.Proxy, route["final"]!.GetValue<string>());
         Assert.True(route["rules"]!.AsArray().Any(r => r!["action"]?.GetValue<string>() == "hijack-dns"));
+        Assert.Contains(route["rules"]!.AsArray(), r =>
+            r!["action"]?.GetValue<string>() == "sniff" &&
+            r!["timeout"]?.GetValue<string>() == "300ms");
+        Assert.Contains(route["rules"]!.AsArray(), r =>
+            r!["action"]?.GetValue<string>() == "reject" &&
+            r!["method"]?.GetValue<string>() == "default" &&
+            r!["network"]?.AsArray().Any(n => n!.GetValue<string>() == "udp") == true &&
+            r!["port"]?.AsArray().Any(p => p!.GetValue<int>() == 443) == true);
 
         var dns = cfg["dns"]!.AsObject();
         Assert.Equal(SingBoxTags.DnsRemote, dns["final"]!.GetValue<string>());
@@ -67,7 +76,7 @@ public class VpnPipelineTest
 
         var inbounds = cfg["inbounds"]!.AsArray();
         var tun = inbounds.First(i => i!["type"]!.GetValue<string>() == "tun")!.AsObject();
-        Assert.Equal(plan.Tun.StrictRoute, tun["strict_route"]!.GetValue<bool>());
+        Assert.False(tun["strict_route"]!.GetValue<bool>());
         Assert.Equal("system", tun["stack"]!.GetValue<string>());
 
         var diag = inbounds.First(i => i!["type"]!.GetValue<string>() == "mixed")!.AsObject();

@@ -72,6 +72,7 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 | Поле | Значение |
 |------|----------|
 | `tls` | enabled + `server_name` + `alpn` |
+| `udp_fragment` | `true` |
 | `domain_resolver` | `dns-direct`, `ipv4_only` |
 | `obfs` | optional salamander |
 | `up_mbps` / `down_mbps` | omitted → BBR |
@@ -91,10 +92,10 @@ Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); bootstrap domai
 
 ## Route и TUN
 
-- TUN: **Wintun** (Windows), `strict_route`, `172.19.0.1/30`
+- TUN: **Wintun** (Windows), `strict_route: false`, `172.19.0.1/30`
 - Split `0.0.0.0/1` + `128.0.0.0/1` — только при literal IPv4 uplink
 - `route_exclude_address` **всегда**: `127.0.0.0/8`, RFC1918 (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`) + uplink IPs
-- Route: sniff → hijack-dns → QUIC reject → `127.0.0.0/8` direct → private direct → **API rule-sets** → uplink IPs → bootstrap → IPv6 reject → proxy
+- Route: sniff (`timeout: 300ms`) → hijack-dns → QUIC reject (`method: default`) → `127.0.0.0/8` direct → private direct → **API rule-sets** → uplink IPs → bootstrap → IPv6 reject (`method: default`) → proxy
 - `default_domain_resolver`: `dns-direct`, `ipv4_only`
 
 (Android использует gVisor TUN + `override_android_vpn`; на Windows — Wintun adapter.)
