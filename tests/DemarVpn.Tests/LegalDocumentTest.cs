@@ -43,4 +43,13 @@ public class LegalDocumentTest
     {
         Assert.Throws<IOException>(() => RawTextFetcher.Decode(200, [0xFF, 0xFE]));
     }
+
+    [Fact]
+    public async Task Repository_CacheHit_SkipsNetwork()
+    {
+        LegalDocumentRepository.ClearCache();
+        LegalDocumentRepository.SeedCache(LegalDocument.Terms, "# cached");
+        Assert.Equal("# cached", await LegalDocumentRepository.LoadAsync(LegalDocument.Terms));
+        LegalDocumentRepository.ClearCache();
+    }
 }

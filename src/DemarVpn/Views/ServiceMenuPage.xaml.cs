@@ -14,7 +14,6 @@ namespace DemarVpn.Views;
 public sealed partial class ServiceMenuPage : OverlayPage
 {
     private readonly DemarKvRow[] _hostRows;
-    private bool _inFlight;
     private Storyboard? _spinStoryboard;
     private CancellationTokenSource? _egressCts;
 
@@ -55,9 +54,26 @@ public sealed partial class ServiceMenuPage : OverlayPage
 
     private async Task ReloadLatestVersionAsync()
     {
-        LatestVersionRow.Value = "…";
-        var release = await WindowsReleaseApi.FetchAsync(UpdateChannelStore.PreferBeta);
-        LatestVersionRow.Value = release?.Version ?? "—";
+        void Set(string v) => DispatcherQueue.TryEnqueue(() => LatestVersionRow.Value = v);
+
+        if (AppServices.Update.LatestVersion is { } cached)
+        {
+            Set(cached);
+            return;
+        }
+
+        Set("…");
+        for (var i = 0; i < 2; i++)
+        {
+            if (i > 0) await Task.Delay(400);
+            var release = await WindowsReleaseApi.FetchAsync(UpdateChannelStore.PreferBeta);
+            if (release?.Version is { } v)
+            {
+                Set(v);
+                return;
+            }
+        }
+        Set("—");
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -71,32 +87,49 @@ public sealed partial class ServiceMenuPage : OverlayPage
 
     private void OnVpnChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(VpnController.State) && !_inFlight)
+        if (e.PropertyName == nameof(VpnController.State))
             _ = ReloadEgressAsync();
     }
 
     private async Task ReloadDeviceAsync()
     {
-        DeviceBusy.Visibility = Visibility.Visible;
-        DevicePanel.Visibility = Visibility.Collapsed;
-        DevicePanel.Children.Clear();
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            DeviceBusy.Visibility = Visibility.Visible;
+            DevicePanel.Visibility = Visibility.Collapsed;
+            DevicePanel.Children.Clear();
+        });
         var rows = await DeviceIdentity.LoadAsync();
-        foreach (var (key, value) in rows)
-            DevicePanel.Children.Add(new DemarKvRow { Key = key, Value = value, KeyWidth = 108 });
-        DeviceBusy.Visibility = Visibility.Collapsed;
-        DevicePanel.Visibility = Visibility.Visible;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            foreach (var (key, value) in rows)
+                DevicePanel.Children.Add(new DemarKvRow { Key = key, Value = value, KeyWidth = 108 });
+            DeviceBusy.Visibility = Visibility.Collapsed;
+            DevicePanel.Visibility = Visibility.Visible;
+        });
     }
 
     private async Task ReloadEgressAsync()
     {
-        if (_inFlight) return;
         _egressCts?.Cancel();
         _egressCts?.Dispose();
         _egressCts = new CancellationTokenSource();
         var ct = _egressCts.Token;
-        _inFlight = true;
-        RouteRow.Value = IpRow.Value = CountryRow.Value = "…";
-        foreach (var row in _hostRows) row.Value = "…";
+
+        void SetRows(string route, string ip, string country)
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (ct.IsCancellationRequested) return;
+                RouteRow.Value = route;
+                IpRow.Value = ip;
+                CountryRow.Value = country;
+            });
+        }
+
+        SetRows("…", "…", "…");
+        foreach (var row in _hostRows)
+            DispatcherQueue.TryEnqueue(() => { if (!ct.IsCancellationRequested) row.Value = "…"; });
         StartRefreshSpin();
 
         try
@@ -104,17 +137,17 @@ public sealed partial class ServiceMenuPage : OverlayPage
             var state = AppServices.Vpn.State;
             var route = await PublicEgressDiagnostics.ResolveRouteAsync(state);
             if (ct.IsCancellationRequested) return;
-            RouteRow.Value = PublicEgressDiagnostics.RouteLabel(route);
             var useTunnel = PublicEgressDiagnostics.ShouldUseTunnel(route);
-
             var geo = await PublicEgressDiagnostics.FetchGeoAsync(useTunnel, ct);
             if (ct.IsCancellationRequested) return;
-            IpRow.Value = PublicEgressDiagnostics.CensorPublicIpv4(geo.Ip);
-            CountryRow.Value = geo.Country;
+            SetRows(
+                PublicEgressDiagnostics.RouteLabel(route),
+                PublicEgressDiagnostics.CensorPublicIpv4(geo.Ip),
+                geo.Country);
 
             await PublicEgressDiagnostics.ProbeAllHostsAsync(useTunnel, (i, probe) =>
             {
-                _ = DispatcherQueue.TryEnqueue(() =>
+                DispatcherQueue.TryEnqueue(() =>
                 {
                     if (!ct.IsCancellationRequested)
                         _hostRows[i].Value = PublicEgressDiagnostics.ProbeLabel(probe);
@@ -122,10 +155,6 @@ public sealed partial class ServiceMenuPage : OverlayPage
             }, ct);
         }
         catch (OperationCanceledException) { }
-        finally
-        {
-            _inFlight = false;
-        }
     }
 
     private void StartRefreshSpin()

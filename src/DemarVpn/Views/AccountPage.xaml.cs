@@ -44,6 +44,7 @@ public sealed partial class AccountPage : Page
     {
         AccountStore.Changed += OnStoreChanged;
         Refresh();
+        _ = PayApi.WarmPlansAsync();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e) =>

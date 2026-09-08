@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using DemarVpn.Services.Auth;
 
 namespace DemarVpn.Services.Content;
 
@@ -8,8 +9,7 @@ namespace DemarVpn.Services.Content;
 public static class RawTextFetcher
 {
     private const int MaxBytes = 512 * 1024;
-    private const int ConnectTimeoutMs = 10_000;
-    private const int ReadTimeoutMs = 15_000;
+    private const int TimeoutMs = 12_000;
 
     private static readonly HttpClient Http = CreateClient();
     private static readonly UTF8Encoding Utf8Strict = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
@@ -22,9 +22,12 @@ public static class RawTextFetcher
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.Accept.ParseAdd("text/plain, text/markdown, */*");
         req.Headers.CacheControl = new CacheControlHeaderValue { NoCache = true, NoStore = true };
+        req.Headers.TryAddWithoutValidation("User-Agent", DemarHttp.UserAgent);
 
-        using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseContentRead, ct).ConfigureAwait(false);
-        var bytes = await resp.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        linked.CancelAfter(TimeoutMs);
+        using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseContentRead, linked.Token);
+        var bytes = await resp.Content.ReadAsByteArrayAsync(linked.Token);
         return Decode((int)resp.StatusCode, bytes);
     }
 
@@ -52,11 +55,8 @@ public static class RawTextFetcher
         var handler = new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.All,
-            ConnectTimeout = TimeSpan.FromMilliseconds(ConnectTimeoutMs),
+            ConnectTimeout = TimeSpan.FromMilliseconds(TimeoutMs),
         };
-        return new HttpClient(handler)
-        {
-            Timeout = TimeSpan.FromMilliseconds(ConnectTimeoutMs + ReadTimeoutMs),
-        };
+        return new HttpClient(handler) { Timeout = TimeSpan.FromMilliseconds(TimeoutMs) };
     }
 }

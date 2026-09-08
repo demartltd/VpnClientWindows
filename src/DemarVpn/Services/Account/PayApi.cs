@@ -33,8 +33,45 @@ public sealed record PayCheckout(
 /// <summary>Pay catalog / checkout — parity Android PayApi (vpn.example.invalid).</summary>
 public static class PayApi
 {
-    public static async Task<PayCatalog> FetchPlansAsync(CancellationToken ct = default) =>
-        ParseCatalog(await DemarHttp.GetJsonAsync($"{DemarHttp.VpnApiBaseUrl}/vpn/pay/plans", ct: ct));
+    private static readonly object PlansGate = new();
+    private static PayCatalog? _cachedPlans;
+    private static Task<PayCatalog>? _plansInFlight;
+
+    /// <summary>Last successful catalog (null until first fetch).</summary>
+    public static PayCatalog? CachedPlans => _cachedPlans;
+
+    public static async Task WarmPlansAsync(CancellationToken ct = default)
+    {
+        try { await FetchPlansAsync(ct); }
+        catch { /* preload best-effort */ }
+    }
+
+    public static Task<PayCatalog> FetchPlansAsync(CancellationToken ct = default)
+    {
+        lock (PlansGate)
+        {
+            if (_cachedPlans is { } hit) return Task.FromResult(hit);
+            return _plansInFlight ??= FetchPlansCoreAsync(ct);
+        }
+    }
+
+    private static async Task<PayCatalog> FetchPlansCoreAsync(CancellationToken ct)
+    {
+        try
+        {
+            var catalog = ParseCatalog(
+                await DemarHttp.GetJsonAsync($"{DemarHttp.VpnApiBaseUrl}/vpn/pay/plans", ct: ct));
+            if (catalog.Tiers.Count > 0)
+            {
+                lock (PlansGate) _cachedPlans = catalog;
+            }
+            return catalog;
+        }
+        finally
+        {
+            lock (PlansGate) _plansInFlight = null;
+        }
+    }
 
     public static async Task<PayCheckout> CreateAsync(
         string userId, string loginAt, string tier, string period, string currency, string? code = null,

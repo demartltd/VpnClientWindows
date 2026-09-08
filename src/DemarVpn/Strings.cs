@@ -116,7 +116,7 @@ public static class Strings
     public const string PayCompareSpeedFree = "10 Мбит/с";
     public const string PayCompareSpeedPlus = "100 Мбит/с";
     public const string PayCompareSpeedVip = "300 Мбит/с";
-    public const string PayCompareTrafficFree = "20 ГБ";
+    public const string PayCompareTrafficFree = "5 ГБ";
     public const string PayCompareTrafficPlus = "500 ГБ";
     public const string PayCompareTrafficVip = "3000 ГБ";
     public const string PayCompareFootnote = "*Пока недоступно.";
@@ -203,6 +203,7 @@ public static class Strings
     public const string LoginErrorInvalidEmail = "Неправильный email";
     public const string LoginErrorGeneric = "Не удалось войти. Попробуйте ещё раз";
     public const string LoginErrorNetwork = "Нет связи с сервером. Проверьте интернет и попробуйте снова";
+    public const string DocumentLoadFailed = "Не удалось загрузить документ. Проверьте интернет и попробуйте снова";
     public const string LoginRegisterTitle = "Аккаунт не найден";
     public const string LoginRegisterBody = "Создать новый аккаунт для {0}?";
     public const string LoginRegisterCreate = "Создать аккаунт";
@@ -232,5 +233,5 @@ public static class Strings
     public const string UpdateDownloadFail = "Не удалось скачать обновление";
     public const string UpdateHashMismatch = "Файл обновления повреждён (SHA-256). Попробуйте снова.";
     public const string UpdateDownloading = "Загрузка";
-    public const string VersionName = "1.0.19";
+    public const string VersionName = "1.0.20";
 }

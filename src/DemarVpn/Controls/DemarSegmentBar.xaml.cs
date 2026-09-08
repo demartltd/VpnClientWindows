@@ -44,6 +44,8 @@ public sealed partial class DemarSegmentBar : UserControl
         Rebuild();
     }
 
+    public void Repaint() => ApplySelection();
+
     private void Rebuild()
     {
         Segments.Children.Clear();

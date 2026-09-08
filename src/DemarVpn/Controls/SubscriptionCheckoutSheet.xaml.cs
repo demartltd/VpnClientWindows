@@ -73,10 +73,18 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
         EnsureBuilt();
         TierBar.SelectedId = _tier;
         UpdatePromoLabel();
+        // Apple/Android: keep catalog for sheet lifetime; Windows sheet is long-lived → reuse cache.
+        _catalog ??= PayApi.CachedPlans;
         UpdatePayEnabled();
         Visibility = Visibility.Visible;
         Chrome.Show();
-        _ = LoadPlansAsync();
+        PaintSelection();
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            PaintSelection();
+            InvalidateArrange();
+        });
+        if (_catalog is null) _ = LoadPlansAsync();
     }
 
     public void Dismiss()
@@ -95,18 +103,27 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
         BuildPeriodRows();
         BuildPeriodPills();
         BuildPlanCards();
-        SetWideLayout(_wide);
+        NarrowPanel.Visibility = _wide ? Visibility.Collapsed : Visibility.Visible;
+        WidePanel.Visibility = _wide ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void PaintSelection()
+    {
+        RefreshPrices();
+        ApplyCurrencySelection();
+        TierBar.Repaint();
     }
 
     private async Task LoadPlansAsync()
     {
+        if (_catalog is not null) return;
         _loadingPlans = true;
         PlansError.Visibility = Visibility.Collapsed;
         UpdatePayEnabled();
+        PaintSelection();
         try
         {
             _catalog = await PayApi.FetchPlansAsync();
-            RefreshPrices();
         }
         catch
         {
@@ -117,7 +134,11 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
         finally
         {
             _loadingPlans = false;
-            UpdatePayEnabled();
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                PaintSelection();
+                UpdatePayEnabled();
+            });
         }
     }
 

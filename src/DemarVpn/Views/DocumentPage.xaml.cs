@@ -9,8 +9,14 @@ namespace DemarVpn.Views;
 public sealed partial class DocumentPage : OverlayPage
 {
     private CancellationTokenSource? _cts;
+    private LegalDocument? _doc;
 
-    public DocumentPage() => InitializeComponent();
+    public DocumentPage()
+    {
+        InitializeComponent();
+        ErrorText.Text = Strings.DocumentLoadFailed;
+        RetryButton.Content = Strings.ServersRetry;
+    }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
@@ -20,9 +26,9 @@ public sealed partial class DocumentPage : OverlayPage
             GoBack();
             return;
         }
+        _doc = doc;
         Chrome.Title = doc.Title();
-        _cts = new CancellationTokenSource();
-        _ = LoadLoopAsync(doc, _cts.Token);
+        StartLoad();
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -40,29 +46,34 @@ public sealed partial class DocumentPage : OverlayPage
         _cts = null;
     }
 
-    private async Task LoadLoopAsync(LegalDocument doc, CancellationToken ct)
+    private void StartLoad()
     {
-        while (!ct.IsCancellationRequested)
+        CancelLoad();
+        _cts = new CancellationTokenSource();
+        _ = LoadAsync(_cts.Token);
+    }
+
+    private async Task LoadAsync(CancellationToken ct)
+    {
+        if (_doc is not { } doc) return;
+        ShowLoading();
+        try
         {
-            ShowLoading();
-            try
+            var md = await LegalDocumentRepository.LoadAsync(doc, ct);
+            if (ct.IsCancellationRequested) return;
+            DispatcherQueue.TryEnqueue(() =>
             {
-                var md = await LegalDocumentRepository.LoadAsync(doc, ct);
                 if (ct.IsCancellationRequested) return;
                 MarkdownBlocks.Fill(BlocksHost, md);
                 ShowContent();
-                return;
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (Exception ex)
-            {
-                AppLog.Append($"DocumentPage load {doc} failed: {ex.Message}");
-            }
-            try { await Task.Delay(2000, ct); }
-            catch (OperationCanceledException) { return; }
+            });
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        catch (Exception ex)
+        {
+            AppLog.Append($"DocumentPage load {doc} failed: {ex.Message}");
+            if (!ct.IsCancellationRequested)
+                DispatcherQueue.TryEnqueue(ShowError);
         }
     }
 
@@ -70,6 +81,7 @@ public sealed partial class DocumentPage : OverlayPage
     {
         LoadingRing.IsActive = true;
         LoadingRing.Visibility = Visibility.Visible;
+        ErrorPanel.Visibility = Visibility.Collapsed;
         ContentScroll.Visibility = Visibility.Collapsed;
     }
 
@@ -77,6 +89,17 @@ public sealed partial class DocumentPage : OverlayPage
     {
         LoadingRing.IsActive = false;
         LoadingRing.Visibility = Visibility.Collapsed;
+        ErrorPanel.Visibility = Visibility.Collapsed;
         ContentScroll.Visibility = Visibility.Visible;
     }
+
+    private void ShowError()
+    {
+        LoadingRing.IsActive = false;
+        LoadingRing.Visibility = Visibility.Collapsed;
+        ContentScroll.Visibility = Visibility.Collapsed;
+        ErrorPanel.Visibility = Visibility.Visible;
+    }
+
+    private void OnRetry(object sender, RoutedEventArgs e) => StartLoad();
 }
