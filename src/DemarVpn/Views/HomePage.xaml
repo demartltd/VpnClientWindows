@@ -13,11 +13,15 @@
     <Grid x:Name="ShadowCast" Grid.RowSpan="5" Background="Transparent" IsHitTestVisible="False" />
     <TextBlock x:Name="TitleBlock" Style="{StaticResource DemarTitleText}" />
     <StackPanel Grid.Row="2" HorizontalAlignment="Center" Spacing="14">
-      <Button x:Name="Toggle" Width="200" Height="200" CornerRadius="100" Click="OnToggle"
-              Background="{StaticResource DemarSurfaceHighBrush}" BorderThickness="0">
-        <FontIcon x:Name="ToggleIcon" Glyph="&#xE7E8;" FontSize="72" />
+      <Button x:Name="Toggle" Style="{StaticResource DemarAccentButtonStyle}"
+              Width="200" Height="200" MinHeight="0" Padding="0" CornerRadius="100"
+              Click="OnToggle" Background="{StaticResource DemarSurfaceHighBrush}" BorderThickness="0">
+        <Grid>
+          <FontIcon x:Name="ToggleIcon" Glyph="&#xE7E8;" FontSize="72" />
+          <ProgressRing x:Name="BusyRing" Width="46" Height="46"
+                        IsActive="False" Visibility="Collapsed" />
+        </Grid>
       </Button>
-      <ProgressRing x:Name="BusyRing" Width="46" Height="46" Visibility="Collapsed" />
       <TextBlock x:Name="ConnectedLabel" Visibility="Collapsed"
                  Foreground="{StaticResource DemarSeedBrush}" FontWeight="Bold" FontSize="18"
                  HorizontalAlignment="Center" />

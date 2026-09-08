@@ -4,6 +4,7 @@ using DemarVpn.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace DemarVpn.Views;
 
@@ -12,6 +13,7 @@ public sealed partial class HomePage : Page
     private bool _shadowWired;
     private bool _promptShown;
     private bool _promptInFlight;
+    private Storyboard? _sizeStoryboard;
 
     public HomePage()
     {
@@ -163,17 +165,52 @@ public sealed partial class HomePage : Page
         ServerName.Text = vpn.Selected is null ? Strings.ServerNotSelected : vpn.Selected.ListTitle;
         Throughput.Text = FormatThroughput(vpn.Throughput);
         var connected = state.Kind == VpnStateKind.Connected;
+        var compact = connected || state.Kind == VpnStateKind.Disconnecting;
         var busy = state.IsBusy;
         ConnectedLabel.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
+        BusyRing.IsActive = busy;
         BusyRing.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
-        Toggle.Visibility = busy ? Visibility.Collapsed : Visibility.Visible;
-        Toggle.Width = Toggle.Height = connected || state.Kind == VpnStateKind.Disconnecting ? 116 : 200;
-        Toggle.Background = connected || state.Kind == VpnStateKind.Disconnecting
+        ToggleIcon.Visibility = busy ? Visibility.Collapsed : Visibility.Visible;
+        AnimateToggleSize(compact ? 116 : 200);
+        Toggle.Background = compact
             ? (Brush)Application.Current.Resources["DemarPrimaryContainerBrush"]
             : (Brush)Application.Current.Resources["DemarSurfaceHighBrush"];
-        ToggleIcon.Glyph = connected ? "\uE72E" : "\uE7E8";
-        ToggleIcon.FontSize = connected ? 44 : 72;
+        if (!busy)
+        {
+            ToggleIcon.Glyph = connected ? "\uE72E" : "\uE7E8";
+            ToggleIcon.FontSize = compact ? 44 : 72;
+        }
         Toggle.IsEnabled = !busy;
+    }
+
+    private void AnimateToggleSize(double target)
+    {
+        if (Math.Abs(Toggle.Width - target) < 0.5)
+        {
+            Toggle.Width = Toggle.Height = target;
+            return;
+        }
+
+        _sizeStoryboard?.Stop();
+        var duration = TimeSpan.FromMilliseconds(320);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        DoubleAnimation Dim() => new()
+        {
+            To = target,
+            Duration = duration,
+            EasingFunction = ease,
+            EnableDependentAnimation = true,
+        };
+        var w = Dim();
+        var h = Dim();
+        Storyboard.SetTarget(w, Toggle);
+        Storyboard.SetTargetProperty(w, "Width");
+        Storyboard.SetTarget(h, Toggle);
+        Storyboard.SetTargetProperty(h, "Height");
+        _sizeStoryboard = new Storyboard();
+        _sizeStoryboard.Children.Add(w);
+        _sizeStoryboard.Children.Add(h);
+        _sizeStoryboard.Begin();
     }
 
     private static string FormatThroughput(ThroughputRates r) =>
