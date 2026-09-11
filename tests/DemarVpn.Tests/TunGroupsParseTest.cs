@@ -129,5 +129,15 @@ public class TunGroupsParseTest
         Assert.NotEqual(on, off);
     }
 
+    [Theory]
+    [InlineData(null, null, true)]
+    [InlineData(null, "free", true)]
+    [InlineData("free", "plus", true)]
+    [InlineData("plus", "free", false)]
+    [InlineData("vip", null, false)]
+    [InlineData(null, "plus", false)]
+    public void TunSubscription_IsFree_accountWinsOverSession(string? account, string? session, bool expected) =>
+        Assert.Equal(expected, TunSubscription.IsFree(account, session));
+
     private static Dictionary<string, bool> NoOverrides { get; } = new(StringComparer.OrdinalIgnoreCase);
 }

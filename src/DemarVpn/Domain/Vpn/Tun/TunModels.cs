@@ -140,3 +140,14 @@ public static class TunEffective
         return enabledByDefault;
     }
 }
+
+public static class TunSubscription
+{
+    /// <summary>Account wins over session so stale session "free" cannot mask paid.</summary>
+    public static bool IsFree(string? accountSub, string? sessionSub)
+    {
+        var sub = accountSub ?? sessionSub;
+        return string.IsNullOrWhiteSpace(sub)
+            || sub.Equals("free", StringComparison.OrdinalIgnoreCase);
+    }
+}

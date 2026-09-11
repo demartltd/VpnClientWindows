@@ -44,18 +44,32 @@ public sealed class VpnController : NotifyBase
 
     public VpnController() => _engine.CoreExited += OnCoreExited;
 
-    public static bool IsFreeSubscription()
-    {
-        var sub = AuthSessionStore.Current?.VpnSubscription ?? AccountStore.Account?.VpnSubscription;
-        return sub is null || sub.Equals("free", StringComparison.OrdinalIgnoreCase);
-    }
+    public static bool IsFreeSubscription() =>
+        TunSubscription.IsFree(
+            AccountStore.Account?.VpnSubscription,
+            AuthSessionStore.Current?.VpnSubscription);
 
     public async Task RefreshTunGroupsAsync(CancellationToken ct = default)
     {
-        var payload = await TunGroupsApi.FetchAsync(ct);
-        if (payload is null) return;
-        TunSettingsStore.CacheGroups(payload.Catalog, payload.Raw);
-        AppLog.Append($"tun_groups: loaded {payload.Catalog.AppGroups.Count} app + {payload.Catalog.SiteGroups.Count} site");
+        try
+        {
+            var payload = await TunGroupsApi.FetchAsync(ct);
+            if (payload is null) return;
+            TunSettingsStore.CacheGroups(payload.Catalog, payload.Raw);
+            AppLog.Append($"tun_groups: loaded {payload.Catalog.AppGroups.Count} app + {payload.Catalog.SiteGroups.Count} site");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Append($"tun_groups: fetch failed — {ex.Message}");
+        }
+    }
+
+    private async Task EnsureConnectPrereqsAsync(CancellationToken ct)
+    {
+        if (AuthRepository.IsSignedIn && AccountStore.Account is null)
+            await AccountStore.RefreshAsync(ct);
+        if (TunSettingsStore.Catalog.AppGroups.Count == 0 && TunSettingsStore.Catalog.SiteGroups.Count == 0)
+            await RefreshTunGroupsAsync(ct);
     }
 
     public void AddBypassExe(string exe)
@@ -139,12 +153,12 @@ public sealed class VpnController : NotifyBase
             var serversTask = ServersApi.FetchServersAsync(session.UserId, session.LoginAt, ct);
             var accountTask = AccountStore.RefreshAsync(ct);
             var tunTask = RefreshTunGroupsAsync(ct);
+            await Task.WhenAll(serversTask, accountTask, tunTask);
             var result = await serversTask;
             ApplyServerList(result.Servers);
             TrafficExceeded = result.TrafficExceeded;
             Raise(nameof(TrafficExceeded));
             AppLog.Append($"servers: loaded {result.Servers.Count} (sub={result.VpnSubscription})");
-            await Task.WhenAll(accountTask, tunTask);
             _ = SupportStore.RefreshUnreadAsync(ct);
             await RefreshServerReachabilityAsync(ct);
         }
@@ -320,6 +334,7 @@ public sealed class VpnController : NotifyBase
                 throw new InvalidOperationException($"{Strings.VpnServerUnreachable}: {plan.UplinkHost} ({why})");
             }
 
+            await EnsureConnectPrereqsAsync(ct);
             var bypass = TunSettingsStore.EffectiveBypass(IsFreeSubscription());
             var configJson = SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass);
             AppLog.Append(
