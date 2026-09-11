@@ -1,4 +1,5 @@
 using DemarVpn.Services.Auth;
+using DemarVpn.Services.Servers;
 
 namespace DemarVpn.Services.Account;
 
@@ -29,19 +30,31 @@ public static class AccountStore
         Changed?.Invoke();
     }
 
-    public static void ApplyAccount(VpnAccount account)
+    public static void Hydrate(VpnAccount? account, VpnTraffic? traffic)
     {
-        lock (Gate) _account = account;
+        lock (Gate)
+        {
+            if (account is not null) _account = account;
+            if (traffic is not null) _traffic = traffic;
+        }
         Changed?.Invoke();
     }
 
-    public static async Task RefreshAsync(CancellationToken ct = default)
+    public static void ApplyAccount(VpnAccount account)
+    {
+        lock (Gate) _account = account;
+        PersistAccount(account);
+        Changed?.Invoke();
+    }
+
+    /// <returns>true if account and/or traffic updated (parity Apple refreshAccount).</returns>
+    public static async Task<bool> RefreshAsync(CancellationToken ct = default)
     {
         var session = AuthSessionStore.Current;
         if (session is null)
         {
             Clear();
-            return;
+            return false;
         }
 
         int gen;
@@ -66,16 +79,19 @@ public static class AccountStore
 
             lock (Gate)
             {
-                if (gen != _refreshGen) return;
+                if (gen != _refreshGen) return false;
                 if (account is not null) _account = account;
                 if (traffic is not null) _traffic = traffic;
             }
 
             if (account is not null)
             {
+                PersistAccount(account);
                 AuthRepository.UpdateVpnProfile(account.VpnSubscription, account.VpnExpiresAt);
                 AppServices.Auth.NotifyChanged();
             }
+            if (traffic is not null)
+                SessionCacheStore.SaveTraffic(traffic, session.UserId);
 
             if (err is AuthException { IsSessionInvalid: true })
             {
@@ -83,11 +99,14 @@ public static class AccountStore
                 AppServices.Auth.NotifyChanged();
                 Clear();
                 AppLog.Append("account: session revoked");
+                return false;
             }
-            else if (err is not null)
+            if (err is not null)
                 AppLog.Append($"account: refresh failed — {err.Message}");
             else
                 AppLog.Append("account: refreshed");
+
+            return account is not null || traffic is not null;
         }
         finally
         {
@@ -97,5 +116,11 @@ public static class AccountStore
             }
             Changed?.Invoke();
         }
+    }
+
+    private static void PersistAccount(VpnAccount account)
+    {
+        var uid = AuthSessionStore.Current?.UserId;
+        if (uid is not null) SessionCacheStore.SaveAccount(account, uid);
     }
 }

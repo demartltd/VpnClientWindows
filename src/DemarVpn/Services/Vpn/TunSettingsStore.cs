@@ -1,5 +1,7 @@
 using System.Text.Json;
 using DemarVpn.Domain.Vpn.Tun;
+using DemarVpn.Services.Auth;
+using DemarVpn.Services.Servers;
 
 namespace DemarVpn.Services.Vpn;
 
@@ -44,6 +46,22 @@ public static class TunSettingsStore
         {
             _catalog = catalog;
             if (rawJson is not null) _groupsJson = rawJson;
+            SaveToDisk();
+        }
+        var uid = AuthSessionStore.Current?.UserId;
+        if (rawJson is not null && uid is not null)
+            SessionCacheStore.SaveTun(rawJson, uid);
+        Changed?.Invoke();
+    }
+
+    /// <summary>Apply TUN groups from session cache — parity Apple TunSettingsStore.hydrateFromCache.</summary>
+    public static void HydrateFromCache(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return;
+        lock (Gate)
+        {
+            _groupsJson = raw;
+            _catalog = TunGroupsApi.Parse(raw);
             SaveToDisk();
         }
         Changed?.Invoke();

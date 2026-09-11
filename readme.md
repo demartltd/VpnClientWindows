@@ -67,7 +67,7 @@ Email OTP + TOTP (если включён) и Telegram OIDC через брау�
 
 ### Servers
 
-После входа `POST https://vpn.example.invalid/vpn/servers` → список по подписке. UI: SegmentBar протокола + All/тиры (Dev/Tester только при наличии), divider, строки `Country | TIER` / `City #N`, floating refresh (roll + snackbar), DNS reachability-dot. Неподдерживаемые протоколы пропускаются. Без сессии — CTA войти.
+После входа `POST https://vpn.example.invalid/vpn/servers` → список по подписке. Session cache (`%LOCALAPPDATA%\DemarVpn\session_cache.json`): servers + account + traffic + tun — hydrate при старте до сети (parity Apple). Один background loop раз в 10 мин: app update + session refresh if stale; connect без единого refresh в процессе — сначала `RefreshServersAsync`. UI: SegmentBar протокола + All/тиры (Dev/Tester только при наличии), divider, строки `Country | TIER` / `City #N`, floating refresh (roll + snackbar), DNS reachability-dot. Неподдерживаемые протоколы пропускаются. Без сессии — CTA войти.
 
 ---
 

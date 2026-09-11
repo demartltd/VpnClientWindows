@@ -23,6 +23,7 @@ public sealed class VpnController : NotifyBase
     private readonly object _reachLock = new();
     private CancellationTokenSource? _reachCts;
     private CancellationTokenSource? _trafficCts;
+    private DateTimeOffset? _lastSessionDataRefreshAt;
     private static readonly string LastProfilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "DemarVpn", "last_profile_id");
@@ -111,6 +112,27 @@ public sealed class VpnController : NotifyBase
     /// <summary>Open account traffic sheet (connect block + demarvpn://settings/traffic).</summary>
     public void RaiseTrafficLimitReached() => TrafficLimitReached?.Invoke();
 
+    /// <summary>Sync disk hydrate before UI — parity Apple AppState.init SessionCacheStore.load.</summary>
+    public void HydrateFromCache()
+    {
+        var session = AuthSessionStore.Current;
+        if (session is null) return;
+        var cached = SessionCacheStore.Load(session.UserId);
+        if (cached is null) return;
+        ApplyServerList(cached.Servers);
+        TrafficExceeded = cached.TrafficExceeded;
+        Raise(nameof(TrafficExceeded));
+        AccountStore.Hydrate(cached.Account, cached.Traffic);
+        TunSettingsStore.HydrateFromCache(cached.TunRaw);
+        AppLog.Append(
+            $"[session] restored cache (servers={cached.Servers.Count}, account={cached.Account is not null}, tun={cached.TunRaw is not null})");
+    }
+
+    public Task RefreshSessionDataIfStaleAsync(CancellationToken ct = default) =>
+        AuthSessionStore.Current is null || !SessionRefreshPolicy.IsStale(_lastSessionDataRefreshAt)
+            ? Task.CompletedTask
+            : RefreshServersAsync(ct);
+
     public void ClearServers()
     {
         _reachCts?.Cancel();
@@ -119,10 +141,17 @@ public sealed class VpnController : NotifyBase
         Selected = null;
         ServersError = null;
         TrafficExceeded = false;
-        Raise(nameof(Servers));
-        Raise(nameof(Selected));
-        Raise(nameof(ServersError));
-        Raise(nameof(ServerReachability));
+        _lastSessionDataRefreshAt = null;
+        Raise(nameof(Servers), nameof(Selected), nameof(ServersError), nameof(ServerReachability), nameof(TrafficExceeded));
+    }
+
+    /// <summary>Memory + disk session wipe (sign-out / revoked / no session).</summary>
+    public void ClearSessionLocal()
+    {
+        ClearServers();
+        AccountStore.Clear();
+        SupportStore.ClearAll();
+        SessionCacheStore.Clear();
     }
 
     public async Task OnSignedOutAsync()
@@ -130,7 +159,7 @@ public sealed class VpnController : NotifyBase
         if (State.Kind is not VpnStateKind.Disconnected)
             await DisconnectAsync();
         ClearLastProfileId();
-        ClearServers();
+        ClearSessionLocal();
     }
 
     public async Task RefreshServersAsync(CancellationToken ct = default)
@@ -138,26 +167,29 @@ public sealed class VpnController : NotifyBase
         var session = AuthSessionStore.Current;
         if (session is null)
         {
-            ClearServers();
-            AccountStore.Clear();
-            SupportStore.ClearAll();
+            ClearSessionLocal();
             return;
         }
 
         ServersLoading = true;
         ServersError = null;
-        Raise(nameof(ServersLoading));
-        Raise(nameof(ServersError));
+        Raise(nameof(ServersLoading), nameof(ServersError));
+        var serversOk = false;
+        var accountOk = false;
         try
         {
             var serversTask = ServersApi.FetchServersAsync(session.UserId, session.LoginAt, ct);
             var accountTask = AccountStore.RefreshAsync(ct);
             var tunTask = RefreshTunGroupsAsync(ct);
-            await Task.WhenAll(serversTask, accountTask, tunTask);
+            accountOk = await accountTask;
+            await tunTask;
+
             var result = await serversTask;
             ApplyServerList(result.Servers);
             TrafficExceeded = result.TrafficExceeded;
             Raise(nameof(TrafficExceeded));
+            SessionCacheStore.SaveServers(result.RawJson, session.UserId);
+            serversOk = true;
             AppLog.Append($"servers: loaded {result.Servers.Count} (sub={result.VpnSubscription})");
             _ = SupportStore.RefreshUnreadAsync(ct);
             await RefreshServerReachabilityAsync(ct);
@@ -166,8 +198,6 @@ public sealed class VpnController : NotifyBase
         {
             AuthRepository.ClearLocal();
             AppServices.Auth.NotifyChanged();
-            AccountStore.Clear();
-            SupportStore.ClearAll();
             await OnSignedOutAsync();
             AppLog.Append("servers: session revoked");
         }
@@ -179,6 +209,8 @@ public sealed class VpnController : NotifyBase
         }
         finally
         {
+            if (serversOk || accountOk)
+                _lastSessionDataRefreshAt = DateTimeOffset.UtcNow;
             ServersLoading = false;
             Raise(nameof(ServersLoading));
         }
@@ -266,9 +298,7 @@ public sealed class VpnController : NotifyBase
             SaveLastProfileId(Selected.Id);
             _ = UplinkIpv4.ResolveAsync(Selected.Profile.Server);
         }
-        Raise(nameof(Servers));
-        Raise(nameof(Selected));
-        Raise(nameof(ServersError));
+        Raise(nameof(Servers), nameof(Selected), nameof(ServersError));
     }
 
     private async Task RunExclusiveAsync(Func<Task> action)
@@ -296,12 +326,6 @@ public sealed class VpnController : NotifyBase
         if (State.Kind == VpnStateKind.Connected) return;
         if (State.IsBusy) await StopToDisconnectedAsync();
 
-        var profile = Selected;
-        if (profile is null)
-        {
-            AppServices.Snackbar.ShowError(Strings.ServerNotSelected);
-            return;
-        }
         if (TrafficExceeded)
         {
             AppLog.Append("[vpn] connect blocked: traffic limit");
@@ -320,6 +344,25 @@ public sealed class VpnController : NotifyBase
         AppLog.Append("[ui] windows home: connect");
         try
         {
+            // Parity Apple: first connect in process must refresh session data.
+            if (AuthSessionStore.Current is not null && _lastSessionDataRefreshAt is null)
+                await RefreshServersAsync(ct);
+
+            var profile = Selected;
+            if (profile is null)
+            {
+                SetState(VpnState.Disconnected);
+                AppServices.Snackbar.ShowError(Strings.ServerNotSelected);
+                return;
+            }
+            if (TrafficExceeded)
+            {
+                SetState(VpnState.Disconnected);
+                AppLog.Append("[vpn] connect blocked: traffic limit");
+                RaiseTrafficLimitReached();
+                return;
+            }
+
             var plan = profile.ConnectPlan;
             var (resolved, dnsErr) = await UplinkIpv4.ResolveDetailedAsync(plan.UplinkHost);
             if (resolved.Count > 0) plan = plan.WithExtraDirectIps(resolved);

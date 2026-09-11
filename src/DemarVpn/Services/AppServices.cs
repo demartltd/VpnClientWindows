@@ -1,7 +1,7 @@
 using DemarVpn.Models;
 using DemarVpn.Services.Account;
 using DemarVpn.Services.Auth;
-using DemarVpn.Services.Support;
+using DemarVpn.Services.Servers;
 using DemarVpn.Services.Vpn;
 
 namespace DemarVpn.Services;
@@ -15,6 +15,8 @@ public static class AppServices
 
     public static string SingBoxLabel { get; private set; } = "1.13.13";
 
+    private static CancellationTokenSource? _bgRefreshCts;
+
     public static void Init()
     {
         AppLog.Init();
@@ -24,6 +26,7 @@ public static class AppServices
         TunSettingsStore.Init();
         AuthSessionStore.Load();
         Auth.NotifyChanged();
+        Vpn.HydrateFromCache();
         SingBoxLabel = ReadBundledVersion();
     }
 
@@ -38,16 +41,8 @@ public static class AppServices
             }
             var ok = await AuthRepository.RefreshSessionAsync();
             Auth.NotifyChanged();
-            if (ok)
-            {
-                await Vpn.RefreshServersAsync();
-            }
-            else
-            {
-                AccountStore.Clear();
-                SupportStore.ClearAll();
-                await Vpn.OnSignedOutAsync();
-            }
+            if (ok) await Vpn.RefreshServersAsync();
+            else await Vpn.OnSignedOutAsync();
         }
         catch (Exception ex)
         {
@@ -55,12 +50,43 @@ public static class AppServices
         }
     }
 
+    /// <summary>One 10‑min loop: app update + session data — parity Apple AppState.startBackgroundRefresh.</summary>
+    public static void StartBackgroundRefresh()
+    {
+        StopBackgroundRefresh();
+        _bgRefreshCts = new CancellationTokenSource();
+        _ = RunBackgroundRefreshAsync(_bgRefreshCts.Token);
+    }
+
+    public static void StopBackgroundRefresh()
+    {
+        _bgRefreshCts?.Cancel();
+        _bgRefreshCts?.Dispose();
+        _bgRefreshCts = null;
+    }
+
     public static async Task SignOutFullyAsync()
     {
         await Auth.SignOutAsync();
-        AccountStore.Clear();
-        SupportStore.ClearAll();
         await Vpn.OnSignedOutAsync();
+    }
+
+    private static async Task RunBackgroundRefreshAsync(CancellationToken ct)
+    {
+        try
+        {
+            await TickBackgroundRefreshAsync(ct);
+            using var timer = new PeriodicTimer(SessionRefreshPolicy.Ttl);
+            while (await timer.WaitForNextTickAsync(ct))
+                await TickBackgroundRefreshAsync(ct);
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private static async Task TickBackgroundRefreshAsync(CancellationToken ct)
+    {
+        await Update.CheckAndDownloadAsync(ct);
+        await Vpn.RefreshSessionDataIfStaleAsync(ct);
     }
 
     private static string ReadBundledVersion()

@@ -9,7 +9,8 @@ public sealed record ServersListResult(
     string? VpnSubscription,
     string? VpnExpiresAt,
     IReadOnlyList<ServerProfile> Servers,
-    bool TrafficExceeded = false);
+    bool TrafficExceeded = false,
+    string RawJson = "");
 
 /// <summary>VPN servers — parity Android ServersApi (POST vpn.example.invalid/vpn/servers).</summary>
 public static class ServersApi
@@ -21,7 +22,11 @@ public static class ServersApi
             $"{DemarHttp.VpnApiBaseUrl}/vpn/servers",
             new JsonObject { ["userId"] = userId, ["loginAt"] = loginAt },
             ct);
+        return ParseServersResponse(json);
+    }
 
+    public static ServersListResult ParseServersResponse(JsonObject json)
+    {
         var profiles = new List<ServerProfile>();
         if (json["servers"] is JsonArray arr)
         {
@@ -40,7 +45,8 @@ public static class ServersApi
             DemarHttp.OptString(json, "vpnSubscription"),
             DemarHttp.OptString(json, "vpnExpiresAt"),
             profiles,
-            json["trafficExceeded"]?.GetValueKind() == JsonValueKind.True);
+            json["trafficExceeded"]?.GetValueKind() == JsonValueKind.True,
+            json.ToJsonString());
     }
 
     public static ServerProfile? ParseServerItem(JsonObject item)

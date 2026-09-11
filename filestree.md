@@ -51,7 +51,7 @@ src/DemarVpn/
 │   ├── Account/                   # VpnAccountApi, AccountStore, PayApi (plans/create + promo/apply)
 │   ├── Support/                   # SupportApi → csauth.example.invalid ticket chat (channel=windows; album ≤10 WebP)
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
-│   ├── Servers/                   # ServersApi (POST vpn.example.invalid/vpn/servers → hy2)
+│   ├── Servers/                   # ServersApi, SessionCacheStore (servers/account/traffic/tun), SessionRefreshPolicy
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
 │   ├── Vpn/                       # VpnController, SingBoxConfigBuilder, engines
 │   ├── Device/DeviceIdentity.cs
@@ -82,6 +82,8 @@ tests/DemarVpn.Tests/
 ├── VpnAccountApiTest.cs         # account/traffic parse + promo + pieSlices + formatBytes
 ├── PayApiParseTest.cs           # pay catalog/checkout/formatPrice + CheckoutIntent
 ├── SupportApiTest.cs            # support ticket JSON parse / encode cache
+├── SessionRefreshPolicyTest.cs  # session TTL 600s
+├── SessionCacheStoreTest.cs     # session disk cache round-trip (servers/account/traffic/tun)
 ├── DemarNavigationTest.cs       # demarvpn:// auth + support + pay + account deep links
 └── LegalDocumentTest.cs         # ToS/PP URLs + RawTextFetcher.Decode
 ```

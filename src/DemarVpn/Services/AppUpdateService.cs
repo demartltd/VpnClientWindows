@@ -29,7 +29,6 @@ public sealed class AppUpdateService : NotifyBase
             "DemarVpn", "pending_update");
 
     int _downloadInFlight;
-    CancellationTokenSource? _loopCts;
     WindowsRelease? _release;
 
     AppUpdateState _state = AppUpdateState.Idle;
@@ -81,39 +80,12 @@ public sealed class AppUpdateService : NotifyBase
         }
     }
 
-    public void StartPeriodicChecks()
-    {
-        _loopCts?.Cancel();
-        _loopCts?.Dispose();
-        _loopCts = new CancellationTokenSource();
-        _ = RunPeriodicAsync(_loopCts.Token);
-    }
-
-    public void StopPeriodicChecks()
-    {
-        _loopCts?.Cancel();
-        _loopCts?.Dispose();
-        _loopCts = null;
-    }
-
     /// <summary>Reset state (unless downloading) after channel toggle.</summary>
     public void ClearPendingUpdate()
     {
         if (State != AppUpdateState.Downloading)
             State = AppUpdateState.Idle;
         ClearPendingFile();
-    }
-
-    async Task RunPeriodicAsync(CancellationToken ct)
-    {
-        await CheckAndDownloadAsync(ct);
-        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
-        try
-        {
-            while (await timer.WaitForNextTickAsync(ct))
-                await CheckAndDownloadAsync(ct);
-        }
-        catch (OperationCanceledException) { }
     }
 
     public async Task CheckAndDownloadAsync(CancellationToken ct = default)

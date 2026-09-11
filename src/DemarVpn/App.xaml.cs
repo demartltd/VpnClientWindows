@@ -58,7 +58,7 @@ public partial class App : Application
     private async Task BootstrapAsync()
     {
         await AppServices.BootstrapSessionAsync();
-        AppServices.Update.StartPeriodicChecks();
+        AppServices.StartBackgroundRefresh();
     }
 
     private void OnRedirectedActivation(AppActivationArguments args)
