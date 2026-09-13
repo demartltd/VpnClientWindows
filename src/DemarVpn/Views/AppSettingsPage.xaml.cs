@@ -15,6 +15,8 @@ public sealed partial class AppSettingsPage : OverlayPage
     {
         InitializeComponent();
         Chrome.Title = Strings.AppSettingsTitle;
+        LanguageRow.Title = Strings.SettingsLanguage;
+        LanguageRow.Subtitle = LocaleStore.DisplayName;
         TunRow.Title = Strings.SettingsTun;
         TunRow.Subtitle = Strings.SettingsTunSub;
         StartupTitle.Text = Strings.SettingsRunAtStartup;
@@ -25,9 +27,38 @@ public sealed partial class AppSettingsPage : OverlayPage
         BetaSub.Text = Strings.SettingsBetaSub;
         BetaToggle.IsOn = UpdateChannelStore.PreferBeta;
         _betaUiReady = true;
+        JournalTitle.Text = Strings.JournalTitle;
+        JournalSub.Text = Strings.JournalSubtitle;
+        JournalEmpty.Text = Strings.JournalEmpty;
+        ClearBtn.Content = Strings.JournalClear;
+        ShareBtn.Content = Strings.JournalShare;
         AppLog.Changed += () => DispatcherQueue.TryEnqueue(RefreshJournal);
         RefreshJournal();
         UpdateExpandLabel();
+    }
+
+    private async void OnLanguage(object? sender, EventArgs e)
+    {
+        if (XamlRoot is null) return;
+        var en = new RadioButton { Content = "English", IsChecked = !LocaleStore.IsRu, GroupName = "lang" };
+        var ru = new RadioButton { Content = "Русский", IsChecked = LocaleStore.IsRu, GroupName = "lang" };
+        var panel = new StackPanel { Spacing = 8 };
+        panel.Children.Add(en);
+        panel.Children.Add(ru);
+        var dialog = new ContentDialog
+        {
+            Title = Strings.SettingsLanguage,
+            Content = panel,
+            PrimaryButtonText = Strings.Ok,
+            CloseButtonText = Strings.Cancel,
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = XamlRoot,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        var tag = ru.IsChecked == true ? LocaleStore.Ru : LocaleStore.En;
+        if (tag == LocaleStore.Tag) return;
+        LocaleStore.Set(tag);
+        App.RemountShell(openAppSettings: true);
     }
 
     private void OnTunSettings(object? sender, EventArgs e) => Frame?.Navigate(typeof(TunSettingsPage));
@@ -48,7 +79,6 @@ public sealed partial class AppSettingsPage : OverlayPage
             return;
         }
 
-        // Revert until user confirms leave-beta dialog.
         _betaUiReady = false;
         BetaToggle.IsOn = true;
         _betaUiReady = true;

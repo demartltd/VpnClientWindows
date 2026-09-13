@@ -24,6 +24,7 @@ public sealed partial class SettingsPage : Page
     public SettingsPage()
     {
         InitializeComponent();
+        HeaderSub.Text = Strings.SettingsHeaderSubtitle;
         VersionLine.Text = $"Demar VPN - {Strings.VersionName} - {Strings.PlatformWindows}";
         SingBoxLine.Text = $"sing-box - {AppServices.SingBoxLabel}";
         BuildSocialLinks();
@@ -74,7 +75,7 @@ public sealed partial class SettingsPage : Page
         var data = new DataPackage();
         data.SetText(Strings.ShareAppPitch);
         Clipboard.SetContent(data);
-        AppServices.Snackbar.ShowInfo("Text copied to clipboard");
+        AppServices.Snackbar.ShowInfo(Strings.ShareCopied);
     }
 
     private async void OnPromo(object? sender, EventArgs e)

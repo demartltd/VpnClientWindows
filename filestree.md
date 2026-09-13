@@ -47,6 +47,7 @@ src/DemarVpn/
 │   ├── AppUpdateService.cs        # fastapi version+sha256, download /windows/download|beta
 │   ├── WindowsReleaseApi.cs       # GET /windows/version (+ beta channel pick)
 │   ├── UpdateChannelStore.cs      # prefer_beta prefs
+│   ├── LocaleStore.cs             # UI language en|ru (first launch = OS)
 │   ├── RunAtStartup.cs            # logon Task Scheduler autostart (default ON)
 │   ├── Account/                   # VpnAccountApi, AccountStore, PayApi (plans/create + promo/apply)
 │   ├── Support/                   # SupportApi → csauth.example.invalid ticket chat (channel=windows; album ≤10 WebP)
@@ -79,6 +80,7 @@ tests/DemarVpn.Tests/
 ├── AppLogTest.cs
 ├── AppUpdateTest.cs             # version parse + SHA256 + beta channel
 ├── RunAtStartupTest.cs          # run_at_startup prefs (default ON)
+├── LocaleStoreTest.cs           # first-launch en/ru resolve
 ├── VpnAccountApiTest.cs         # account/traffic parse + promo + pieSlices + formatBytes
 ├── PayApiParseTest.cs           # pay catalog/checkout/formatPrice + CheckoutIntent
 ├── SupportApiTest.cs            # support ticket JSON parse / encode cache
@@ -97,6 +99,7 @@ src/DemarVpn.Installer/
 ├── MainWindow.xaml / MainWindow.xaml.cs
 ├── InstallerMode.cs            # /silent /uninstall /launch /D=
 ├── InstallService.cs           # install / uninstall / ARP / shortcut / demarvpn://
+├── InstallerStrings.cs         # EN/RU by OS UI culture
 ├── UninstallProgram.cs         # Native AOT Win32 Demar UI
 ├── app.manifest                # requireAdministrator
 └── Resources/                  # payload.zip + uninstall.exe — generated (gitignore)

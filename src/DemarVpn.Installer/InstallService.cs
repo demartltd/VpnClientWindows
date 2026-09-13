@@ -99,22 +99,22 @@ public static class InstallService
     {
         installDir = IOPath.GetFullPath(installDir.Trim());
         if (string.IsNullOrWhiteSpace(installDir))
-            throw new InvalidOperationException("Путь установки пуст");
+            throw new InvalidOperationException(InstallerStrings.EmptyInstallPath);
 
         var previous = TryReadMarker() ?? TryReadArpInstallDir();
 
-        progress?.Report("Остановка процессов…");
+        progress?.Report(InstallerStrings.Stopping);
         StopVpnAndWait(installDir, previous);
 
         Directory.CreateDirectory(installDir);
 
-        progress?.Report("Очистка старых файлов…");
+        progress?.Report(InstallerStrings.Cleaning);
         ClearInstallDir(installDir);
 
-        progress?.Report("Распаковка…");
+        progress?.Report(InstallerStrings.Extracting);
         ExtractPayloadWithRetry(installDir);
 
-        progress?.Report("Регистрация…");
+        progress?.Report(InstallerStrings.Registering);
         var uninstallExe = IOPath.Combine(installDir, "Uninstall.exe");
         ExtractEmbeddedUninstall(uninstallExe);
 
@@ -126,7 +126,7 @@ public static class InstallService
         WriteArp(installDir, appExe, uninstallExe);
         WriteMarker(installDir);
         RegisterProtocol(appExe);
-        progress?.Report("Готово");
+        progress?.Report(InstallerStrings.Done);
     }
 
     public static bool LaunchApp(string installDir)
@@ -308,10 +308,10 @@ public static class InstallService
     {
         var dir = ResolveInstallDirFromArp();
 
-        progress?.Report("Остановка процессов…");
+        progress?.Report(InstallerStrings.Stopping);
         StopVpnAndWait(dir, null);
 
-        progress?.Report("Удаление…");
+        progress?.Report(InstallerStrings.Removing);
         TryDelete(StartMenuLnk);
         DeleteArp();
         ClearMarker();
@@ -330,7 +330,7 @@ public static class InstallService
                 TryDeleteDir(sub);
         }
 
-        progress?.Report("Завершение…");
+        progress?.Report(InstallerStrings.Finishing);
         ScheduleSelfDelete(self, dir);
     }
 

@@ -8,6 +8,9 @@
     <ScrollViewer Padding="{StaticResource OverlayBodyPadding}">
       <StackPanel Spacing="12">
         <Border Style="{StaticResource DemarCard}">
+          <controls:SettingsActionButton x:Name="LanguageRow" Glyph="&#xE775;" Click="OnLanguage" />
+        </Border>
+        <Border Style="{StaticResource DemarCard}">
           <controls:SettingsActionButton x:Name="TunRow" Glyph="&#xE705;" Click="OnTunSettings" />
         </Border>
         <Border Style="{StaticResource DemarCard}">
@@ -38,13 +41,13 @@
         </Border>
         <Border Style="{StaticResource DemarCard}">
           <StackPanel Spacing="8">
-            <TextBlock Text="Журнал" FontWeight="SemiBold" />
-            <TextBlock Text="Сообщения приложения и ядра VPN" Opacity="0.7" TextWrapping="Wrap" />
+            <TextBlock x:Name="JournalTitle" FontWeight="SemiBold" />
+            <TextBlock x:Name="JournalSub" Opacity="0.7" TextWrapping="Wrap" />
             <Button x:Name="ExpandBtn" Click="OnExpand" HorizontalAlignment="Left" />
             <Border x:Name="JournalBox" Visibility="Collapsed" Height="260" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1" CornerRadius="8">
               <Grid>
-                <TextBlock x:Name="JournalEmpty" Text="Пока пусто" Opacity="0.6"
+                <TextBlock x:Name="JournalEmpty" Opacity="0.6"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <ScrollViewer x:Name="JournalScroll" Padding="8">
                   <TextBlock x:Name="JournalText" FontFamily="Consolas" FontSize="12"
@@ -54,8 +57,8 @@
               </Grid>
             </Border>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-              <Button Content="Очистить" Click="OnClear" />
-              <Button Content="Поделиться" Click="OnShare" />
+              <Button x:Name="ClearBtn" Click="OnClear" />
+              <Button x:Name="ShareBtn" Click="OnShare" />
             </StackPanel>
           </StackPanel>
         </Border>

@@ -42,6 +42,12 @@ public sealed partial class ShellPage : Page
         SizeChanged += (_, _) => UpdateToolbarLayout();
     }
 
+    public void OpenAppSettings()
+    {
+        GoToTab(2);
+        ShowOverlay(typeof(AppSettingsPage));
+    }
+
     public void OnExternalSignIn()
     {
         LoginSheet.Dismiss();

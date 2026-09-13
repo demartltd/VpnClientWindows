@@ -37,7 +37,7 @@ static unsafe class UninstallUi
     static readonly uint Secondary = Rgb(0xB8, 0xC8, 0xDA), Outline = Rgb(0x4A, 0x55, 0x64);
 
     static nint _hwnd, _fontUi, _fontTitle, _fontBtn;
-    static string _status = "", _action = "Удалить";
+    static string _status = "", _action = InstallerStrings.Uninstall;
     static bool _busy, _done, _btnHover, _btnDown, _closeHover;
     static int _exit;
     static readonly WndProcDel _proc = WndProc;
@@ -93,12 +93,12 @@ static unsafe class UninstallUi
                 if (wParam != 0) Marshal.FreeHGlobal(wParam);
                 InvalidateRect(hwnd, 0, 0); return 0;
             case MsgDone:
-                _busy = false; _done = true; _action = "Закрыть"; _status = "Удалено"; _exit = 0;
+                _busy = false; _done = true; _action = InstallerStrings.Close; _status = InstallerStrings.Uninstalled; _exit = 0;
                 InvalidateRect(hwnd, 0, 0);
                 return 0;
             case MsgFail:
-                _busy = false; _action = "Удалить"; _exit = 1;
-                _status = Marshal.PtrToStringUni(wParam) ?? "Ошибка";
+                _busy = false; _action = InstallerStrings.Uninstall; _exit = 1;
+                _status = Marshal.PtrToStringUni(wParam) ?? InstallerStrings.Error;
                 if (wParam != 0) Marshal.FreeHGlobal(wParam);
                 InvalidateRect(hwnd, 0, 0); return 0;
             case WmClose: DestroyWindow(hwnd); return 0;
@@ -117,12 +117,12 @@ static unsafe class UninstallUi
 
         Fill(mem, 0, 0, W, H, Bg);
         Fill(mem, 0, 0, W, 40, Surface);
-        TextAt(mem, 16, 11, "Demar VPN — Удаление", _fontUi, Primary);
+        TextAt(mem, 16, 11, InstallerStrings.ChromeUninstall, _fontUi, Primary);
         // Close inset so hover never covers the 1px outline
         Fill(mem, W - 41, 1, 39, 38, _closeHover ? SurfHover : Surface);
         Center(mem, W - 41, 1, 39, 38, "✕", _fontUi, Secondary);
         TextAt(mem, 28, 64, $"Demar VPN  {InstallService.AppVersion}", _fontTitle, Primary);
-        TextAt(mem, 28, 108, "Удалит приложение, ярлык и записи установщика.", _fontUi, Secondary);
+        TextAt(mem, 28, 108, InstallerStrings.SubtitleUninstall, _fontUi, Secondary);
         if (_status.Length > 0) TextAt(mem, 28, 160, _status, _fontUi, Secondary);
         if (_busy) Fill(mem, 28, 220, 424, 4, BtnHover);
 
@@ -164,7 +164,7 @@ static unsafe class UninstallUi
     {
         if (_done) { PostMessageW(hwnd, WmClose, 0, 0); return; }
         if (_busy) return;
-        _busy = true; _status = "Остановка процессов…";
+        _busy = true; _status = InstallerStrings.Stopping;
         InvalidateRect(hwnd, 0, 0);
         ThreadPool.QueueUserWorkItem(_ =>
         {

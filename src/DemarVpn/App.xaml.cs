@@ -17,7 +17,19 @@ public partial class App : Application
     /// <summary>HWND for FileOpenPicker InitializeWithWindow (unpackaged WinUI).</summary>
     public static nint MainHwnd { get; private set; }
 
+    public static App? CurrentApp => Current as App;
+
     public App() => InitializeComponent();
+
+    /// <summary>Recreate shell after locale change so UI strings refresh.</summary>
+    public static void RemountShell(bool openAppSettings = false)
+    {
+        var main = CurrentApp?._main;
+        if (main is null) return;
+        main.RootFrame.Navigate(typeof(Views.ShellPage));
+        if (openAppSettings)
+            main.DispatcherQueue.TryEnqueue(() => main.Shell?.OpenAppSettings());
+    }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {

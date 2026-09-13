@@ -55,8 +55,9 @@ pwsh scripts/for_builds/build_windows.ps1 -Fast
 | Servers                       | SegmentBar протокол/тиры (drag), divider, `Country | TIER` + city, FAB refresh, reachability; Dev/Tester только если есть в списке |
 | Settings + social links       | FA6 brand icons (`IconLinkChip`: X / Bluesky / IG / TikTok / Telegram); промокод (`POST fastapi…/vpn/promo/activate` → refresh account+servers); Documents sheet → ToS/PP с GitHub Markdown; **Support** тикет-чат (`csauth.example.invalid`, `channel=windows`, альбом до 10 фото WebP, unread badge) |
 | Account + login + notify/traffic sheets | Email OTP + TOTP + Telegram OAuth → `auth.example.invalid`; Account: подписка / **checkout** (narrow≈iOS / wide≈macOS) / трафик pie / семья (stub) / уведомления / выход; `AccountStore` refresh при старте и при обновлении серверов (`fastapi…/vpn/account|traffic|notify`); оплата: `GET /vpn/pay/plans` → `POST /vpn/pay/create` → браузер → `demarvpn://pay/ok|fail` |
-| App settings (журнал + beta + autostart)  | `AppLog` — до 512 строк; тоггл бета-канала; автозапуск при входе (Task Scheduler); обновления с `vpn.example.invalid` + SHA-256 |
-| Service menu (3× tap version) | О приложении, Route, egress probes, device identity                                                                                |
+| App settings (язык + журнал + beta + autostart) | **Language** EN/RU (first launch = OS UI, иначе EN; remount UI); `AppLog` — до 512 строк; тоггл бета-канала; автозапуск при входе (Task Scheduler); обновления с `vpn.example.invalid` + SHA-256 |
+| Service menu (3× tap version) | English only — About, Route, egress probes, device identity |
+| Installer / Uninstall         | UI EN/RU по языку ОС (ru → RU, иначе EN); без переключателя |
 
 
 VPN connect (Hysteria2) — **реализовано** (`SingBoxProcessEngine` + Wintun). При Connect появится **UAC для sing-box.exe** (TUN).

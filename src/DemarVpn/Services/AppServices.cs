@@ -19,6 +19,7 @@ public static class AppServices
 
     public static void Init()
     {
+        LocaleStore.Init();
         AppLog.Init();
         UpdateChannelStore.Init();
         RunAtStartup.Init();

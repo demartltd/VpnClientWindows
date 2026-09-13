@@ -13,7 +13,7 @@ public partial class App : Application
         _mutex = new Mutex(true, @"Global\DemarVpn.Updater", out var created);
         if (!created)
         {
-            MessageBox.Show("Установщик Demar VPN уже запущен.", "Demar VPN",
+            MessageBox.Show(InstallerStrings.AlreadyRunning, "Demar VPN",
                 MessageBoxButton.OK, MessageBoxImage.Information);
             Shutdown(1);
             return;

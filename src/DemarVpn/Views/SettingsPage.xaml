@@ -7,7 +7,7 @@
       <StackPanel HorizontalAlignment="Center" Spacing="8" Margin="0,56,0,0">
         <FontIcon Glyph="&#xE705;" FontSize="64" Foreground="{StaticResource DemarPrimaryBrush}" HorizontalAlignment="Center" />
         <TextBlock Text="Demar VPN" Style="{StaticResource DemarTabTitleStyle}" />
-        <TextBlock Text="Настройки подключения и приложения" TextAlignment="Center" Opacity="0.7" TextWrapping="Wrap" />
+        <TextBlock x:Name="HeaderSub" TextAlignment="Center" Opacity="0.7" TextWrapping="Wrap" />
       </StackPanel>
       <ContentControl x:Name="SocialLinksHost" HorizontalAlignment="Center" Margin="0,32,0,32" />
       <StackPanel x:Name="MenuHost" Spacing="12" />

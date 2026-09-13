@@ -19,8 +19,8 @@
             MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
         <TextBlock x:Name="ChromeTitle" Text="Demar VPN" VerticalAlignment="Center"
                    Margin="16,0,0,0" FontSize="13" Foreground="{StaticResource DemarPrimary}" />
-        <Button Style="{StaticResource DemarCloseButton}" HorizontalAlignment="Right"
-                Width="40" Height="40" Click="Close_OnClick" ToolTip="Закрыть">
+        <Button x:Name="CloseBtn" Style="{StaticResource DemarCloseButton}" HorizontalAlignment="Right"
+                Width="40" Height="40" Click="Close_OnClick">
           <TextBlock Text="✕" FontSize="14" Foreground="{StaticResource DemarSecondary}"
                      HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Button>
@@ -33,7 +33,7 @@
                    TextWrapping="Wrap" Foreground="{StaticResource DemarSecondary}" />
 
         <StackPanel x:Name="PathPanel" Margin="0,20,0,0">
-          <TextBlock Text="Папка установки" FontSize="12" Opacity="0.7"
+          <TextBlock x:Name="FolderLabel" FontSize="12" Opacity="0.7"
                      Foreground="{StaticResource DemarSecondary}" Margin="0,0,0,6" />
           <Grid>
             <Grid.ColumnDefinitions>
@@ -45,8 +45,8 @@
                      Foreground="{StaticResource DemarOnPrimaryContainer}"
                      BorderBrush="{StaticResource DemarOutline}"
                      VerticalContentAlignment="Center" />
-            <Button Grid.Column="1" Style="{StaticResource DemarButton}"
-                    Content="Обзор…" Margin="8,0,0,0" Height="36" Padding="14,0"
+            <Button x:Name="BrowseBtn" Grid.Column="1" Style="{StaticResource DemarButton}"
+                    Margin="8,0,0,0" Height="36" Padding="14,0"
                     Click="Browse_OnClick" />
           </Grid>
         </StackPanel>

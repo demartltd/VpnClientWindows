@@ -135,10 +135,15 @@ public sealed partial class AccountPage : Page
 
     private static string InDays(int days)
     {
+        if (!LocaleStore.IsRu)
+            return string.Format(days == 1 ? Strings.AccountInDaysOne : Strings.AccountInDaysMany, days);
         var n = Math.Abs(days) % 100;
         var n1 = n % 10;
-        var unit = n is >= 11 and <= 14 ? "дней" : n1 == 1 ? "день" : n1 is >= 2 and <= 4 ? "дня" : "дней";
-        return $"{days} {unit}";
+        var fmt = n is >= 11 and <= 14 ? Strings.AccountInDaysMany
+            : n1 == 1 ? Strings.AccountInDaysOne
+            : n1 is >= 2 and <= 4 ? Strings.AccountInDaysFew
+            : Strings.AccountInDaysMany;
+        return string.Format(fmt, days);
     }
 
     private void BuildFamilySlots()

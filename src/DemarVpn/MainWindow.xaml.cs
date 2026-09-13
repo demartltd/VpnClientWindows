@@ -9,6 +9,7 @@ namespace DemarVpn;
 public sealed partial class MainWindow : Window
 {
     public Views.ShellPage? Shell => Root.Content as Views.ShellPage;
+    public Frame RootFrame => Root;
 
     public MainWindow()
     {

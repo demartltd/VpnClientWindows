@@ -46,5 +46,6 @@
     <Compile Include="..\..\src\DemarVpn\Services\Content\LegalDocumentRepository.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\WindowsReleaseApi.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\RunAtStartup.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\LocaleStore.cs" />
   </ItemGroup>
 </Project>

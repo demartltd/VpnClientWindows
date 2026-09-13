@@ -25,16 +25,22 @@ public sealed partial class ServiceMenuPage : OverlayPage
         InternetHeader.Text = Strings.ServiceInternet;
         DeviceHeader.Text = Strings.ServiceDevice;
         DebugHeader.Text = Strings.ServiceDebug;
+        NameRow.Key = Strings.ServiceName;
         NameRow.Value = Strings.AppName;
+        PackageRow.Key = Strings.ServicePackage;
         PackageRow.Value = AppPackageInfo.PackageId;
+        VersionRow.Key = Strings.ServiceVersion;
         VersionRow.Value = AppPackageInfo.VersionDetail;
+        LatestVersionRow.Key = Strings.ServiceLatestVersion;
         LatestVersionRow.Value = "…";
+        PlatformRow.Key = Strings.ServicePlatform;
         PlatformRow.Value = Strings.PlatformWindows;
         CoreRow.Key = Strings.ServiceCore;
         CoreRow.Value = AppServices.SingBoxLabel;
         RouteRow.Key = Strings.ServiceRoute;
         IpRow.Key = Strings.ServiceIp;
         CountryRow.Key = Strings.ServiceCountry;
+        ToolTipService.SetToolTip(RefreshBtn, Strings.ServiceRefresh);
         RestartBtn.Content = Strings.ServiceRestartCore;
         CrashBtn.Content = Strings.ServiceCrash;
 

@@ -19,11 +19,12 @@ public partial class MainWindow : Window
 
         var ver = InstallService.AppVersion;
         TitleText.Text = $"Demar VPN  {ver}";
-        ChromeTitle.Text = _uninstall ? "Demar VPN — Удаление" : "Demar VPN — Установка";
-        SubtitleText.Text = _uninstall
-            ? "Удалит приложение, ярлык и записи установщика."
-            : "Установит последнюю версию из этого пакета.";
-        ActionButton.Content = _uninstall ? "Удалить" : "Установить";
+        ChromeTitle.Text = _uninstall ? InstallerStrings.ChromeUninstall : InstallerStrings.ChromeInstall;
+        SubtitleText.Text = _uninstall ? InstallerStrings.SubtitleUninstall : InstallerStrings.SubtitleInstall;
+        ActionButton.Content = _uninstall ? InstallerStrings.Uninstall : InstallerStrings.Install;
+        FolderLabel.Text = InstallerStrings.InstallFolder;
+        BrowseBtn.Content = InstallerStrings.Browse;
+        CloseBtn.ToolTip = InstallerStrings.Close;
 
         if (_uninstall)
         {
@@ -48,7 +49,7 @@ public partial class MainWindow : Window
     {
         var dlg = new OpenFolderDialog
         {
-            Title = "Папка установки Demar VPN",
+            Title = InstallerStrings.BrowseTitle,
             Multiselect = false,
         };
         if (!string.IsNullOrWhiteSpace(PathBox.Text) && Directory.Exists(PathBox.Text))
@@ -74,17 +75,17 @@ public partial class MainWindow : Window
                 if (_uninstall) InstallService.Uninstall(progress);
                 else InstallService.Install(dir, progress);
             });
-            StatusText.Text = _uninstall ? "Удалено" : "Установлено";
+            StatusText.Text = _uninstall ? InstallerStrings.Uninstalled : InstallerStrings.Installed;
             ActionButton.Click -= Action_OnClick;
             if (_uninstall)
             {
-                ActionButton.Content = "Закрыть";
+                ActionButton.Content = InstallerStrings.Close;
                 ActionButton.Click += (_, _) => Close();
             }
             else
             {
                 _installDir = dir;
-                ActionButton.Content = "Открыть";
+                ActionButton.Content = InstallerStrings.Open;
                 ActionButton.Click += Open_OnClick;
             }
             ActionButton.IsEnabled = true;
@@ -94,7 +95,7 @@ public partial class MainWindow : Window
             StatusText.Text = ex.Message;
             ActionButton.IsEnabled = true;
             PathBox.IsEnabled = !_uninstall;
-            ActionButton.Content = _uninstall ? "Удалить" : "Установить";
+            ActionButton.Content = _uninstall ? InstallerStrings.Uninstall : InstallerStrings.Install;
             _busy = false;
         }
         finally
