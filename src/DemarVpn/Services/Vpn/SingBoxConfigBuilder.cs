@@ -43,7 +43,7 @@ public static class SingBoxConfigBuilder
         return new JsonObject
         {
             ["log"] = new JsonObject { ["level"] = logLevel, ["timestamp"] = true },
-            ["dns"] = MakeDns(plan.Tun.DnsFinal, bootstrap, ruleSets, bypassHosts),
+            ["dns"] = MakeDns(plan.Tun.DnsFinal, bootstrap, ruleSets, bypassExes, bypassHosts),
             ["inbounds"] = new JsonArray(MakeTunInbound(tunName, mtu, plan.DirectIPs), new JsonObject
             {
                 ["type"] = "mixed",
@@ -65,6 +65,7 @@ public static class SingBoxConfigBuilder
         string dnsFinal,
         IReadOnlyList<string> bootstrapDomains,
         IReadOnlyList<ApiBypassRuleSet> ruleSets,
+        IReadOnlyList<string> bypassExes,
         IReadOnlyList<string> bypassHosts)
     {
         var rules = new JsonArray(
@@ -74,6 +75,13 @@ public static class SingBoxConfigBuilder
                 ["domain"] = Arr("localhost"),
                 ["action"] = "predefined",
                 ["answer"] = Arr("localhost. IN A 127.0.0.1"),
+            });
+        if (bypassExes.Count > 0)
+            rules.Add(new JsonObject
+            {
+                ["process_name"] = Arr(bypassExes),
+                ["action"] = "route",
+                ["server"] = SingBoxTags.DnsDirect,
             });
         if (CleanedDomains(bootstrapDomains) is { Count: > 0 } exact)
             rules.Add(new JsonObject
@@ -125,19 +133,18 @@ public static class SingBoxConfigBuilder
         IReadOnlyList<string> bypassHosts)
     {
         var rules = new JsonArray(
-            new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "sniff", ["timeout"] = "300ms" },
-            new JsonObject { ["protocol"] = "dns", ["action"] = "hijack-dns" },
-            new JsonObject { ["network"] = Arr("udp"), ["port"] = Arr(443), ["action"] = "reject", ["method"] = "default" },
-            new JsonObject { ["ip_cidr"] = Arr("127.0.0.0/8"), ["action"] = "route", ["outbound"] = SingBoxTags.Direct },
-            new JsonObject { ["ip_is_private"] = true, ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
-
-        foreach (var exe in bypassExes)
+            new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "sniff", ["timeout"] = "300ms" });
+        if (bypassExes.Count > 0)
             rules.Add(new JsonObject
             {
-                ["process_name"] = Arr(exe),
+                ["process_name"] = Arr(bypassExes),
                 ["action"] = "route",
                 ["outbound"] = SingBoxTags.Direct,
             });
+        rules.Add(new JsonObject { ["protocol"] = "dns", ["action"] = "hijack-dns" });
+        rules.Add(new JsonObject { ["network"] = Arr("udp"), ["port"] = Arr(443), ["action"] = "reject", ["method"] = "default" });
+        rules.Add(new JsonObject { ["ip_cidr"] = Arr("127.0.0.0/8"), ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
+        rules.Add(new JsonObject { ["ip_is_private"] = true, ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
 
         foreach (var rs in ruleSets)
             rules.Add(new JsonObject

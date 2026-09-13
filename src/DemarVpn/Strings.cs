@@ -233,5 +233,5 @@ public static class Strings
     public const string UpdateDownloadFail = "Не удалось скачать обновление";
     public const string UpdateHashMismatch = "Файл обновления повреждён (SHA-256). Попробуйте снова.";
     public const string UpdateDownloading = "Загрузка";
-    public const string VersionName = "1.0.22";
+    public const string VersionName = "1.0.24";
 }

@@ -137,19 +137,68 @@ public class VpnPipelineTest
         var cfg = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass))!.AsObject();
         var rules = cfg["route"]!["rules"]!.AsArray();
 
-        Assert.Contains(rules, r =>
-            r!["process_name"]?.AsArray().Any(p => p!.GetValue<string>() == "steam.exe") == true &&
-            r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
+        var process = Assert.Single(rules, r => r!["process_name"] is not null);
+        var names = process!["process_name"]!.AsArray().Select(p => p!.GetValue<string>()).ToList();
+        Assert.Contains("steam.exe", names);
+        Assert.Contains(TunExeNames.SingBox, names);
+        Assert.Equal(SingBoxTags.Direct, process["outbound"]!.GetValue<string>());
+
         Assert.Contains(rules, r =>
             r!["domain_suffix"]?.AsArray().Any(d => d!.GetValue<string>() == "store.steampowered.com") == true &&
             r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
-        Assert.Contains(rules, r =>
-            r!["process_name"]?.AsArray().Any(p => p!.GetValue<string>() == TunExeNames.SingBox) == true);
 
         var dnsRules = cfg["dns"]!["rules"]!.AsArray();
         Assert.Contains(dnsRules, r =>
+            r!["process_name"]?.AsArray().Any(p => p!.GetValue<string>() == "steam.exe") == true &&
+            r!["server"]?.GetValue<string>() == SingBoxTags.DnsDirect);
+        Assert.Contains(dnsRules, r =>
             r!["domain_suffix"]?.AsArray().Any(d => d!.GetValue<string>() == "store.steampowered.com") == true &&
             r!["server"]?.GetValue<string>() == SingBoxTags.DnsDirect);
+    }
+
+    [Fact]
+    public void TunBypass_processRuleBeforeHijackAndQuicReject()
+    {
+        var plan = Fixture().ConnectPlan;
+        var bypass = new TunBypassOptions(["steam.exe"], []);
+        var rules = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass))!["route"]!["rules"]!.AsArray();
+
+        var processIdx = IndexOf(rules, r => r!["process_name"] is not null);
+        var hijackIdx = IndexOf(rules, r => r!["action"]?.GetValue<string>() == "hijack-dns");
+        var quicIdx = IndexOf(rules, r =>
+            r!["action"]?.GetValue<string>() == "reject" &&
+            r!["network"]?.AsArray().Any(n => n!.GetValue<string>() == "udp") == true &&
+            r!["port"]?.AsArray().Any(p => p!.GetValue<int>() == 443) == true);
+
+        Assert.True(processIdx >= 0);
+        Assert.True(processIdx < hijackIdx);
+        Assert.True(hijackIdx < quicIdx);
+    }
+
+    [Fact]
+    public void TunBypass_emptyUserList_selfProcessStillBeforeQuic()
+    {
+        var plan = Fixture().ConnectPlan;
+        var rules = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan))!["route"]!["rules"]!.AsArray();
+
+        var process = Assert.Single(rules, r => r!["process_name"] is not null);
+        Assert.Contains(
+            process!["process_name"]!.AsArray().Select(p => p!.GetValue<string>()),
+            n => n.Equals(TunExeNames.SingBox, StringComparison.OrdinalIgnoreCase));
+
+        var processIdx = IndexOf(rules, r => r!["process_name"] is not null);
+        var quicIdx = IndexOf(rules, r =>
+            r!["action"]?.GetValue<string>() == "reject" &&
+            r!["network"]?.AsArray().Any(n => n!.GetValue<string>() == "udp") == true &&
+            r!["port"]?.AsArray().Any(p => p!.GetValue<int>() == 443) == true);
+        Assert.True(processIdx < quicIdx);
+    }
+
+    private static int IndexOf(JsonArray rules, Func<JsonNode?, bool> pred)
+    {
+        for (var i = 0; i < rules.Count; i++)
+            if (pred(rules[i])) return i;
+        return -1;
     }
 
     [Fact]
