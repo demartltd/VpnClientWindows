@@ -15,6 +15,8 @@ public sealed class VpnController : NotifyBase
     private readonly SemaphoreSlim _ops = new(1, 1);
     private int _ensureStopGate;
     private int _switchPending;
+    private Task? _refreshServersTask;
+    private readonly object _refreshGate = new();
     private CancellationTokenSource? _op;
     private CancellationTokenSource? _watchdog;
     private CancellationTokenSource? _health;
@@ -162,7 +164,18 @@ public sealed class VpnController : NotifyBase
         ClearSessionLocal();
     }
 
-    public async Task RefreshServersAsync(CancellationToken ct = default)
+    public Task RefreshServersAsync(CancellationToken ct = default)
+    {
+        lock (_refreshGate)
+        {
+            if (_refreshServersTask is { IsCompleted: false } inflight)
+                return inflight;
+            _refreshServersTask = RefreshServersCoreAsync(ct);
+            return _refreshServersTask;
+        }
+    }
+
+    private async Task RefreshServersCoreAsync(CancellationToken ct)
     {
         var session = AuthSessionStore.Current;
         if (session is null)

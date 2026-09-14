@@ -96,16 +96,12 @@ public sealed partial class HomePage : Page
         try
         {
             var latest = AppServices.Update.LatestVersion ?? "?";
-            var dialog = new ContentDialog
-            {
-                Title = Strings.UpdateTitle,
-                Content = string.Format(Strings.UpdateBody, Strings.VersionName, latest),
-                PrimaryButtonText = Strings.UpdateNow,
-                SecondaryButtonText = Strings.UpdateNextLaunch,
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = XamlRoot,
-            };
-            var result = await dialog.ShowAsync();
+            var result = await DemarDialog.ChooseAsync(
+                XamlRoot,
+                Strings.UpdateTitle,
+                string.Format(Strings.UpdateBody, Strings.VersionName, latest),
+                Strings.UpdateNow,
+                Strings.UpdateNextLaunch);
             _promptShown = true;
             if (result == ContentDialogResult.Primary)
             {

@@ -45,16 +45,13 @@ public sealed partial class AppSettingsPage : OverlayPage
         var panel = new StackPanel { Spacing = 8 };
         panel.Children.Add(en);
         panel.Children.Add(ru);
-        var dialog = new ContentDialog
-        {
-            Title = Strings.SettingsLanguage,
-            Content = panel,
-            PrimaryButtonText = Strings.Ok,
-            CloseButtonText = Strings.Cancel,
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = XamlRoot,
-        };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        if (await DemarDialog.ChooseAsync(
+                XamlRoot,
+                Strings.SettingsLanguage,
+                panel,
+                Strings.Ok,
+                closeButtonText: Strings.Cancel) != ContentDialogResult.Primary)
+            return;
         var tag = ru.IsChecked == true ? LocaleStore.Ru : LocaleStore.En;
         if (tag == LocaleStore.Tag) return;
         LocaleStore.Set(tag);
@@ -84,15 +81,11 @@ public sealed partial class AppSettingsPage : OverlayPage
         _betaUiReady = true;
 
         if (XamlRoot is null) return;
-        var dialog = new ContentDialog
-        {
-            Title = Strings.SettingsBetaOffTitle,
-            Content = Strings.SettingsBetaOffBody,
-            PrimaryButtonText = Strings.SettingsBetaOffOk,
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = XamlRoot,
-        };
-        await dialog.ShowAsync();
+        await DemarDialog.ChooseAsync(
+            XamlRoot,
+            Strings.SettingsBetaOffTitle,
+            Strings.SettingsBetaOffBody,
+            Strings.SettingsBetaOffOk);
         _betaUiReady = false;
         BetaToggle.IsOn = false;
         _betaUiReady = true;

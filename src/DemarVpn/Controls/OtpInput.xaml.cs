@@ -21,7 +21,6 @@ public sealed partial class OtpInput : UserControl
         InitializeComponent();
         BuildCells();
         Input.TextChanged += (_, _) => OnTextChanged();
-        Loaded += (_, _) => Input.Focus(FocusState.Programmatic);
     }
 
     public void Reset()
@@ -30,7 +29,6 @@ public sealed partial class OtpInput : UserControl
         Input.Text = string.Empty;
         _suppressChange = false;
         RefreshCells();
-        Input.Focus(FocusState.Programmatic);
     }
 
     private void BuildCells()

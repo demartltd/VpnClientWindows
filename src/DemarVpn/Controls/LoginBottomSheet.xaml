@@ -16,8 +16,6 @@
         <TextBlock x:Name="ErrorText" Foreground="{StaticResource DemarErrorBrush}"
                    FontSize="13" TextAlignment="Center" TextWrapping="Wrap"
                    Visibility="Collapsed" Margin="0,0,0,4" />
-        <ProgressRing x:Name="BusyRing" Width="28" Height="28" IsActive="False"
-                      Visibility="Collapsed" HorizontalAlignment="Center" />
         <StackPanel x:Name="EmailStep" Spacing="12">
           <Border Background="{StaticResource DemarSurfaceHighBrush}"
                   BorderBrush="{StaticResource DemarOutlineVariantBrush}"

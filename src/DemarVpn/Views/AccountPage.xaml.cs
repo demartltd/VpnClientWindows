@@ -201,18 +201,27 @@ public sealed partial class AccountPage : Page
     private async void OnSignOutClick(object? sender, EventArgs e)
     {
         if (_signingOut) return;
-        var dialog = new ContentDialog
+        if (XamlRoot is null) return;
+        try
         {
-            Title = Strings.SignOutConfirmTitle,
-            Content = Strings.SignOutConfirmBody,
-            PrimaryButtonText = Strings.Cancel,
-            CloseButtonText = Strings.SignOut,
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = XamlRoot,
-        };
-        if (await dialog.ShowAsync() != ContentDialogResult.None) return;
-        _signingOut = true;
-        Refresh();
-        SignOutRequested?.Invoke();
+            // Apple parity: Primary = Sign out, Close = Cancel (Escape cancels).
+            if (!await DemarDialog.ConfirmAsync(
+                    XamlRoot,
+                    Strings.SignOutConfirmTitle,
+                    Strings.SignOutConfirmBody,
+                    Strings.SignOut,
+                    Strings.Cancel))
+                return;
+            AppLog.AppendCrash("account: sign-out confirmed");
+            _signingOut = true;
+            Refresh();
+            SignOutRequested?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            AppLog.AppendCrash($"account: sign-out dialog failed — {ex}");
+            _signingOut = false;
+            Refresh();
+        }
     }
 }

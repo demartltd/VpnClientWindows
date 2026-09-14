@@ -1,5 +1,5 @@
+using DemarVpn.Services;
 using DemarVpn.Services.Auth;
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -45,15 +45,10 @@ public sealed partial class LoginBottomSheet : UserControl
         ResetSteps();
         Visibility = Visibility.Visible;
         Chrome.Show();
-        EmailBox.Focus(FocusState.Programmatic);
+        DispatcherQueue.TryEnqueue(() => EmailBox.Focus(FocusState.Programmatic));
     }
 
-    public void Dismiss()
-    {
-        Chrome.Dismiss();
-        Visibility = Visibility.Collapsed;
-        ResetSteps();
-    }
+    public void Dismiss() => Chrome.Dismiss();
 
     private void ResetSteps()
     {
@@ -147,6 +142,8 @@ public sealed partial class LoginBottomSheet : UserControl
                 return;
             }
 
+            var onUi = DispatcherQueue?.HasThreadAccess == true;
+            AppLog.AppendCrash($"auth: after await ui={onUi}");
             _registering = purpose == "register";
             OnUi(() =>
             {
@@ -157,6 +154,7 @@ public sealed partial class LoginBottomSheet : UserControl
                 VerifyStep.Visibility = Visibility.Visible;
                 TotpStep.Visibility = Visibility.Collapsed;
                 VerifyOtp.Reset();
+                AppLog.AppendCrash("auth: otp step ready");
             });
         }
         catch (AuthException ex)
@@ -166,7 +164,7 @@ public sealed partial class LoginBottomSheet : UserControl
         }
         catch (Exception ex)
         {
-            AppLog.Append($"auth: send failed — {ex}");
+            AppLog.AppendCrash($"auth: send failed — {ex}");
             ShowError(Strings.LoginErrorGeneric);
             OnUi(() => VerifyOtp.Reset());
         }
@@ -178,22 +176,17 @@ public sealed partial class LoginBottomSheet : UserControl
 
     private async Task<bool> ConfirmRegisterAsync()
     {
-        var root = XamlRoot;
-        if (root is null)
+        if (XamlRoot is null)
         {
             ShowError(Strings.LoginErrorGeneric);
             return false;
         }
-        var dialog = new ContentDialog
-        {
-            Title = Strings.LoginRegisterTitle,
-            Content = string.Format(Strings.LoginRegisterBody, _email),
-            PrimaryButtonText = Strings.LoginRegisterCreate,
-            CloseButtonText = Strings.LoginRegisterFix,
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = root,
-        };
-        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+        return await DemarDialog.ConfirmAsync(
+            XamlRoot,
+            Strings.LoginRegisterTitle,
+            string.Format(Strings.LoginRegisterBody, _email),
+            Strings.LoginRegisterCreate,
+            Strings.LoginRegisterFix);
     }
 
     private async Task RunAuthAsync(Func<Task> block)
@@ -210,18 +203,18 @@ public sealed partial class LoginBottomSheet : UserControl
             ShowError(string.IsNullOrWhiteSpace(ex.Message) ? Strings.LoginErrorGeneric : ex.Message);
             OnUi(() =>
             {
-                VerifyOtp.Reset();
-                TotpOtp.Reset();
+                if (TotpStep.Visibility == Visibility.Visible) TotpOtp.Reset();
+                else if (VerifyStep.Visibility == Visibility.Visible) VerifyOtp.Reset();
             });
         }
         catch (Exception ex)
         {
-            AppLog.Append($"auth: failed — {ex}");
+            AppLog.AppendCrash($"auth: failed — {ex}");
             ShowError(Strings.LoginErrorGeneric);
             OnUi(() =>
             {
-                VerifyOtp.Reset();
-                TotpOtp.Reset();
+                if (TotpStep.Visibility == Visibility.Visible) TotpOtp.Reset();
+                else if (VerifyStep.Visibility == Visibility.Visible) VerifyOtp.Reset();
             });
         }
         finally
@@ -233,11 +226,9 @@ public sealed partial class LoginBottomSheet : UserControl
     private void SetBusy(bool busy)
     {
         _busy = busy;
-        Chrome.BlockDismiss = busy;
         OnUi(() =>
         {
-            BusyRing.IsActive = busy;
-            BusyRing.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+            Chrome.BlockDismiss = busy;
             ContinueBtn.IsEnabled = !busy;
             ResendBtn.IsEnabled = !busy;
             EmailBox.IsEnabled = !busy;
@@ -259,16 +250,11 @@ public sealed partial class LoginBottomSheet : UserControl
     private void FinishSignedIn() => OnUi(() =>
     {
         AppServices.Auth.NotifyChanged();
-        Dismiss();
         SignedIn?.Invoke(this, EventArgs.Empty);
+        Dismiss();
     });
 
-    private void OnUi(Action action)
-    {
-        var dq = DispatcherQueue;
-        if (dq is null || dq.HasThreadAccess) action();
-        else dq.TryEnqueue(DispatcherQueuePriority.Normal, () => action());
-    }
+    private void OnUi(Action action) => Ui.Run(DispatcherQueue, action);
 
     private static bool LooksLikeEmail(string email) =>
         email.Contains('@') && email.Contains('.') && email.Length >= 5;

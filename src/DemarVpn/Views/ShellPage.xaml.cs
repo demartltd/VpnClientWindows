@@ -35,12 +35,21 @@ public sealed partial class ShellPage : Page
         TrafficSheet.UpgradeTrafficRequested += OnUpgradeTraffic;
         CheckoutSheet.CompareRequested += OpenPlanCompare;
         CompareSheet.BuyRequested += () => OpenCheckout(CheckoutIntent.Buy);
-        AppServices.Vpn.TrafficLimitReached += () => DispatcherQueue.TryEnqueue(OpenTrafficSheet);
+        AppServices.Vpn.TrafficLimitReached += OnTrafficLimitReached;
         AccountStore.Changed += OnAccountStoreChanged;
         LoginSheet.SignedIn += OnLoginSuccess;
         Loaded += (_, _) => UpdateToolbarLayout();
+        Unloaded += OnUnloaded;
         SizeChanged += (_, _) => UpdateToolbarLayout();
     }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        AccountStore.Changed -= OnAccountStoreChanged;
+        AppServices.Vpn.TrafficLimitReached -= OnTrafficLimitReached;
+    }
+
+    private void OnTrafficLimitReached() => DispatcherQueue.TryEnqueue(OpenTrafficSheet);
 
     public void OpenAppSettings()
     {
@@ -213,24 +222,56 @@ public sealed partial class ShellPage : Page
     {
         var target = _loginReturnTab is 1 or 3 ? _loginReturnTab : 3;
         if (_openSupportAfterLogin || _pendingSupportRoute is not null) target = 2;
-        GoToTab(target);
-        AccountTab.Refresh();
-        await AppServices.Vpn.RefreshServersAsync();
-        if (target == 1) ServersTab.OnTabVisible();
-        MaybeOpenPendingSupport();
-        MaybeOpenPendingCheckout();
+        try
+        {
+            GoToTab(target);
+            AccountTab.Refresh();
+            await AppServices.Vpn.RefreshServersAsync();
+            Ui.Run(DispatcherQueue, () =>
+            {
+                if (target == 1) ServersTab.OnTabVisible();
+                MaybeOpenPendingSupport();
+                MaybeOpenPendingCheckout();
+            });
+        }
+        catch (Exception ex)
+        {
+            AppLog.AppendCrash($"shell: login success failed — {ex}");
+            Ui.Run(DispatcherQueue, () =>
+            {
+                if (target == 1) ServersTab.OnTabVisible();
+                MaybeOpenPendingSupport();
+                MaybeOpenPendingCheckout();
+            });
+        }
     }
 
     private async void OnSignOutRequested()
     {
-        NotifySheet.Dismiss();
-        TrafficSheet.Dismiss();
-        CheckoutSheet.Dismiss();
-        CompareSheet.Dismiss();
-        PayResultSheet.Dismiss();
-        await AppServices.SignOutFullyAsync();
-        AccountTab.Refresh();
-        GoToTab(0);
+        AppLog.AppendCrash("shell: signing out");
+        try
+        {
+            NotifySheet.Dismiss();
+            TrafficSheet.Dismiss();
+            CheckoutSheet.Dismiss();
+            CompareSheet.Dismiss();
+            PayResultSheet.Dismiss();
+            await AppServices.SignOutFullyAsync();
+            Ui.Run(DispatcherQueue, () =>
+            {
+                AccountTab.Refresh();
+                GoToTab(0);
+            });
+        }
+        catch (Exception ex)
+        {
+            AppLog.AppendCrash($"shell: sign-out failed — {ex}");
+            Ui.Run(DispatcherQueue, () =>
+            {
+                AccountTab.Refresh();
+                GoToTab(0);
+            });
+        }
     }
 
     private void GoToTab(int index)

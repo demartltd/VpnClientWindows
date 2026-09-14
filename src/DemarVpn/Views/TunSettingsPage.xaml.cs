@@ -574,16 +574,13 @@ public sealed partial class TunSettingsPage : OverlayPage
     private async Task PickExeAsync()
     {
         if (_picking || XamlRoot is null) return;
-        var dialog = new ContentDialog
-        {
-            Title = Strings.SettingsTunAppsAdd,
-            PrimaryButtonText = Strings.SettingsTunAppsPickExplorer,
-            SecondaryButtonText = Strings.SettingsTunAppsTypeName,
-            CloseButtonText = Strings.Cancel,
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = XamlRoot,
-        };
-        var result = await dialog.ShowAsync();
+        var result = await DemarDialog.ChooseAsync(
+            XamlRoot,
+            Strings.SettingsTunAppsAdd,
+            content: null,
+            Strings.SettingsTunAppsPickExplorer,
+            Strings.SettingsTunAppsTypeName,
+            Strings.Cancel);
         if (result == ContentDialogResult.Primary)
             await PickExeFromDiskAsync();
         else if (result == ContentDialogResult.Secondary)
@@ -594,16 +591,13 @@ public sealed partial class TunSettingsPage : OverlayPage
     {
         if (XamlRoot is null) return;
         var input = new TextBox { PlaceholderText = Strings.SettingsTunAppsTypeHint, MinWidth = 280 };
-        var dialog = new ContentDialog
-        {
-            Title = Strings.SettingsTunAppsTypeName,
-            Content = input,
-            PrimaryButtonText = Strings.SettingsTunAppsAdd,
-            CloseButtonText = Strings.Cancel,
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = XamlRoot,
-        };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        if (await DemarDialog.ChooseAsync(
+                XamlRoot,
+                Strings.SettingsTunAppsTypeName,
+                input,
+                Strings.SettingsTunAppsAdd,
+                closeButtonText: Strings.Cancel) != ContentDialogResult.Primary)
+            return;
         var raw = input.Text.Trim();
         if (raw.Length == 0) return;
         if (!TunExeNames.IsExeName(raw))

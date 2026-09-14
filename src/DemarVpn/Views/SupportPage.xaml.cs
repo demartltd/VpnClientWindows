@@ -205,16 +205,13 @@ public sealed partial class SupportPage : OverlayPage
         var openLocal = _tickets.Any(t => t.IsOpen && t.Channel == SupportApi.Channel);
         if (openLocal)
         {
-            var confirm = new ContentDialog
-            {
-                Title = Strings.SupportOpenExistsTitle,
-                Content = Strings.SupportOpenExistsBody,
-                PrimaryButtonText = Strings.SupportCreateNew,
-                CloseButtonText = Strings.Cancel,
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = XamlRoot,
-            };
-            if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+            if (!await DemarDialog.ConfirmAsync(
+                    XamlRoot,
+                    Strings.SupportOpenExistsTitle,
+                    Strings.SupportOpenExistsBody,
+                    Strings.SupportCreateNew,
+                    Strings.Cancel))
+                return;
         }
         await OpenThemePickerAsync();
     }
@@ -237,16 +234,12 @@ public sealed partial class SupportPage : OverlayPage
         };
         if (selected is not null) combo.SelectedIndex = 0;
 
-        var dialog = new ContentDialog
-        {
-            Title = Strings.SupportThemeSub,
-            Content = combo,
-            PrimaryButtonText = Strings.SupportCreate,
-            CloseButtonText = Strings.Cancel,
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = XamlRoot,
-            IsPrimaryButtonEnabled = selected is not null,
-        };
+        if (XamlRoot is null) return;
+        var dialog = DemarDialog.Create(XamlRoot, Strings.SupportThemeSub, combo);
+        dialog.PrimaryButtonText = Strings.SupportCreate;
+        dialog.CloseButtonText = Strings.Cancel;
+        dialog.DefaultButton = ContentDialogButton.Primary;
+        dialog.IsPrimaryButtonEnabled = selected is not null;
         combo.SelectionChanged += (_, _) =>
         {
             dialog.IsPrimaryButtonEnabled = combo.SelectedIndex >= 0;

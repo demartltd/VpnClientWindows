@@ -8,6 +8,7 @@ public static class AppLog
     private static readonly Queue<string> Lines = new(MaxLines);
     private static readonly object Gate = new();
     private static string? _logPath;
+    private static int _appendsSinceTrim;
 
     public static event Action? Changed;
 
@@ -34,6 +35,14 @@ public static class AppLog
         var t = line.Trim();
         if (t.Length == 0 || IsVpnTrafficAccessNoise(t)) return;
         PushRows([$"{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss} {t}"]);
+    }
+
+    /// <summary>Crash breadcrumbs — no noise filter, always flush to disk.</summary>
+    public static void AppendCrash(string line)
+    {
+        var t = line.Trim();
+        if (t.Length == 0) return;
+        PushRows([$"{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss} {t}"], notify: false);
     }
 
     public static void AppendMany(IEnumerable<string> raw, bool prependStamp = true)
@@ -72,6 +81,7 @@ public static class AppLog
         {
             _logPath = null;
             Lines.Clear();
+            _appendsSinceTrim = 0;
         }
         Changed?.Invoke();
     }
@@ -99,18 +109,38 @@ public static class AppLog
         Changed?.Invoke();
     }
 
-    private static void PushRows(IReadOnlyList<string> rows)
+    private static void PushRows(IReadOnlyList<string> rows, bool notify = true)
     {
-        if (_logPath is null) return;
         lock (Gate)
         {
-            try { File.AppendAllText(_logPath, string.Join(Environment.NewLine, rows) + Environment.NewLine, Encoding.UTF8); }
-            catch { return; }
             foreach (var row in rows) Lines.Enqueue(row);
             while (Lines.Count > MaxLines && Lines.TryDequeue(out _)) { }
-            TrimDisk();
+
+            _logPath ??= Path.Combine(JournalDir, "demar_app.log");
+            try
+            {
+                Directory.CreateDirectory(JournalDir);
+                var payload = string.Join(Environment.NewLine, rows) + Environment.NewLine;
+                using var fs = new FileStream(
+                    _logPath,
+                    FileMode.Append,
+                    FileAccess.Write,
+                    FileShare.ReadWrite,
+                    bufferSize: 4096,
+                    FileOptions.WriteThrough);
+                var bytes = Encoding.UTF8.GetBytes(payload);
+                fs.Write(bytes, 0, bytes.Length);
+                fs.Flush(flushToDisk: true);
+            }
+            catch { /* keep in-memory even if disk fails */ }
+
+            if (++_appendsSinceTrim >= 64)
+            {
+                _appendsSinceTrim = 0;
+                TrimDisk();
+            }
         }
-        Changed?.Invoke();
+        if (notify) Changed?.Invoke();
     }
 
     private static List<string> ReadFileLines(string path) =>

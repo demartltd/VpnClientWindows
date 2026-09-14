@@ -19,7 +19,15 @@ public partial class App : Application
 
     public static App? CurrentApp => Current as App;
 
-    public App() => InitializeComponent();
+    public App()
+    {
+        InitializeComponent();
+        UnhandledException += (_, e) =>
+        {
+            try { AppLog.Append($"unhandled: {e.Exception}"); } catch { /* best-effort */ }
+            // Do not set Handled — keep crash visible; log is the breadcrumb.
+        };
+    }
 
     /// <summary>Recreate shell after locale change so UI strings refresh.</summary>
     public static void RemountShell(bool openAppSettings = false)
