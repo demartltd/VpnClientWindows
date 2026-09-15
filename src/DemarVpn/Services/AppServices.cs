@@ -13,7 +13,7 @@ public static class AppServices
     public static AuthSession Auth { get; } = new();
     public static AppUpdateService Update { get; } = new();
 
-    public static string SingBoxLabel { get; private set; } = "1.13.13";
+    public static string SingBoxLabel { get; private set; } = "1.14.1";
 
     private static CancellationTokenSource? _bgRefreshCts;
 
@@ -104,7 +104,7 @@ public static class AppServices
             }
         }
         catch { /* fallback */ }
-        return "1.13.13";
+        return "1.14.1";
     }
 }
 
