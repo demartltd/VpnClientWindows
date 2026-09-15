@@ -30,16 +30,6 @@ public static class SingBoxConfigBuilder
         var ruleSets = plan.BypassRuleSets.DistinctBy(rs => rs.Tag).ToList();
         var bypassExes = SelfBypassExes(bypass.BypassExes);
         var bypassHosts = bypass.BypassHosts.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var experimental = new JsonObject
-        {
-            ["clash_api"] = new JsonObject
-            {
-                ["external_controller"] = $"{SingBoxTags.ClashApiHost}:{SingBoxTags.ClashApiPort}",
-            },
-        };
-        if (ruleSets.Count > 0)
-            experimental["cache_file"] = new JsonObject { ["enabled"] = true };
-
         return new JsonObject
         {
             ["log"] = new JsonObject { ["level"] = logLevel, ["timestamp"] = true },
@@ -57,7 +47,14 @@ public static class SingBoxConfigBuilder
                 ["type"] = "direct",
                 ["tag"] = SingBoxTags.Direct,
             }),
-            ["experimental"] = experimental,
+            ["experimental"] = new JsonObject
+            {
+                ["clash_api"] = new JsonObject
+                {
+                    ["external_controller"] = $"{SingBoxTags.ClashApiHost}:{SingBoxTags.ClashApiPort}",
+                },
+                ["cache_file"] = new JsonObject { ["enabled"] = true, ["store_dns"] = true },
+            },
         };
     }
 
@@ -121,6 +118,7 @@ public static class SingBoxConfigBuilder
             ["rules"] = rules,
             ["final"] = dnsFinal,
             ["strategy"] = "ipv4_only",
+            ["optimistic"] = true,
         };
     }
 

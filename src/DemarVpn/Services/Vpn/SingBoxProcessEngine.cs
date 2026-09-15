@@ -21,6 +21,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
     private readonly StringBuilder _stderr = new();
     private readonly string _configPath;
     private readonly string _logPath;
+    private readonly string _cachePath;
     private readonly string _startupLogPath;
 
     public event Action? CoreExited;
@@ -33,6 +34,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         Directory.CreateDirectory(dir);
         _configPath = Path.Combine(dir, "config.json");
         _logPath = Path.Combine(dir, "sing-box.log");
+        _cachePath = Path.Combine(dir, "cache.db");
         _startupLogPath = CoreWatchEntry.StartupLogPath;
     }
 
@@ -47,7 +49,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
             TryDelete(_logPath);
             TryDelete(_startupLogPath);
 
-            configJson = InjectLogOutput(configJson, _logPath);
+            configJson = InjectRuntimePaths(configJson, _logPath, _cachePath);
             await File.WriteAllTextAsync(_configPath, configJson, cancellationToken);
 
             var exe = FindSingBoxExe();
@@ -379,7 +381,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
     }
 
-    private static string InjectLogOutput(string configJson, string logPath)
+    private static string InjectRuntimePaths(string configJson, string logPath, string cachePath)
     {
         var node = JsonNode.Parse(configJson)?.AsObject();
         if (node is null) return configJson;
@@ -387,6 +389,11 @@ public sealed class SingBoxProcessEngine : IVpnEngine
             log["output"] = logPath;
         else
             node["log"] = new JsonObject { ["output"] = logPath };
+        if (node["experimental"] is not JsonObject experimental)
+            node["experimental"] = experimental = new JsonObject();
+        if (experimental["cache_file"] is not JsonObject cache)
+            experimental["cache_file"] = cache = new JsonObject { ["enabled"] = true, ["store_dns"] = true };
+        cache["path"] = cachePath;
         return node.ToJsonString();
     }
 

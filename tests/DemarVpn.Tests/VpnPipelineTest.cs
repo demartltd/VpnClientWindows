@@ -64,6 +64,7 @@ public class VpnPipelineTest
 
         var dns = cfg["dns"]!.AsObject();
         Assert.Equal(SingBoxTags.DnsRemote, dns["final"]!.GetValue<string>());
+        Assert.True(dns["optimistic"]!.GetValue<bool>());
         var dnsRemote = dns["servers"]!.AsArray()
             .First(s => s!["tag"]!.GetValue<string>() == SingBoxTags.DnsRemote)!.AsObject();
         Assert.Equal("8s", dnsRemote["connect_timeout"]!.GetValue<string>());
@@ -86,6 +87,9 @@ public class VpnPipelineTest
         Assert.Equal(
             $"{SingBoxTags.ClashApiHost}:{SingBoxTags.ClashApiPort}",
             clash["external_controller"]!.GetValue<string>());
+        var cache = cfg["experimental"]!["cache_file"]!.AsObject();
+        Assert.True(cache["enabled"]!.GetValue<bool>());
+        Assert.True(cache["store_dns"]!.GetValue<bool>());
     }
 
     [Fact]
@@ -442,6 +446,7 @@ public class VpnPipelineTest
         var cfg = JsonNode.Parse(built)!.AsObject();
         Assert.True(cfg["route"]!.AsObject().ContainsKey("rule_set"));
         Assert.True(cfg["experimental"]!["cache_file"]!["enabled"]!.GetValue<bool>());
+        Assert.True(cfg["experimental"]!["cache_file"]!["store_dns"]!.GetValue<bool>());
         Assert.Contains(
             cfg["dns"]!["rules"]!.AsArray(),
             r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == "geosite-cn") == true &&
@@ -476,13 +481,16 @@ public class VpnPipelineTest
     }
 
     [Fact]
-    public void RuleSets_empty_omitsRouteRuleSetAndCacheFile()
+    public void RuleSets_empty_omitsRouteRuleSet_keepsCacheFile()
     {
         var plan = Fixture().ConnectPlan;
         Assert.Empty(plan.BypassRuleSets);
         var cfg = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan))!.AsObject();
         Assert.False(cfg["route"]!.AsObject().ContainsKey("rule_set"));
-        Assert.False(cfg["experimental"]!.AsObject().ContainsKey("cache_file"));
+        var cache = cfg["experimental"]!["cache_file"]!.AsObject();
+        Assert.True(cache["enabled"]!.GetValue<bool>());
+        Assert.True(cache["store_dns"]!.GetValue<bool>());
+        Assert.True(cfg["dns"]!["optimistic"]!.GetValue<bool>());
     }
 
     [Fact]

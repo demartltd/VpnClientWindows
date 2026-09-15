@@ -88,7 +88,7 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 | `dns-direct` | UDP `1.1.1.1` | bootstrap, domain resolver |
 | `dns-remote` | HTTPS `1.1.1.1` | DoH через proxy |
 
-Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); TUN process bypass → `dns-direct`; bootstrap domains (uplink hostname + TLS name) → `dns-direct`; site bypass hosts → `dns-direct`; geosite rule-sets from API → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`.
+Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); TUN process bypass → `dns-direct`; bootstrap domains (uplink hostname + TLS name) → `dns-direct`; site bypass hosts → `dns-direct`; geosite rule-sets from API → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`, `optimistic: true` (sing-box 1.14). `experimental.cache_file`: всегда `enabled` + `store_dns` (path inject → `%LOCALAPPDATA%\DemarVpn\demar\cache.db`).
 
 ---
 
@@ -111,7 +111,7 @@ Servermaster кладёт remote `route.rule_set` (RU/IR/CN) в `clientConfigJso
 - geoip → route `direct`
 - **не** эмитить TUN `route_exclude_address_set` (parity Android)
 - `download_detour` → `direct` (bootstrap без chicken-egg через proxy)
-- при непустых rule-sets: `experimental.cache_file.enabled`
+- `experimental.cache_file` всегда (`enabled` + `store_dns`); rule-sets тоже пишутся в тот же cache
 ---
 
 ## Bypass
