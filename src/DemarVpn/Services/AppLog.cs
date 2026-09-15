@@ -37,7 +37,7 @@ public static class AppLog
         PushRows([$"{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss} {t}"]);
     }
 
-    /// <summary>Crash breadcrumbs — no noise filter, always flush to disk.</summary>
+    /// <summary>Crash breadcrumbs — no noise filter, no UI notify.</summary>
     public static void AppendCrash(string line)
     {
         var t = line.Trim();
@@ -114,7 +114,9 @@ public static class AppLog
         lock (Gate)
         {
             foreach (var row in rows) Lines.Enqueue(row);
-            while (Lines.Count > MaxLines && Lines.TryDequeue(out _)) { }
+            var overCap = false;
+            while (Lines.Count > MaxLines && Lines.TryDequeue(out _))
+                overCap = true;
 
             _logPath ??= Path.Combine(JournalDir, "demar_app.log");
             try
@@ -126,15 +128,13 @@ public static class AppLog
                     FileMode.Append,
                     FileAccess.Write,
                     FileShare.ReadWrite,
-                    bufferSize: 4096,
-                    FileOptions.WriteThrough);
+                    bufferSize: 4096);
                 var bytes = Encoding.UTF8.GetBytes(payload);
                 fs.Write(bytes, 0, bytes.Length);
-                fs.Flush(flushToDisk: true);
             }
             catch { /* keep in-memory even if disk fails */ }
 
-            if (++_appendsSinceTrim >= 64)
+            if (overCap || ++_appendsSinceTrim >= 64)
             {
                 _appendsSinceTrim = 0;
                 TrimDisk();

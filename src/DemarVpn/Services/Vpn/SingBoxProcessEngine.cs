@@ -18,6 +18,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
     private Process? _process;
     private int? _ownedPid;
     private ProcessJobLink? _job;
+    private CancellationTokenSource? _stderrCts;
     private readonly StringBuilder _stderr = new();
     private readonly string _configPath;
     private readonly string _logPath;
@@ -73,7 +74,12 @@ public sealed class SingBoxProcessEngine : IVpnEngine
 
             AppLog.Append($"[vpn] sing-box pid={DescribePid()}");
             if (_process?.StartInfo.RedirectStandardError == true)
-                _ = ReadStderrAsync(_process, cancellationToken);
+            {
+                _stderrCts?.Cancel();
+                _stderrCts?.Dispose();
+                _stderrCts = new CancellationTokenSource();
+                _ = ReadStderrAsync(_process, _stderrCts.Token);
+            }
 
             await WaitForDiagPortAsync(cancellationToken);
             _ownedPid ??= CoreProcess.FirstPid();
@@ -112,6 +118,9 @@ public sealed class SingBoxProcessEngine : IVpnEngine
 
     private async Task StopLocalAsync()
     {
+        try { _stderrCts?.Cancel(); } catch (ObjectDisposedException) { }
+        _stderrCts?.Dispose();
+        _stderrCts = null;
         if (_ownedPid is int pid)
         {
             try

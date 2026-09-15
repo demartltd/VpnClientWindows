@@ -97,8 +97,8 @@ Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); TUN process byp
 - TUN: **Wintun** (Windows), `strict_route: false`, `172.19.0.1/30`
 - Split `0.0.0.0/1` + `128.0.0.0/1` — всегда в `route_address`
 - `route_exclude_address` **всегда**: `127.0.0.0/8`, RFC1918 (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`) + uplink IPs
-- Route: sniff (`timeout: 300ms`) → **process bypass** (`process_name` → `direct`) → hijack-dns → QUIC reject (`method: default`) → `127.0.0.0/8` direct → private direct → **API rule-sets** → uplink IPs → site hosts → bootstrap → IPv6 reject (`method: default`) → proxy
-- Windows process bypass = route + DNS `process_name` (не OS `exclude_package`); список из API-групп + свои `.exe` + всегда `sing-box.exe` / app; смена TUN → reconnect
+- Route: **process bypass** → `127.0.0.0/8` / private direct → **geoip** rule-sets → uplink IPs → sniff (`timeout: 50ms`) → hijack-dns → QUIC reject (`method: default`) → **geosite** / site hosts / bootstrap → IPv6 reject (`method: default`) → proxy
+- Windows process bypass = route + DNS `process_name` (не OS `exclude_package`); список из API-групп + свои `.exe` + всегда `sing-box.exe` / app; смена TUN → reconnect; IP/process **до** sniff (TCP pre-match останавливается на sniff)
 - `default_domain_resolver`: `dns-direct`, `ipv4_only`
 
 (Android использует gVisor TUN + `override_android_vpn`; на Windows — Wintun adapter.)

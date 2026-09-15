@@ -27,12 +27,15 @@ public sealed partial class DemarSnackbarHost : UserControl
     public DemarSnackbarHost()
     {
         InitializeComponent();
-        AppServices.Snackbar.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(Services.SnackbarService.Current))
-                DispatcherQueue.TryEnqueue(Refresh);
-        };
+        AppServices.Snackbar.PropertyChanged += OnSnackbarChanged;
+        Unloaded += (_, _) => AppServices.Snackbar.PropertyChanged -= OnSnackbarChanged;
         _timer.Tick += (_, _) => AppServices.Snackbar.Dismiss();
+    }
+
+    private void OnSnackbarChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Services.SnackbarService.Current))
+            DispatcherQueue.TryEnqueue(Refresh);
     }
 
     public void SetWideLayout(bool wide)

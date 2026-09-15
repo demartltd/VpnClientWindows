@@ -32,26 +32,35 @@ public sealed partial class ServersPage : Page
             _tierFilter = next;
             RebuildList();
         };
-        Loaded += (_, _) =>
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (!_wired)
         {
-            if (!_wired)
-            {
-                _wired = true;
-                RefreshShadow.Receivers.Add(ShadowCast);
-                AppServices.Vpn.PropertyChanged += (_, e) =>
-                {
-                    if (e.PropertyName == nameof(Services.Vpn.VpnController.Selected))
-                        DispatcherQueue.TryEnqueue(SyncSelection);
-                    else if (e.PropertyName == nameof(Services.Vpn.VpnController.ServerReachability))
-                        DispatcherQueue.TryEnqueue(SyncReachability);
-                    else if (e.PropertyName is nameof(Services.Vpn.VpnController.Servers)
-                        or nameof(Services.Vpn.VpnController.ServersLoading)
-                        or nameof(Services.Vpn.VpnController.ServersError))
-                        DispatcherQueue.TryEnqueue(Rebuild);
-                };
-            }
-            Rebuild();
-        };
+            _wired = true;
+            RefreshShadow.Receivers.Add(ShadowCast);
+        }
+        AppServices.Vpn.PropertyChanged -= OnVpnChanged;
+        AppServices.Vpn.PropertyChanged += OnVpnChanged;
+        Rebuild();
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e) =>
+        AppServices.Vpn.PropertyChanged -= OnVpnChanged;
+
+    private void OnVpnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Services.Vpn.VpnController.Selected))
+            DispatcherQueue.TryEnqueue(SyncSelection);
+        else if (e.PropertyName == nameof(Services.Vpn.VpnController.ServerReachability))
+            DispatcherQueue.TryEnqueue(SyncReachability);
+        else if (e.PropertyName is nameof(Services.Vpn.VpnController.Servers)
+            or nameof(Services.Vpn.VpnController.ServersLoading)
+            or nameof(Services.Vpn.VpnController.ServersError))
+            DispatcherQueue.TryEnqueue(Rebuild);
     }
 
     public void OnTabVisible()

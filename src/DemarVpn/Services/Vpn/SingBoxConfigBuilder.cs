@@ -130,8 +130,7 @@ public static class SingBoxConfigBuilder
         IReadOnlyList<string> bypassExes,
         IReadOnlyList<string> bypassHosts)
     {
-        var rules = new JsonArray(
-            new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "sniff", ["timeout"] = "300ms" });
+        var rules = new JsonArray();
         if (bypassExes.Count > 0)
             rules.Add(new JsonObject
             {
@@ -139,22 +138,29 @@ public static class SingBoxConfigBuilder
                 ["action"] = "route",
                 ["outbound"] = SingBoxTags.Direct,
             });
-        rules.Add(new JsonObject { ["protocol"] = "dns", ["action"] = "hijack-dns" });
-        rules.Add(new JsonObject { ["network"] = Arr("udp"), ["port"] = Arr(443), ["action"] = "reject", ["method"] = "default" });
         rules.Add(new JsonObject { ["ip_cidr"] = Arr("127.0.0.0/8"), ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
         rules.Add(new JsonObject { ["ip_is_private"] = true, ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
-
-        foreach (var rs in ruleSets)
+        foreach (var rs in ruleSets.Where(r => !r.IsGeosite))
             rules.Add(new JsonObject
             {
                 ["rule_set"] = Arr(rs.Tag),
                 ["action"] = "route",
                 ["outbound"] = SingBoxTags.Direct,
             });
-
         foreach (var ip in directIPs)
             rules.Add(new JsonObject { ["ip_cidr"] = Arr($"{ip}/32"), ["action"] = "route", ["outbound"] = SingBoxTags.Direct });
 
+        rules.Add(new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "sniff", ["timeout"] = "50ms" });
+        rules.Add(new JsonObject { ["protocol"] = "dns", ["action"] = "hijack-dns" });
+        rules.Add(new JsonObject { ["network"] = Arr("udp"), ["port"] = Arr(443), ["action"] = "reject", ["method"] = "default" });
+
+        foreach (var rs in ruleSets.Where(r => r.IsGeosite))
+            rules.Add(new JsonObject
+            {
+                ["rule_set"] = Arr(rs.Tag),
+                ["action"] = "route",
+                ["outbound"] = SingBoxTags.Direct,
+            });
         if (CleanedDomains(bypassHosts) is { Count: > 0 } suffixes)
             rules.Add(new JsonObject
             {

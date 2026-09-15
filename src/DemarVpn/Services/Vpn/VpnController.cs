@@ -25,6 +25,9 @@ public sealed class VpnController : NotifyBase
     private readonly object _reachLock = new();
     private CancellationTokenSource? _reachCts;
     private CancellationTokenSource? _trafficCts;
+    private long _lastTrafficRaiseMs;
+    private string? _appliedTunFingerprint;
+    private CancellationTokenSource? _tunReconnectCts;
     private DateTimeOffset? _lastSessionDataRefreshAt;
     private static readonly string LastProfilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -45,7 +48,11 @@ public sealed class VpnController : NotifyBase
     public event Action<string>? ErrorRaised;
     public event Action? TrafficLimitReached;
 
-    public VpnController() => _engine.CoreExited += OnCoreExited;
+    public VpnController()
+    {
+        _engine.CoreExited += OnCoreExited;
+        TunSettingsStore.Changed += OnTunSettingsChanged;
+    }
 
     public static bool IsFreeSubscription() =>
         TunSubscription.IsFree(
@@ -410,6 +417,7 @@ public sealed class VpnController : NotifyBase
             }
 
             AppLog.Append($"[vpn] tunnel path ok {probe.ElapsedMs}ms");
+            _appliedTunFingerprint = TunSettingsFingerprint();
             SetState(VpnState.Connected);
             AppLog.Append("[vpn] connected");
         }
@@ -460,6 +468,7 @@ public sealed class VpnController : NotifyBase
         _op?.Cancel();
         _watchdog?.Cancel();
         _health?.Cancel();
+        _tunReconnectCts?.Cancel();
         StopTraffic();
     }
 
@@ -552,9 +561,13 @@ public sealed class VpnController : NotifyBase
         StopTraffic();
         _trafficCts = new CancellationTokenSource();
         var ct = _trafficCts.Token;
+        _lastTrafficRaiseMs = 0;
         _ = ClashTrafficMonitor.RunAsync((up, down) =>
         {
             Throughput = new(down, up);
+            var now = Environment.TickCount64;
+            if (now - _lastTrafficRaiseMs < 500) return;
+            _lastTrafficRaiseMs = now;
             Raise(nameof(Throughput));
         }, ct);
     }
@@ -563,6 +576,29 @@ public sealed class VpnController : NotifyBase
     {
         _trafficCts?.Cancel();
         _trafficCts = null;
+    }
+
+    private void OnTunSettingsChanged()
+    {
+        if (State.Kind != VpnStateKind.Connected) return;
+        if (TunSettingsFingerprint() == _appliedTunFingerprint) return;
+        _tunReconnectCts?.Cancel();
+        var ct = (_tunReconnectCts = new CancellationTokenSource()).Token;
+        _ = ReconnectTunAsync(ct);
+    }
+
+    private async Task ReconnectTunAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(300, ct);
+            if (State.Kind != VpnStateKind.Connected) return;
+            if (TunSettingsFingerprint() == _appliedTunFingerprint) return;
+            AppLog.Append("[vpn] tun settings changed → reconnect");
+            await HardRestartCoreAsync();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { AppLog.Append($"[vpn] tun reconnect: {ex.Message}"); }
     }
 
     private void ClearThroughput()

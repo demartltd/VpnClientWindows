@@ -55,7 +55,7 @@ public class VpnPipelineTest
         Assert.True(route["rules"]!.AsArray().Any(r => r!["action"]?.GetValue<string>() == "hijack-dns"));
         Assert.Contains(route["rules"]!.AsArray(), r =>
             r!["action"]?.GetValue<string>() == "sniff" &&
-            r!["timeout"]?.GetValue<string>() == "300ms");
+            r!["timeout"]?.GetValue<string>() == "50ms");
         Assert.Contains(route["rules"]!.AsArray(), r =>
             r!["action"]?.GetValue<string>() == "reject" &&
             r!["method"]?.GetValue<string>() == "default" &&
@@ -168,15 +168,16 @@ public class VpnPipelineTest
         var rules = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass))!["route"]!["rules"]!.AsArray();
 
         var processIdx = IndexOf(rules, r => r!["process_name"] is not null);
+        var privateIdx = IndexOf(rules, r => r!["ip_is_private"]?.GetValue<bool>() == true);
+        var sniffIdx = IndexOf(rules, r => r!["action"]?.GetValue<string>() == "sniff");
         var hijackIdx = IndexOf(rules, r => r!["action"]?.GetValue<string>() == "hijack-dns");
         var quicIdx = IndexOf(rules, r =>
             r!["action"]?.GetValue<string>() == "reject" &&
             r!["network"]?.AsArray().Any(n => n!.GetValue<string>() == "udp") == true &&
             r!["port"]?.AsArray().Any(p => p!.GetValue<int>() == 443) == true);
 
-        Assert.True(processIdx >= 0);
-        Assert.True(processIdx < hijackIdx);
-        Assert.True(hijackIdx < quicIdx);
+        Assert.True(processIdx < privateIdx && privateIdx < sniffIdx && sniffIdx < hijackIdx && hijackIdx < quicIdx);
+        Assert.Equal("50ms", rules[sniffIdx]!["timeout"]!.GetValue<string>());
     }
 
     [Fact]
@@ -455,6 +456,14 @@ public class VpnPipelineTest
             cfg["route"]!["rules"]!.AsArray(),
             r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == "geoip-ru") == true &&
                  r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
+        var routeRules = cfg["route"]!["rules"]!.AsArray();
+        var sniffIdx = IndexOf(routeRules, r => r!["action"]?.GetValue<string>() == "sniff");
+        var geoipIdx = IndexOf(routeRules, r =>
+            r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == "geoip-ru") == true);
+        var geositeIdx = IndexOf(routeRules, r =>
+            r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == "geosite-cn") == true);
+        Assert.True(geoipIdx < sniffIdx);
+        Assert.True(sniffIdx < geositeIdx);
         Assert.All(
             cfg["route"]!["rule_set"]!.AsArray(),
             rs => Assert.Equal(SingBoxTags.Direct, rs!["download_detour"]!.GetValue<string>()));

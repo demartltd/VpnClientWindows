@@ -32,10 +32,13 @@ public sealed partial class AppSettingsPage : OverlayPage
         JournalEmpty.Text = Strings.JournalEmpty;
         ClearBtn.Content = Strings.JournalClear;
         ShareBtn.Content = Strings.JournalShare;
-        AppLog.Changed += () => DispatcherQueue.TryEnqueue(RefreshJournal);
+        AppLog.Changed += OnLogChanged;
+        Unloaded += (_, _) => AppLog.Changed -= OnLogChanged;
         RefreshJournal();
         UpdateExpandLabel();
     }
+
+    private void OnLogChanged() => DispatcherQueue.TryEnqueue(RefreshJournal);
 
     private async void OnLanguage(object? sender, EventArgs e)
     {

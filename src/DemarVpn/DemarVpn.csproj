@@ -16,9 +16,9 @@
     <SelfContained>true</SelfContained>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.0.27</Version>
-    <AssemblyVersion>1.0.27.31</AssemblyVersion>
-    <FileVersion>1.0.27.31</FileVersion>
+    <Version>1.0.28</Version>
+    <AssemblyVersion>1.0.28.32</AssemblyVersion>
+    <FileVersion>1.0.28.32</FileVersion>
     <ApplicationTitle>Demar VPN</ApplicationTitle>
     <ApplicationDescription>Demar VPN / Best VPN</ApplicationDescription>
     <SatelliteResourceLanguages>en-US;ru-RU</SatelliteResourceLanguages>

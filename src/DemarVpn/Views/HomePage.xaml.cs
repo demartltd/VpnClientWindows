@@ -21,7 +21,6 @@ public sealed partial class HomePage : Page
         TitleBlock.Text = Strings.HomeTitle;
         ConnectedLabel.Text = Strings.VpnConnected;
         UpdateHint.Text = Strings.UpdateDownloading;
-        AppServices.Vpn.PropertyChanged += (_, e) => DispatcherQueue.TryEnqueue(Refresh);
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         Refresh();
@@ -35,6 +34,9 @@ public sealed partial class HomePage : Page
             _shadowWired = true;
             UpdateShadow.Receivers.Add(ShadowCast);
         }
+        AppServices.Vpn.PropertyChanged -= OnVpnChanged;
+        AppServices.Vpn.PropertyChanged += OnVpnChanged;
+        AppServices.Update.PropertyChanged -= OnUpdateChanged;
         AppServices.Update.PropertyChanged += OnUpdateChanged;
         SyncUpdateFab();
         MaybePromptUpdate();
@@ -42,7 +44,21 @@ public sealed partial class HomePage : Page
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        AppServices.Vpn.PropertyChanged -= OnVpnChanged;
         AppServices.Update.PropertyChanged -= OnUpdateChanged;
+    }
+
+    private void OnVpnChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Services.Vpn.VpnController.Throughput))
+        {
+            DispatcherQueue.TryEnqueue(() => Throughput.Text = FormatThroughput(AppServices.Vpn.Throughput));
+            return;
+        }
+        if (e.PropertyName is nameof(Services.Vpn.VpnController.State)
+            or nameof(Services.Vpn.VpnController.Selected)
+            or null)
+            DispatcherQueue.TryEnqueue(Refresh);
     }
 
     private void OnUpdateChanged(object? sender, PropertyChangedEventArgs e)
