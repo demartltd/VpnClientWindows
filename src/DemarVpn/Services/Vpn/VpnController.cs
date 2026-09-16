@@ -248,12 +248,17 @@ public sealed class VpnController : NotifyBase
 
         await Task.WhenAll(_servers.Select(async profile =>
         {
-            var state = await ServerReachProbe.ProbeAsync(profile);
-            if (token.IsCancellationRequested) return;
-            lock (_reachLock)
-                _reachability[profile.Id] = state;
-            Raise(nameof(ServerReachability));
+            try
+            {
+                var state = await ServerReachProbe.ProbeAsync(profile, token);
+                if (token.IsCancellationRequested) return;
+                lock (_reachLock)
+                    _reachability[profile.Id] = state;
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         }));
+        if (!token.IsCancellationRequested)
+            Raise(nameof(ServerReachability));
     }
 
     public void Select(ServerProfile profile)
@@ -294,7 +299,8 @@ public sealed class VpnController : NotifyBase
         }
     }
 
-    public void EnsureStoppedSync() => EnsureStoppedAsync().GetAwaiter().GetResult();
+    public void EnsureStoppedSync() =>
+        EnsureStoppedAsync().Wait(TimeSpan.FromSeconds(8));
 
     public Task DisconnectAsync() => RunExclusiveAsync(DisconnectCoreAsync);
 
@@ -480,10 +486,14 @@ public sealed class VpnController : NotifyBase
             if (State.Kind == VpnStateKind.Connecting)
             {
                 _op?.Cancel();
-                await _engine.StopAsync();
-                SetState(VpnState.Error(Strings.VpnConnectFailed));
-                ErrorRaised?.Invoke(Strings.VpnConnectFailed);
-                AppServices.Snackbar.ShowError(Strings.VpnConnectFailed);
+                await RunExclusiveAsync(async () =>
+                {
+                    if (State.Kind != VpnStateKind.Connecting) return;
+                    await StopToDisconnectedAsync();
+                    SetState(VpnState.Error(Strings.VpnConnectFailed));
+                    ErrorRaised?.Invoke(Strings.VpnConnectFailed);
+                    AppServices.Snackbar.ShowError(Strings.VpnConnectFailed);
+                });
             }
         }
         catch (OperationCanceledException) { }
@@ -511,13 +521,18 @@ public sealed class VpnController : NotifyBase
 
                 _health?.Cancel();
                 StopTraffic();
-                await _engine.StopAsync();
-                ClearThroughput();
-                var msg = Strings.VpnTunnelLost;
-                SetState(VpnState.Error(msg));
-                ErrorRaised?.Invoke(msg);
-                AppServices.Snackbar.ShowError(msg);
-                AppLog.Append($"[vpn] health fail: {msg}");
+                await RunExclusiveAsync(async () =>
+                {
+                    if (State.Kind != VpnStateKind.Connected) return;
+                    try { await _engine.StopAsync(); }
+                    catch (Exception ex) { AppLog.Append($"[vpn] health stop: {ex.Message}"); }
+                    ClearThroughput();
+                    var msg = Strings.VpnTunnelLost;
+                    SetState(VpnState.Error(msg));
+                    ErrorRaised?.Invoke(msg);
+                    AppServices.Snackbar.ShowError(msg);
+                    AppLog.Append($"[vpn] health fail: {msg}");
+                });
                 return;
             }
         }
@@ -566,7 +581,7 @@ public sealed class VpnController : NotifyBase
         {
             Throughput = new(down, up);
             var now = Environment.TickCount64;
-            if (now - _lastTrafficRaiseMs < 500) return;
+            if (now - _lastTrafficRaiseMs < 1000) return;
             _lastTrafficRaiseMs = now;
             Raise(nameof(Throughput));
         }, ct);

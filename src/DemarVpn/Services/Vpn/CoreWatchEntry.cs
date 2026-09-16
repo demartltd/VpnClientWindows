@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
 using DemarVpn.Services;
 
 namespace DemarVpn.Services.Vpn;
@@ -67,12 +66,12 @@ public static class CoreWatchEntry
             Directory.CreateDirectory(AppLog.JournalDir);
             File.WriteAllText(StartupLogPath, string.Empty);
 
+            // Log goes to sing-box.log via config — no stderr redirect (avoids pipe backpressure stall).
             var psi = new ProcessStartInfo
             {
                 FileName = exe,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                RedirectStandardError = true,
                 WorkingDirectory = workDir,
             };
             foreach (var arg in coreArgv)
@@ -86,42 +85,12 @@ public static class CoreWatchEntry
                 return null;
             }
 
-            _ = Task.Run(() => PumpStderr(process));
             return process;
         }
         catch (Exception ex)
         {
             AppLog.Append($"[vpn] core-watch start failed: {ex.Message}");
             return null;
-        }
-    }
-
-    private static void PumpStderr(Process process)
-    {
-        var buf = new StringBuilder();
-        try
-        {
-            while (!process.HasExited)
-            {
-                var line = process.StandardError.ReadLine();
-                if (line is null) break;
-                buf.AppendLine(line);
-                AppLog.Append($"[sing-box] {line}");
-            }
-        }
-        catch
-        {
-            /* ignore */
-        }
-
-        try
-        {
-            if (buf.Length > 0)
-                File.AppendAllText(StartupLogPath, buf.ToString());
-        }
-        catch
-        {
-            /* ignore */
         }
     }
 

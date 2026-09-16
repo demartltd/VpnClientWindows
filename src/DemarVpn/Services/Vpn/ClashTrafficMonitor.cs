@@ -8,7 +8,7 @@ public static class ClashTrafficMonitor
 {
     private static readonly HttpClient Http = new(new HttpClientHandler { UseProxy = false })
     {
-        Timeout = Timeout.InfiniteTimeSpan,
+        Timeout = TimeSpan.FromSeconds(60),
     };
 
     private static readonly Uri TrafficUrl =

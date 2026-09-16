@@ -1,8 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Principal;
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using DemarVpn.Domain.Vpn;
 using DemarVpn.Services.Network;
@@ -12,14 +10,13 @@ namespace DemarVpn.Services.Vpn;
 public sealed class SingBoxProcessEngine : IVpnEngine
 {
     private const int UacCancelledHResult = unchecked((int)0x800704C7);
+    private static readonly TimeSpan GateTimeout = TimeSpan.FromSeconds(5);
 
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     private Process? _process;
     private int? _ownedPid;
     private ProcessJobLink? _job;
-    private CancellationTokenSource? _stderrCts;
-    private readonly StringBuilder _stderr = new();
     private readonly string _configPath;
     private readonly string _logPath;
     private readonly string _cachePath;
@@ -44,9 +41,8 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            await StopLocalAsync();
+            StopLocal();
             await StopElevatedIfNeededAsync();
-            _stderr.Clear();
             TryDelete(_logPath);
             TryDelete(_startupLogPath);
 
@@ -73,14 +69,6 @@ public sealed class SingBoxProcessEngine : IVpnEngine
             }
 
             AppLog.Append($"[vpn] sing-box pid={DescribePid()}");
-            if (_process?.StartInfo.RedirectStandardError == true)
-            {
-                _stderrCts?.Cancel();
-                _stderrCts?.Dispose();
-                _stderrCts = new CancellationTokenSource();
-                _ = ReadStderrAsync(_process, _stderrCts.Token);
-            }
-
             await WaitForDiagPortAsync(cancellationToken);
             _ownedPid ??= CoreProcess.FirstPid();
             if (_ownedPid is int pid && _process is null && CoreProcess.IsRunning(pid))
@@ -104,10 +92,17 @@ public sealed class SingBoxProcessEngine : IVpnEngine
 
     public async Task StopAsync()
     {
-        await _gate.WaitAsync();
+        if (!await _gate.WaitAsync(GateTimeout))
+        {
+            AppLog.Append("[vpn] stop: gate timeout — best-effort kill");
+            try { StopLocal(); } catch { /* ignore */ }
+            try { CoreProcess.KillAll(); } catch { /* ignore */ }
+            return;
+        }
+
         try
         {
-            await StopLocalAsync();
+            StopLocal();
             await StopElevatedIfNeededAsync();
         }
         finally
@@ -116,11 +111,8 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         }
     }
 
-    private async Task StopLocalAsync()
+    private void StopLocal()
     {
-        try { _stderrCts?.Cancel(); } catch (ObjectDisposedException) { }
-        _stderrCts?.Dispose();
-        _stderrCts = null;
         if (_ownedPid is int pid)
         {
             try
@@ -207,12 +199,12 @@ public sealed class SingBoxProcessEngine : IVpnEngine
 
     private Process StartDirect(string exe, IReadOnlyList<string> coreArgv, string workDir)
     {
+        // Log goes to sing-box.log via config — no stderr redirect (avoids pipe backpressure stall).
         var psi = new ProcessStartInfo
         {
             FileName = exe,
             UseShellExecute = false,
             CreateNoWindow = true,
-            RedirectStandardError = true,
             WorkingDirectory = workDir,
         };
         foreach (var arg in coreArgv)
@@ -316,50 +308,8 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         throw new InvalidOperationException(FormatStartupError(CollectStartupErrors()));
     }
 
-    private async Task ReadStderrAsync(Process process, CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    if (process.HasExited) break;
-                }
-                catch
-                {
-                    break;
-                }
-
-                var line = await process.StandardError.ReadLineAsync(cancellationToken);
-                if (line is null) break;
-                lock (_stderr)
-                {
-                    _stderr.AppendLine(line);
-                    if (_stderr.Length > 8192)
-                        _stderr.Remove(0, _stderr.Length - 4096);
-                }
-
-                AppLog.Append($"[sing-box] {line}");
-            }
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            AppLog.Append($"[sing-box stderr] {ex.Message}");
-        }
-    }
-
-    private string CollectStartupErrors()
-    {
-        lock (_stderr)
-        {
-            if (_stderr.Length > 0)
-                return _stderr.ToString();
-        }
-
-        return ReadFileTail(_logPath) + ReadFileTail(_startupLogPath);
-    }
+    private string CollectStartupErrors() =>
+        ReadFileTail(_logPath) + ReadFileTail(_startupLogPath);
 
     private static string ReadFileTail(string path)
     {

@@ -59,6 +59,7 @@ public class AppLogTest : IDisposable
     {
         Bind();
         AppLog.Append("before-restart");
+        AppLog.FlushForTest();
         AppLog.ResetForTest();
         Bind();
         Assert.Single(AppLog.Snapshot());
