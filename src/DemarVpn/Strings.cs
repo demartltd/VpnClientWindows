@@ -148,6 +148,7 @@ public static class Strings
     public static string PayPeriodSubMonth => T("per month", "в месяц");
     public static string PayPeriodSubQuarter => T("per 3 months", "за 3 месяца");
     public static string PayPeriodSubYear => T("per year", "в год");
+    public static string PayCompare => T("Compare", "Сравнить");
     public static string PayComparePlans => T("Compare plans", "Сравнить планы");
     public static string PayCompareSpeed => T("Speed", "Скорость");
     public static string PayCompareTraffic => T("Traffic", "Трафик");

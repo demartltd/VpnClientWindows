@@ -32,6 +32,7 @@ public sealed partial class ShellPage : Page
         AccountTab.NotifySheetRequested += () => NotifySheet.Show();
         AccountTab.TrafficSheetRequested += () => TrafficSheet.Show();
         AccountTab.CheckoutRequested += OpenCheckout;
+        ServersTab.NeedUpgrade += () => OpenCheckout(CheckoutIntent.Buy);
         TrafficSheet.UpgradeTrafficRequested += OnUpgradeTraffic;
         CheckoutSheet.CompareRequested += OpenPlanCompare;
         CompareSheet.BuyRequested += () => OpenCheckout(CheckoutIntent.Buy);
@@ -83,6 +84,7 @@ public sealed partial class ShellPage : Page
             ShowLogin(3);
             return;
         }
+        GoToTab(3);
         switch (sheet)
         {
             case DemarNavigation.AccountSheet.Buy:
@@ -105,7 +107,6 @@ public sealed partial class ShellPage : Page
             ShowLogin(3);
             return;
         }
-        GoToTab(3);
         CompareSheet.Dismiss();
         PayResultSheet.Dismiss();
         var plan = AccountStore.Account?.VpnSubscription ?? AuthSessionStore.Current?.VpnSubscription;
@@ -119,7 +120,6 @@ public sealed partial class ShellPage : Page
             ShowLogin(3);
             return;
         }
-        GoToTab(3);
         CheckoutSheet.Dismiss();
         CompareSheet.Show();
     }

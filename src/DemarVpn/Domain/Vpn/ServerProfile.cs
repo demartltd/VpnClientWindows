@@ -21,6 +21,25 @@ public static class ServerTierLabels
         ServerTier.Vip => "VIP",
         _ => "FREE",
     };
+
+    public static int PaywallRank(this ServerTier tier) => tier switch
+    {
+        ServerTier.Tester => 1,
+        ServerTier.Plus => 2,
+        ServerTier.Vip or ServerTier.Dev => 3,
+        _ => 0,
+    };
+
+    public static int SubscriptionRank(string? raw) => (raw ?? "free").Trim().ToLowerInvariant() switch
+    {
+        "tester" => 1,
+        "plus" => 2,
+        "vip" or "dev" => 3,
+        _ => 0,
+    };
+
+    public static bool RequiresUpgrade(this ServerTier tier, string? subscription) =>
+        SubscriptionRank(subscription) < tier.PaywallRank();
 }
 
 public enum ServerProtocol

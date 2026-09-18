@@ -1,5 +1,7 @@
 using DemarVpn.Controls;
 using DemarVpn.Domain.Vpn;
+using DemarVpn.Services.Account;
+using DemarVpn.Services.Auth;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -16,6 +18,8 @@ public sealed partial class ServersPage : Page
     private bool _refreshing;
     private Storyboard? _spin;
 
+    public event Action? NeedUpgrade;
+
     public ServersPage()
     {
         InitializeComponent();
@@ -29,6 +33,16 @@ public sealed partial class ServersPage : Page
         {
             var next = id == "ALL" ? null : ParseTier(id);
             if (next == _tierFilter) return;
+            if (next is { } tier)
+            {
+                var sub = AccountStore.Account?.VpnSubscription ?? AuthSessionStore.Current?.VpnSubscription;
+                if (tier.RequiresUpgrade(sub))
+                {
+                    NeedUpgrade?.Invoke();
+                    TierBar.SelectedId = _tierFilter?.Label() ?? "ALL";
+                    return;
+                }
+            }
             _tierFilter = next;
             RebuildList();
         };

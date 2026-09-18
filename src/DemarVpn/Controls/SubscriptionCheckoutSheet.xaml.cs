@@ -43,7 +43,7 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
     {
         InitializeComponent();
         NarrowTitle.Text = Strings.AccountSubscription;
-        CompareButton.Content = Strings.PayComparePlans;
+        CompareButton.Content = Strings.PayCompare;
         PayButton.Content = Strings.PayAction;
         PromoLabel.Text = Strings.SettingsPromo;
         Chrome.Dismissed += () => Visibility = Visibility.Collapsed;
@@ -67,6 +67,7 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
     {
         _tier = intent.DefaultTier(currentPlan);
         _period = "month";
+        _currency = LocaleStore.IsRu ? "RUB" : "EUR";
         _appliedCode = null;
         _discountPercent = 0;
         _paying = false;

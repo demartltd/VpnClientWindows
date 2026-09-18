@@ -321,6 +321,15 @@ public class VpnPipelineTest
     }
 
     [Fact]
+    public void ServerTier_requiresUpgrade()
+    {
+        Assert.True(ServerTier.Plus.RequiresUpgrade("free"));
+        Assert.True(ServerTier.Vip.RequiresUpgrade("plus"));
+        Assert.False(ServerTier.Plus.RequiresUpgrade("vip"));
+        Assert.False(ServerTier.Free.RequiresUpgrade(null));
+    }
+
+    [Fact]
     public void ServersApi_parseHysteria2_andSkipUnsupported()
     {
         var hy2 = JsonNode.Parse("""
