@@ -187,7 +187,6 @@ public static class Strings
     public static string SettingsTunAppsAddSub => T("Add a .exe to the exclusion list", "Добавьте .exe в список исключений");
     public static string SettingsTunAppsPickExplorer => T("Browse…", "В Проводнике");
     public static string SettingsTunAppsTypeName => T(".exe name", "Имя .exe");
-    public static string SettingsTunAppsRunning => T("Running apps", "Открытые приложения");
     public static string SettingsTunAppsMustExe => T("Name must end with .exe", "Имя должно заканчиваться на .exe");
     public static string SettingsTunAppsPickUnavailable => T("Could not open File Explorer", "Не удалось открыть проводник");
     public static string SettingsTunGroupsTitle => T("Preset app groups", "Готовые группы приложений");

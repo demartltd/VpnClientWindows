@@ -37,15 +37,7 @@ public sealed partial class TunSettingsPage
             list.Items.Add(row);
         }
 
-        var dialog = DemarDialog.Create(XamlRoot, Strings.SettingsTunAppsAdd, new StackPanel
-        {
-            Spacing = 8,
-            Children =
-            {
-                new TextBlock { Text = Strings.SettingsTunAppsRunning, Opacity = 0.7, FontSize = 12 },
-                list,
-            },
-        });
+        var dialog = DemarDialog.Create(XamlRoot, Strings.SettingsTunAppsAdd, list);
         dialog.PrimaryButtonText = Strings.SettingsTunAppsPickExplorer;
         dialog.SecondaryButtonText = Strings.SettingsTunAppsTypeName;
         dialog.CloseButtonText = Strings.Cancel;
