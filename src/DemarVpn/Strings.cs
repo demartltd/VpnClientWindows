@@ -28,7 +28,7 @@ public static class Strings
     public const string LoginEmailHint = "Email";
     public const string LoginMoreMethods = "More Login Methods";
     public const string PlatformWindows = "Windows";
-    public const string VersionName = "1.0.31";
+    public const string VersionName = "1.0.32";
 
     // Service menu — English only (no localization)
     public const string ServiceMenuTitle = "Service menu";
@@ -187,6 +187,7 @@ public static class Strings
     public static string SettingsTunAppsAddSub => T("Add a .exe to the exclusion list", "Добавьте .exe в список исключений");
     public static string SettingsTunAppsPickExplorer => T("Browse…", "В Проводнике");
     public static string SettingsTunAppsTypeName => T(".exe name", "Имя .exe");
+    public static string SettingsTunAppsRunning => T("Running apps", "Открытые приложения");
     public static string SettingsTunAppsMustExe => T("Name must end with .exe", "Имя должно заканчиваться на .exe");
     public static string SettingsTunAppsPickUnavailable => T("Could not open File Explorer", "Не удалось открыть проводник");
     public static string SettingsTunGroupsTitle => T("Preset app groups", "Готовые группы приложений");

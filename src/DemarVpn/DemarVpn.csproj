@@ -16,9 +16,9 @@
     <SelfContained>true</SelfContained>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.0.31</Version>
-    <AssemblyVersion>1.0.31.35</AssemblyVersion>
-    <FileVersion>1.0.31.35</FileVersion>
+    <Version>1.0.32</Version>
+    <AssemblyVersion>1.0.32.36</AssemblyVersion>
+    <FileVersion>1.0.32.36</FileVersion>
     <ApplicationTitle>Demar VPN</ApplicationTitle>
     <ApplicationDescription>Demar VPN / Best VPN</ApplicationDescription>
     <SatelliteResourceLanguages>en-US;ru-RU</SatelliteResourceLanguages>
@@ -31,6 +31,7 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260529003" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.4" />
   </ItemGroup>
 
   <ItemGroup>
