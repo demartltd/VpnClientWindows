@@ -219,9 +219,10 @@ public sealed partial class ServersPage : Page
         }
 
         var selected = vpn.Selected;
+        var reachMap = vpn.ServerReachability;
         foreach (var profile in list)
         {
-            vpn.ServerReachability.TryGetValue(profile.Id, out var reach);
+            reachMap.TryGetValue(profile.Id, out var reach);
             var row = new ServerRow
             {
                 Profile = profile,

@@ -56,7 +56,8 @@ public static class AppServices
     {
         StopBackgroundRefresh();
         _bgRefreshCts = new CancellationTokenSource();
-        _ = RunBackgroundRefreshAsync(_bgRefreshCts.Token);
+        var ct = _bgRefreshCts.Token;
+        _ = Task.Run(() => RunBackgroundRefreshAsync(ct));
     }
 
     public static void StopBackgroundRefresh()
@@ -76,18 +77,18 @@ public static class AppServices
     {
         try
         {
-            await TickBackgroundRefreshAsync(ct);
+            await TickBackgroundRefreshAsync(ct).ConfigureAwait(false);
             using var timer = new PeriodicTimer(SessionRefreshPolicy.Ttl);
-            while (await timer.WaitForNextTickAsync(ct))
-                await TickBackgroundRefreshAsync(ct);
+            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+                await TickBackgroundRefreshAsync(ct).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { }
     }
 
     private static async Task TickBackgroundRefreshAsync(CancellationToken ct)
     {
-        await Update.CheckAndDownloadAsync(ct);
-        await Vpn.RefreshSessionDataIfStaleAsync(ct);
+        await Update.CheckAndDownloadAsync(ct).ConfigureAwait(false);
+        await Vpn.RefreshSessionDataIfStaleAsync(ct).ConfigureAwait(false);
     }
 
     private static string ReadBundledVersion()

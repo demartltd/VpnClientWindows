@@ -137,7 +137,7 @@ public sealed class VpnController : NotifyBase
     public Task RefreshSessionDataIfStaleAsync(CancellationToken ct = default) =>
         AuthSessionStore.Current is null || !SessionRefreshPolicy.IsStale(_lastSessionDataRefreshAt)
             ? Task.CompletedTask
-            : RefreshServersAsync(ct);
+            : RefreshServersAsync(ct, probeReachability: false);
 
     public void ClearServers()
     {
@@ -168,18 +168,18 @@ public sealed class VpnController : NotifyBase
         ClearSessionLocal();
     }
 
-    public Task RefreshServersAsync(CancellationToken ct = default)
+    public Task RefreshServersAsync(CancellationToken ct = default, bool probeReachability = true)
     {
         lock (_refreshGate)
         {
             if (_refreshServersTask is { IsCompleted: false } inflight)
                 return inflight;
-            _refreshServersTask = RefreshServersCoreAsync(ct);
+            _refreshServersTask = RefreshServersCoreAsync(ct, probeReachability);
             return _refreshServersTask;
         }
     }
 
-    private async Task RefreshServersCoreAsync(CancellationToken ct)
+    private async Task RefreshServersCoreAsync(CancellationToken ct, bool probeReachability)
     {
         var session = AuthSessionStore.Current;
         if (session is null)
@@ -195,13 +195,16 @@ public sealed class VpnController : NotifyBase
         var accountOk = false;
         try
         {
+            var prevIds = _servers.Select(s => s.Id).ToHashSet();
             var serversTask = ServersApi.FetchServersAsync(session.UserId, session.LoginAt, ct);
             var accountTask = AccountStore.RefreshAsync(ct);
             var tunTask = RefreshTunGroupsAsync(ct);
-            accountOk = await accountTask;
-            await tunTask;
+            accountOk = await accountTask.ConfigureAwait(false);
+            await tunTask.ConfigureAwait(false);
 
-            var result = await serversTask;
+            var result = await serversTask.ConfigureAwait(false);
+            var idsChanged = result.Servers.Count != prevIds.Count
+                             || result.Servers.Any(s => !prevIds.Contains(s.Id));
             ApplyServerList(result.Servers);
             TrafficExceeded = result.TrafficExceeded;
             Raise(nameof(TrafficExceeded));
@@ -209,13 +212,16 @@ public sealed class VpnController : NotifyBase
             serversOk = true;
             AppLog.Append($"servers: loaded {result.Servers.Count} (sub={result.VpnSubscription})");
             _ = SupportStore.RefreshUnreadAsync(ct);
-            await RefreshServerReachabilityAsync(ct);
+            bool reachEmpty;
+            lock (_reachLock) reachEmpty = _reachability.Count == 0;
+            if (probeReachability || idsChanged || reachEmpty)
+                await RefreshServerReachabilityAsync(ct).ConfigureAwait(false);
         }
         catch (AuthException e) when (e.IsSessionInvalid)
         {
             AuthRepository.ClearLocal();
             AppServices.Auth.NotifyChanged();
-            await OnSignedOutAsync();
+            await OnSignedOutAsync().ConfigureAwait(false);
             AppLog.Append("servers: session revoked");
         }
         catch (Exception e)
@@ -247,13 +253,13 @@ public sealed class VpnController : NotifyBase
         {
             try
             {
-                var state = await ServerReachProbe.ProbeAsync(profile, token);
+                var state = await ServerReachProbe.ProbeAsync(profile, token).ConfigureAwait(false);
                 if (token.IsCancellationRequested) return;
                 lock (_reachLock)
                     _reachability[profile.Id] = state;
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-        }));
+        })).ConfigureAwait(false);
         if (!token.IsCancellationRequested)
             Raise(nameof(ServerReachability));
     }

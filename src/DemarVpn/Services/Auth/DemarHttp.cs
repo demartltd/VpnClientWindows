@@ -109,7 +109,7 @@ public static class DemarHttp
                     .ConfigureAwait(false);
                 var raw = await res.Content.ReadAsStringAsync(linked.Token).ConfigureAwait(false);
                 return res.IsSuccessStatusCode ? raw : null;
-            }, ct).ConfigureAwait(true);
+            }, ct).ConfigureAwait(false);
         }
         catch
         {
@@ -159,7 +159,7 @@ public static class DemarHttp
                 AppLog.Append($"auth http: failed — {ex.GetType().Name}: {ex.Message}");
                 throw new AuthException(Strings.LoginErrorGeneric);
             }
-        }, ct).ConfigureAwait(true);
+        }, ct).ConfigureAwait(false);
     }
 
     public static JsonObject ParseObject(string raw)
