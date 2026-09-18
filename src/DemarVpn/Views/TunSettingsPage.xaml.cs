@@ -11,7 +11,6 @@ public sealed partial class TunSettingsPage : OverlayPage
 {
     private bool _uiReady;
     private bool _picking;
-    private bool _customExpanded;
     private string? _catalogKey;
     private DemarToggle? _rulesToggle;
     private readonly HashSet<string> _expandedAppGroups = new(StringComparer.OrdinalIgnoreCase);
@@ -20,8 +19,6 @@ public sealed partial class TunSettingsPage : OverlayPage
     private readonly Dictionary<string, GroupUi> _appGroups = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, GroupUi> _siteGroups = new(StringComparer.OrdinalIgnoreCase);
     private ItemsControl? _customChips;
-    private Button? _customAddBtn;
-    private Border? _customBody;
 
     private sealed class GroupUi
     {
@@ -108,11 +105,6 @@ public sealed partial class TunSettingsPage : OverlayPage
 
         RootPanel.Opacity = rulesOn ? 1 : 0.45;
         SetToggle(_rulesToggle, rulesOn, !isFree);
-
-        if (_customBody is not null)
-            _customBody.Visibility = _customExpanded && rulesOn ? Visibility.Visible : Visibility.Collapsed;
-        if (_customAddBtn is not null)
-            _customAddBtn.Visibility = !isFree && rulesOn && _customExpanded ? Visibility.Visible : Visibility.Collapsed;
         RefreshCustomChips(settings, isFree);
 
         ApplyGroupStates(catalog.AppGroups, _appGroups, _expandedAppGroups, g => settings.IsAppGroupEnabled(g, isFree), !isFree && rulesOn);

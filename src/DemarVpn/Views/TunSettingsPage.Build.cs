@@ -42,22 +42,14 @@ public sealed partial class TunSettingsPage
             Title = Strings.SettingsTunCustomTitle,
             Subtitle = isFree ? Strings.SettingsTunCustomFreeSub : Strings.SettingsTunAppsAddSub,
         };
-        header.Click += (_, _) => { _customExpanded = !_customExpanded; ApplySettings(); };
-        panel.Children.Add(header);
-
-        _customBody = new Border { Padding = new Thickness(4, 0, 4, 4) };
-        var body = new StackPanel { Spacing = 8 };
-        _customChips = new ItemsControl { ItemsPanel = (ItemsPanelTemplate)Resources["TunChipWrapPanel"] };
-        _customAddBtn = new Button
+        header.Click += async (_, _) =>
         {
-            Content = Strings.SettingsTunAppsAdd,
-            HorizontalAlignment = HorizontalAlignment.Left,
+            if (isFree || !TunSettingsStore.Settings.IsRulesEnabled(isFree)) return;
+            await PickExeAsync();
         };
-        _customAddBtn.Click += async (_, _) => await PickExeAsync();
-        body.Children.Add(_customChips);
-        body.Children.Add(_customAddBtn);
-        _customBody.Child = body;
-        panel.Children.Add(_customBody);
+        _customChips = new ItemsControl { ItemsPanel = (ItemsPanelTemplate)Resources["TunChipWrapPanel"] };
+        panel.Children.Add(header);
+        panel.Children.Add(_customChips);
         return Card(panel);
     }
 
