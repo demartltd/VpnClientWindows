@@ -66,5 +66,9 @@ public sealed partial class TrafficBottomSheet : UserControl
         IncreaseButton.Visibility = Visibility.Collapsed;
     }
 
-    private void OnIncreaseLimits(object sender, RoutedEventArgs e) => UpgradeTrafficRequested?.Invoke();
+    private void OnIncreaseLimits(object sender, RoutedEventArgs e)
+    {
+        Dismiss();
+        UpgradeTrafficRequested?.Invoke();
+    }
 }

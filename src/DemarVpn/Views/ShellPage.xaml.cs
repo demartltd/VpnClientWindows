@@ -33,7 +33,7 @@ public sealed partial class ShellPage : Page
         AccountTab.TrafficSheetRequested += () => TrafficSheet.Show();
         AccountTab.CheckoutRequested += OpenCheckout;
         ServersTab.NeedUpgrade += () => OpenCheckout(CheckoutIntent.Buy);
-        TrafficSheet.UpgradeTrafficRequested += OnUpgradeTraffic;
+        TrafficSheet.UpgradeTrafficRequested += () => OpenCheckout(CheckoutIntent.UpgradeTraffic);
         CheckoutSheet.CompareRequested += OpenPlanCompare;
         CompareSheet.BuyRequested += () => OpenCheckout(CheckoutIntent.Buy);
         AppServices.Vpn.TrafficLimitReached += OnTrafficLimitReached;
@@ -109,6 +109,7 @@ public sealed partial class ShellPage : Page
         }
         CompareSheet.Dismiss();
         PayResultSheet.Dismiss();
+        TrafficSheet.Dismiss();
         var plan = AccountStore.Account?.VpnSubscription ?? AuthSessionStore.Current?.VpnSubscription;
         CheckoutSheet.Show(intent, plan);
     }
@@ -135,18 +136,6 @@ public sealed partial class ShellPage : Page
         if (now - _lastPayRefreshAt < 5_000) return;
         _lastPayRefreshAt = now;
         _ = AppServices.Vpn.RefreshServersAsync();
-    }
-
-    private void OnUpgradeTraffic()
-    {
-        TrafficSheet.Dismiss();
-        _ = OpenCheckoutDelayedAsync(CheckoutIntent.UpgradeTraffic);
-    }
-
-    private async Task OpenCheckoutDelayedAsync(CheckoutIntent intent)
-    {
-        await Task.Delay(400);
-        OpenCheckout(intent);
     }
 
     private void OpenTrafficSheet()
