@@ -38,16 +38,16 @@ public sealed class SingBoxProcessEngine : IVpnEngine
 
     public async Task StartAsync(string configJson, CancellationToken cancellationToken)
     {
-        await _gate.WaitAsync(cancellationToken);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             StopLocal();
-            await StopElevatedIfNeededAsync();
+            await StopElevatedIfNeededAsync().ConfigureAwait(false);
             TryDelete(_logPath);
             TryDelete(_startupLogPath);
 
             configJson = InjectRuntimePaths(configJson, _logPath, _cachePath);
-            await File.WriteAllTextAsync(_configPath, configJson, cancellationToken);
+            await File.WriteAllTextAsync(_configPath, configJson, cancellationToken).ConfigureAwait(false);
 
             var exe = FindSingBoxExe();
             if (exe is null)
@@ -69,7 +69,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
             }
 
             AppLog.Append($"[vpn] sing-box pid={DescribePid()}");
-            await WaitForDiagPortAsync(cancellationToken);
+            await WaitForDiagPortAsync(cancellationToken).ConfigureAwait(false);
             _ownedPid ??= CoreProcess.FirstPid();
             if (_ownedPid is int pid && _process is null && CoreProcess.IsRunning(pid))
             {
@@ -92,7 +92,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
 
     public async Task StopAsync()
     {
-        if (!await _gate.WaitAsync(GateTimeout))
+        if (!await _gate.WaitAsync(GateTimeout).ConfigureAwait(false))
         {
             AppLog.Append("[vpn] stop: gate timeout — best-effort kill");
             try { StopLocal(); } catch { /* ignore */ }
@@ -103,7 +103,7 @@ public sealed class SingBoxProcessEngine : IVpnEngine
         try
         {
             StopLocal();
-            await StopElevatedIfNeededAsync();
+            await StopElevatedIfNeededAsync().ConfigureAwait(false);
         }
         finally
         {
@@ -135,20 +135,20 @@ public sealed class SingBoxProcessEngine : IVpnEngine
     private static async Task StopElevatedIfNeededAsync()
     {
         var diagUp = await UplinkProbe.TcpReachableAsync(
-            SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 150);
+            SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 150).ConfigureAwait(false);
         if (!CoreProcess.AnyRunning() && !diagUp)
             return;
 
         TryElevatedStop();
-        await UplinkProbe.WaitForDiagPortClosedAsync();
+        await UplinkProbe.WaitForDiagPortClosedAsync().ConfigureAwait(false);
         var deadline = DateTimeOffset.UtcNow.AddSeconds(4);
         while (DateTimeOffset.UtcNow < deadline)
         {
             if (!CoreProcess.AnyRunning()
                 && !await UplinkProbe.TcpReachableAsync(
-                    SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 150))
+                    SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 150).ConfigureAwait(false))
                 return;
-            await Task.Delay(100);
+            await Task.Delay(100).ConfigureAwait(false);
         }
 
         AppLog.Append("[vpn] elevated stop: timeout");
@@ -296,13 +296,14 @@ public sealed class SingBoxProcessEngine : IVpnEngine
                 _ownedPid = CoreProcess.FirstPid();
 
             if (await UplinkProbe.TcpReachableAsync(
-                    SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 500, cancellationToken))
+                    SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 500, cancellationToken)
+                .ConfigureAwait(false))
             {
                 AppLog.Append("[vpn] diag port ready");
                 return;
             }
 
-            await Task.Delay(ConnectTimeouts.StartupPollMs, cancellationToken);
+            await Task.Delay(ConnectTimeouts.StartupPollMs, cancellationToken).ConfigureAwait(false);
         }
 
         throw new InvalidOperationException(FormatStartupError(CollectStartupErrors()));

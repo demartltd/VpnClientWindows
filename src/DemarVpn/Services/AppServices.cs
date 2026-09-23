@@ -87,7 +87,7 @@ public static class AppServices
 
     private static async Task TickBackgroundRefreshAsync(CancellationToken ct)
     {
-        await Update.CheckAndDownloadAsync(ct).ConfigureAwait(false);
+        _ = Update.CheckAndDownloadAsync(ct); // do not block session refresh on update download
         await Vpn.RefreshSessionDataIfStaleAsync(ct).ConfigureAwait(false);
     }
 

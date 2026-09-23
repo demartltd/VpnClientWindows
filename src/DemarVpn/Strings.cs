@@ -28,7 +28,7 @@ public static class Strings
     public const string LoginEmailHint = "Email";
     public const string LoginMoreMethods = "More Login Methods";
     public const string PlatformWindows = "Windows";
-    public const string VersionName = "1.0.33";
+    public const string VersionName = "1.0.34";
 
     // Service menu — English only (no localization)
     public const string ServiceMenuTitle = "Service menu";

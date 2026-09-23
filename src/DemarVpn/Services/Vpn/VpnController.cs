@@ -46,6 +46,11 @@ public sealed class VpnController : NotifyBase
     public event Action<string>? ErrorRaised;
     public event Action? TrafficLimitReached;
 
+    private bool RefreshInFlight
+    {
+        get { lock (_refreshGate) return _refreshServersTask is { IsCompleted: false }; }
+    }
+
     public VpnController()
     {
         _engine.CoreExited += OnCoreExited;
@@ -60,7 +65,7 @@ public sealed class VpnController : NotifyBase
     {
         try
         {
-            var payload = await TunGroupsApi.FetchAsync(ct);
+            var payload = await TunGroupsApi.FetchAsync(ct).ConfigureAwait(false);
             if (payload is null) return;
             TunSettingsStore.CacheGroups(payload.Catalog, payload.Raw);
             AppLog.Append($"tun_groups: loaded {payload.Catalog.AppGroups.Count} app + {payload.Catalog.SiteGroups.Count} site");
@@ -74,9 +79,9 @@ public sealed class VpnController : NotifyBase
     private async Task EnsureConnectPrereqsAsync(CancellationToken ct)
     {
         if (AuthRepository.IsSignedIn && AccountStore.Account is null)
-            await AccountStore.RefreshAsync(ct);
+            await AccountStore.RefreshAsync(ct).ConfigureAwait(false);
         if (TunSettingsStore.Catalog.AppGroups.Count == 0 && TunSettingsStore.Catalog.SiteGroups.Count == 0)
-            await RefreshTunGroupsAsync(ct);
+            await RefreshTunGroupsAsync(ct).ConfigureAwait(false);
     }
 
     public void AddBypassExe(string exe)
@@ -163,7 +168,7 @@ public sealed class VpnController : NotifyBase
     public async Task OnSignedOutAsync()
     {
         if (State.Kind is not VpnStateKind.Disconnected)
-            await DisconnectAsync();
+            await StopToDisconnectedAsync().ConfigureAwait(false);
         ClearLastProfileId();
         ClearSessionLocal();
     }
@@ -181,6 +186,7 @@ public sealed class VpnController : NotifyBase
 
     private async Task RefreshServersCoreAsync(CancellationToken ct, bool probeReachability)
     {
+        var silent = !probeReachability;
         var session = AuthSessionStore.Current;
         if (session is null)
         {
@@ -188,14 +194,17 @@ public sealed class VpnController : NotifyBase
             return;
         }
 
-        ServersLoading = true;
-        ServersError = null;
-        Raise(nameof(ServersLoading), nameof(ServersError));
+        if (silent) AppLog.Append("session: refresh begin");
+        if (!silent)
+        {
+            ServersLoading = true;
+            ServersError = null;
+            Raise(nameof(ServersLoading), nameof(ServersError));
+        }
         var serversOk = false;
         var accountOk = false;
         try
         {
-            var prevIds = _servers.Select(s => s.Id).ToHashSet();
             var serversTask = ServersApi.FetchServersAsync(session.UserId, session.LoginAt, ct);
             var accountTask = AccountStore.RefreshAsync(ct);
             var tunTask = RefreshTunGroupsAsync(ct);
@@ -203,18 +212,17 @@ public sealed class VpnController : NotifyBase
             await tunTask.ConfigureAwait(false);
 
             var result = await serversTask.ConfigureAwait(false);
-            var idsChanged = result.Servers.Count != prevIds.Count
-                             || result.Servers.Any(s => !prevIds.Contains(s.Id));
             ApplyServerList(result.Servers);
-            TrafficExceeded = result.TrafficExceeded;
-            Raise(nameof(TrafficExceeded));
+            if (TrafficExceeded != result.TrafficExceeded)
+            {
+                TrafficExceeded = result.TrafficExceeded;
+                Raise(nameof(TrafficExceeded));
+            }
             SessionCacheStore.SaveServers(result.RawJson, session.UserId);
             serversOk = true;
             AppLog.Append($"servers: loaded {result.Servers.Count} (sub={result.VpnSubscription})");
             _ = SupportStore.RefreshUnreadAsync(ct);
-            bool reachEmpty;
-            lock (_reachLock) reachEmpty = _reachability.Count == 0;
-            if (probeReachability || idsChanged || reachEmpty)
+            if (probeReachability)
                 await RefreshServerReachabilityAsync(ct).ConfigureAwait(false);
         }
         catch (AuthException e) when (e.IsSessionInvalid)
@@ -226,16 +234,23 @@ public sealed class VpnController : NotifyBase
         }
         catch (Exception e)
         {
-            ServersError = e.Message;
-            Raise(nameof(ServersError));
+            if (!silent)
+            {
+                ServersError = e.Message;
+                Raise(nameof(ServersError));
+            }
             AppLog.Append($"servers: fetch failed — {e.Message}");
         }
         finally
         {
             if (serversOk || accountOk)
                 _lastSessionDataRefreshAt = DateTimeOffset.UtcNow;
-            ServersLoading = false;
-            Raise(nameof(ServersLoading));
+            if (!silent)
+            {
+                ServersLoading = false;
+                Raise(nameof(ServersLoading));
+            }
+            if (silent) AppLog.Append("session: refresh end");
         }
     }
 
@@ -279,7 +294,13 @@ public sealed class VpnController : NotifyBase
         _ = RunExclusiveAsync(DrainSwitchAsync);
     }
 
-    public Task ConnectAsync() => RunExclusiveAsync(ConnectCoreAsync);
+    public async Task ConnectAsync()
+    {
+        // First-connect session refresh outside _ops — avoids deadlock with 401→sign-out.
+        if (AuthSessionStore.Current is not null && _lastSessionDataRefreshAt is null)
+            await RefreshServersAsync().ConfigureAwait(false);
+        await RunExclusiveAsync(ConnectCoreAsync).ConfigureAwait(false);
+    }
 
     public async Task EnsureStoppedAsync()
     {
@@ -289,7 +310,7 @@ public sealed class VpnController : NotifyBase
             CancelOps();
             if (State.Kind is VpnStateKind.Disconnected) return;
 
-            try { await _engine.StopAsync(); }
+            try { await _engine.StopAsync().ConfigureAwait(false); }
             catch (Exception ex) { AppLog.Append($"[vpn] ensure stop: {ex.Message}"); }
 
             ClearThroughput();
@@ -303,7 +324,7 @@ public sealed class VpnController : NotifyBase
     }
 
     public void EnsureStoppedSync() =>
-        EnsureStoppedAsync().Wait(TimeSpan.FromSeconds(8));
+        Task.Run(() => EnsureStoppedAsync().Wait(TimeSpan.FromSeconds(8))).GetAwaiter().GetResult();
 
     public Task DisconnectAsync() => RunExclusiveAsync(DisconnectCoreAsync);
 
@@ -311,15 +332,18 @@ public sealed class VpnController : NotifyBase
     {
         if (State.Kind != VpnStateKind.Connected)
             throw new InvalidOperationException(Strings.ServiceRestartFail);
-        await StopToDisconnectedAsync();
-        await ConnectCoreAsync();
+        await StopToDisconnectedAsync().ConfigureAwait(false);
+        await ConnectCoreAsync().ConfigureAwait(false);
     });
 
     private void ApplyServerList(IReadOnlyList<ServerProfile> servers)
     {
+        var same = servers.Count == _servers.Count
+                   && servers.Select(s => s.Id).SequenceEqual(_servers.Select(s => s.Id));
+        var prevSelectedId = Selected?.Id;
         _servers = servers.ToList();
         var lastId = LoadLastProfileId();
-        Selected = _servers.FirstOrDefault(s => s.Id == Selected?.Id)
+        Selected = _servers.FirstOrDefault(s => s.Id == prevSelectedId)
                    ?? _servers.FirstOrDefault(s => s.Id == lastId)
                    ?? _servers.FirstOrDefault();
         if (Selected is not null)
@@ -327,13 +351,14 @@ public sealed class VpnController : NotifyBase
             SaveLastProfileId(Selected.Id);
             _ = UplinkIpv4.ResolveAsync(Selected.Profile.Server);
         }
+        if (same && Selected?.Id == prevSelectedId) return;
         Raise(nameof(Servers), nameof(Selected), nameof(ServersError));
     }
 
     private async Task RunExclusiveAsync(Func<Task> action)
     {
-        await _ops.WaitAsync();
-        try { await action(); }
+        await _ops.WaitAsync().ConfigureAwait(false);
+        try { await action().ConfigureAwait(false); }
         finally { _ops.Release(); }
     }
 
@@ -342,18 +367,18 @@ public sealed class VpnController : NotifyBase
         while (Volatile.Read(ref _switchPending) == 1)
         {
             Interlocked.Exchange(ref _switchPending, 0);
-            await StopToDisconnectedAsync();
-            await Task.Delay(ConnectTimeouts.SwitchSettleMs);
+            await StopToDisconnectedAsync().ConfigureAwait(false);
+            await Task.Delay(ConnectTimeouts.SwitchSettleMs).ConfigureAwait(false);
             if (Volatile.Read(ref _switchPending) == 1)
                 continue;
-            await ConnectCoreAsync();
+            await ConnectCoreAsync().ConfigureAwait(false);
         }
     }
 
     private async Task ConnectCoreAsync()
     {
         if (State.Kind == VpnStateKind.Connected) return;
-        if (State.IsBusy) await StopToDisconnectedAsync();
+        if (State.IsBusy) await StopToDisconnectedAsync().ConfigureAwait(false);
 
         if (TrafficExceeded)
         {
@@ -373,10 +398,6 @@ public sealed class VpnController : NotifyBase
         AppLog.Append("[ui] windows home: connect");
         try
         {
-            // Parity Apple: first connect in process must refresh session data.
-            if (AuthSessionStore.Current is not null && _lastSessionDataRefreshAt is null)
-                await RefreshServersAsync(ct);
-
             var profile = Selected;
             if (profile is null)
             {
@@ -393,7 +414,7 @@ public sealed class VpnController : NotifyBase
             }
 
             var plan = profile.ConnectPlan;
-            var (resolved, dnsErr) = await UplinkIpv4.ResolveDetailedAsync(plan.UplinkHost);
+            var (resolved, dnsErr) = await UplinkIpv4.ResolveDetailedAsync(plan.UplinkHost).ConfigureAwait(false);
             if (resolved.Count > 0) plan = plan.WithExtraDirectIps(resolved);
 
             var connectTarget = resolved.Count > 0
@@ -406,7 +427,7 @@ public sealed class VpnController : NotifyBase
                 throw new InvalidOperationException($"{Strings.VpnServerUnreachable}: {plan.UplinkHost} ({why})");
             }
 
-            await EnsureConnectPrereqsAsync(ct);
+            await EnsureConnectPrereqsAsync(ct).ConfigureAwait(false);
             var bypass = TunSettingsStore.EffectiveBypass(IsFreeSubscription());
             var configJson = SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass);
             AppLog.Append(
@@ -416,9 +437,9 @@ public sealed class VpnController : NotifyBase
             _watchdog = CancellationTokenSource.CreateLinkedTokenSource(token);
             _ = WatchdogAsync(_watchdog.Token);
 
-            await _engine.StartAsync(configJson, ct);
+            await _engine.StartAsync(configJson, ct).ConfigureAwait(false);
 
-            var probe = await TunnelPathProbe.Tcp443ViaDiagAsync("1.1.1.1", ct);
+            var probe = await TunnelPathProbe.Tcp443ViaDiagAsync("1.1.1.1", ct).ConfigureAwait(false);
             if (!probe.Ok)
             {
                 AppLog.Append($"[vpn] tunnel path probe failed: {probe.Detail}");
@@ -431,14 +452,14 @@ public sealed class VpnController : NotifyBase
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
-            try { await _engine.StopAsync(); }
+            try { await _engine.StopAsync().ConfigureAwait(false); }
             catch (Exception stopEx) { AppLog.Append($"[vpn] stop after cancel: {stopEx.Message}"); }
             if (State.Kind == VpnStateKind.Connecting)
                 SetState(VpnState.Disconnected);
         }
         catch (Exception ex)
         {
-            try { await _engine.StopAsync(); }
+            try { await _engine.StopAsync().ConfigureAwait(false); }
             catch (Exception stopEx) { AppLog.Append($"[vpn] stop after fail: {stopEx.Message}"); }
             ClearThroughput();
             var msg = ex.Message;
@@ -456,7 +477,7 @@ public sealed class VpnController : NotifyBase
         if (State.Kind is VpnStateKind.Disconnected or VpnStateKind.Disconnecting) return;
         Interlocked.Exchange(ref _switchPending, 0);
         AppLog.Append("[ui] windows home: disconnect");
-        await StopToDisconnectedAsync();
+        await StopToDisconnectedAsync().ConfigureAwait(false);
         AppLog.Append("[vpn] disconnected");
     }
 
@@ -465,7 +486,7 @@ public sealed class VpnController : NotifyBase
         CancelOps();
         if (State.Kind is VpnStateKind.Disconnected) return;
         SetState(VpnState.Disconnecting);
-        try { await _engine.StopAsync(); }
+        try { await _engine.StopAsync().ConfigureAwait(false); }
         catch (Exception ex) { AppLog.Append($"[vpn] stop: {ex.Message}"); }
         ClearThroughput();
         SetState(VpnState.Disconnected);
@@ -483,19 +504,14 @@ public sealed class VpnController : NotifyBase
     {
         try
         {
-            await Task.Delay(ConnectTimeouts.WatchdogMs, token);
-            if (State.Kind == VpnStateKind.Connecting)
-            {
-                _op?.Cancel();
-                await RunExclusiveAsync(async () =>
-                {
-                    if (State.Kind != VpnStateKind.Connecting) return;
-                    await StopToDisconnectedAsync();
-                    SetState(VpnState.Error(Strings.VpnConnectFailed));
-                    ErrorRaised?.Invoke(Strings.VpnConnectFailed);
-                    AppServices.Snackbar.ShowError(Strings.VpnConnectFailed);
-                });
-            }
+            await Task.Delay(ConnectTimeouts.WatchdogMs, token).ConfigureAwait(false);
+            if (State.Kind != VpnStateKind.Connecting) return;
+            _op?.Cancel();
+            // No nested RunExclusiveAsync — Connect still holds _ops.
+            await StopToDisconnectedAsync().ConfigureAwait(false);
+            SetState(VpnState.Error(Strings.VpnConnectFailed));
+            ErrorRaised?.Invoke(Strings.VpnConnectFailed);
+            AppServices.Snackbar.ShowError(Strings.VpnConnectFailed);
         }
         catch (OperationCanceledException) { }
     }
@@ -507,11 +523,17 @@ public sealed class VpnController : NotifyBase
         {
             while (!token.IsCancellationRequested)
             {
-                await Task.Delay(ConnectTimeouts.HealthIntervalMs, token);
+                await Task.Delay(ConnectTimeouts.HealthIntervalMs, token).ConfigureAwait(false);
                 if (State.Kind != VpnStateKind.Connected) return;
 
+                if (RefreshInFlight)
+                {
+                    fails = 0;
+                    continue;
+                }
+
                 var ok = await UplinkProbe.TcpReachableAsync(
-                    SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 500, token);
+                    SingBoxTags.DiagListenHost, SingBoxTags.DiagListenPort, 500, token).ConfigureAwait(false);
                 if (ok)
                 {
                     fails = 0;
@@ -522,10 +544,10 @@ public sealed class VpnController : NotifyBase
 
                 _health?.Cancel();
                 StopTraffic();
-                await RunExclusiveAsync(async () =>
+                // No nested RunExclusiveAsync — avoid waiting forever on connect/switch.
+                if (State.Kind == VpnStateKind.Connected)
                 {
-                    if (State.Kind != VpnStateKind.Connected) return;
-                    try { await _engine.StopAsync(); }
+                    try { await _engine.StopAsync().ConfigureAwait(false); }
                     catch (Exception ex) { AppLog.Append($"[vpn] health stop: {ex.Message}"); }
                     ClearThroughput();
                     var msg = Strings.VpnTunnelLost;
@@ -533,7 +555,7 @@ public sealed class VpnController : NotifyBase
                     ErrorRaised?.Invoke(msg);
                     AppServices.Snackbar.ShowError(msg);
                     AppLog.Append($"[vpn] health fail: {msg}");
-                });
+                }
                 return;
             }
         }
