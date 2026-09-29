@@ -67,7 +67,7 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
     {
         _tier = intent.DefaultTier(currentPlan);
         _period = "month";
-        _currency = LocaleStore.IsRu ? "RUB" : "EUR";
+        _currency = LocaleStore.DefaultCurrency;
         _appliedCode = null;
         _discountPercent = 0;
         _paying = false;
@@ -302,9 +302,9 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
     {
         PlanCards.Children.Clear();
         AddPlanCard(0, "plus", "Plus", Strings.PayPlusTagline, true,
-            [Strings.PayPerkPremium, Strings.PayPerk100Mbps, Strings.PayPerk500Gb]);
+            [Strings.PayPerkPremium, Strings.PayCompareSpeedPlus, Strings.PayPerk500Gb]);
         AddPlanCard(1, "vip", "VIP", Strings.PayVipTagline, false,
-            [Strings.PayPerkDedicated, Strings.PayPerk300Mbps, Strings.PayPerk3000Gb]);
+            [Strings.PayPerkDedicated, Strings.PayCompareSpeedVip, Strings.PayPerk3000Gb]);
     }
 
     private void AddPlanCard(int col, string tierId, string name, string tagline, bool featured, string[] perks)

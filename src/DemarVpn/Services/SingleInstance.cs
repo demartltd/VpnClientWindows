@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
 using Windows.ApplicationModel.Activation;
@@ -8,14 +7,10 @@ namespace DemarVpn.Services;
 internal static class SingleInstance
 {
     const string Key = "DemarVpn";
-    const uint MbOkInfo = 0x40;
 
     static string PidPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "DemarVpn", "instance.pid");
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    static extern int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
 
     public static bool TryClaim(Action<AppActivationArguments>? onActivated = null)
     {
@@ -29,13 +24,11 @@ internal static class SingleInstance
             if (demarUri is not null)
                 ProtocolRegistration.WritePendingUri(demarUri);
 
-            // This process briefly owns FG (browser launched us) — unlock main instance.
+            // This process briefly owns FG (browser/shortcut launched us) — unlock main instance.
             if (TryReadOwnerPid(out var ownerPid))
                 WindowFocus.AllowForeground(ownerPid);
 
             instance.RedirectActivationToAsync(args).AsTask().GetAwaiter().GetResult();
-            if (demarUri is null && !IsProtocolActivation(args))
-                MessageBoxW(IntPtr.Zero, Strings.AlreadyRunningMessage, Strings.AppName, MbOkInfo);
             Application.Current.Exit();
             return false;
         }

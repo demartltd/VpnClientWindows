@@ -43,20 +43,32 @@ public sealed partial class AppSettingsPage : OverlayPage
     private async void OnLanguage(object? sender, EventArgs e)
     {
         if (XamlRoot is null) return;
-        var en = new RadioButton { Content = "English", IsChecked = !LocaleStore.IsRu, GroupName = "lang" };
-        var ru = new RadioButton { Content = "Русский", IsChecked = LocaleStore.IsRu, GroupName = "lang" };
+        var radios = LocaleStore.Supported
+            .Select(tag => new RadioButton
+            {
+                Content = LocaleStore.DisplayNameOf(tag),
+                IsChecked = tag == LocaleStore.Tag,
+                GroupName = "lang",
+                Tag = tag,
+            })
+            .ToList();
         var panel = new StackPanel { Spacing = 8 };
-        panel.Children.Add(en);
-        panel.Children.Add(ru);
+        foreach (var r in radios) panel.Children.Add(r);
+        var body = new ScrollViewer
+        {
+            MaxHeight = 300,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = panel,
+        };
         if (await DemarDialog.ChooseAsync(
                 XamlRoot,
                 Strings.SettingsLanguage,
-                panel,
+                body,
                 Strings.Ok,
                 closeButtonText: Strings.Cancel) != ContentDialogResult.Primary)
             return;
-        var tag = ru.IsChecked == true ? LocaleStore.Ru : LocaleStore.En;
-        if (tag == LocaleStore.Tag) return;
+        var tag = radios.FirstOrDefault(r => r.IsChecked == true)?.Tag as string;
+        if (tag is null || tag == LocaleStore.Tag) return;
         LocaleStore.Set(tag);
         App.RemountShell(openAppSettings: true);
     }

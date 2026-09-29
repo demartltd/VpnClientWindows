@@ -7,6 +7,9 @@ Windows-only. C# + WinUI 3 (dark only, x64 unpackaged EXE).
 ```
 src/DemarVpn/
 ├── App.xaml / MainWindow.xaml
+├── Strings.cs                     # UI string API (L→Locales); consts + service-menu EN-only
+├── Locales/                       # per-language maps (Apple .lproj / Android values-* parity)
+│   ├── Catalog.cs
 ├── Theme/                         # DemarPalette (MaterialColorUtilities TonalSpot)
 ├── Domain/
 │   ├── Vpn/                       # Hysteria2Profile, SingBoxConnectPlan, ApiBypassRuleSet, ServerProfile, ServerReachability
@@ -47,7 +50,7 @@ src/DemarVpn/
 │   ├── AppUpdateService.cs        # fastapi version+sha256, download /windows/download|beta
 │   ├── WindowsReleaseApi.cs       # GET /windows/version (+ beta channel pick)
 │   ├── UpdateChannelStore.cs      # prefer_beta prefs
-│   ├── LocaleStore.cs             # UI language en|ru (first launch = OS)
+│   ├── LocaleStore.cs             # UI language 13 tags (OS if supported); ru→RUB else EUR
 │   ├── RunAtStartup.cs            # logon Task Scheduler autostart (default ON)
 │   ├── Account/                   # VpnAccountApi, AccountStore, PayApi (plans/create + promo/apply)
 │   ├── Support/                   # SupportApi → csauth.example.invalid ticket chat (channel=windows; album ≤10 WebP)
@@ -80,7 +83,7 @@ tests/DemarVpn.Tests/
 ├── AppLogTest.cs
 ├── AppUpdateTest.cs             # version parse + SHA256 + beta channel
 ├── RunAtStartupTest.cs          # run_at_startup prefs (default ON)
-├── LocaleStoreTest.cs           # first-launch en/ru resolve
+├── LocaleStoreTest.cs           # first-launch locale resolve + currency (13 langs)
 ├── VpnAccountApiTest.cs         # account/traffic parse + promo + pieSlices + formatBytes
 ├── PayApiParseTest.cs           # pay catalog/checkout/formatPrice + CheckoutIntent
 ├── SupportApiTest.cs            # support ticket JSON parse / encode cache
@@ -99,7 +102,7 @@ src/DemarVpn.Installer/
 ├── MainWindow.xaml / MainWindow.xaml.cs
 ├── InstallerMode.cs            # /silent /uninstall /launch /D=
 ├── InstallService.cs           # install / uninstall / ARP / shortcut / demarvpn://
-├── InstallerStrings.cs         # EN/RU by OS UI culture
+├── InstallerStrings.cs         # 13 langs by OS UI culture (Win32 locale fallback for AOT)
 ├── UninstallProgram.cs         # Native AOT Win32 Demar UI
 ├── app.manifest                # requireAdministrator
 └── Resources/                  # payload.zip + uninstall.exe — generated (gitignore)

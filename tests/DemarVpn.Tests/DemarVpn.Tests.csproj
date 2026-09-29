@@ -40,6 +40,7 @@
     <Compile Include="..\..\src\DemarVpn\Services\DemarNavigation.cs" />
     <Compile Include="..\..\src\DemarVpn\Models\AppModels.cs" />
     <Compile Include="..\..\src\DemarVpn\Strings.cs" />
+    <Compile Include="..\..\src\DemarVpn\Locales\**\*.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Vpn\TunnelPathProbe.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\AppLog.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Content\RawTextFetcher.cs" />

@@ -135,7 +135,7 @@ public sealed partial class AccountPage : Page
 
     private static string InDays(int days)
     {
-        if (!LocaleStore.IsRu)
+        if (!LocaleStore.UsesSlavicPlurals)
             return string.Format(days == 1 ? Strings.AccountInDaysOne : Strings.AccountInDaysMany, days);
         var n = Math.Abs(days) % 100;
         var n1 = n % 10;
