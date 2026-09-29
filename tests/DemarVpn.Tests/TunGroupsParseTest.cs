@@ -75,7 +75,7 @@ public class TunGroupsParseTest
     }
 
     [Fact]
-    public void EffectiveBypassExes_freeIgnoresOverrides()
+    public void EffectiveBypassExes_freeFollowsApiDefaults_ignoresCustomAndOverrides()
     {
         var catalog = TunGroupsApi.Parse(SampleJson);
         var settings = new TunSettings(
@@ -83,9 +83,9 @@ public class TunGroupsParseTest
             new Dictionary<string, bool> { ["games"] = false },
             NoOverrides);
         var effective = settings.EffectiveBypassExes(catalog, isFree: true);
-        Assert.Contains("custom.exe", effective);
+        Assert.DoesNotContain("custom.exe", effective);
         Assert.Contains("steam.exe", effective);
-        Assert.Contains("sber.exe", effective);
+        Assert.DoesNotContain("sber.exe", effective);
     }
 
     [Fact]

@@ -129,7 +129,6 @@ static class ZhHans
         ["Could not open File Explorer"] = "无法打开资源管理器",
         ["Preset app groups"] = "预设应用分组",
         ["Preset site groups"] = "预设网站分组",
-        ["On Free all groups stay on"] = "Free 计划下所有分组保持开启",
         ["Launch at Windows sign-in"] = "Windows 登录时启动",
         ["Open Demar VPN automatically after you sign in to Windows"] = "登录 Windows 后自动打开 Demar VPN",
         ["Install beta versions"] = "安装测试版",

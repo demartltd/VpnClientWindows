@@ -29,7 +29,7 @@ public static class Strings
     public const string LoginEmailHint = "Email";
     public const string LoginMoreMethods = "More Login Methods";
     public const string PlatformWindows = "Windows";
-    public const string VersionName = "1.0.36";
+    public const string VersionName = "1.0.37";
 
     // Service menu — English only (no localization)
     public const string ServiceMenuTitle = "Service menu";
@@ -190,7 +190,6 @@ public static class Strings
     public static string SettingsTunAppsPickUnavailable => L("Could not open File Explorer");
     public static string SettingsTunGroupsTitle => L("Preset app groups");
     public static string SettingsTunSiteGroupsTitle => L("Preset site groups");
-    public static string SettingsTunGroupsFreeHint => L("On Free all groups stay on");
     public static string SettingsRunAtStartup => L("Launch at Windows sign-in");
     public static string SettingsRunAtStartupSub => L("Open Demar VPN automatically after you sign in to Windows");
     public static string SettingsBeta => L("Install beta versions");

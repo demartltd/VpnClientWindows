@@ -1,6 +1,7 @@
 using DemarVpn.Controls;
 using DemarVpn.Domain.Vpn.Tun;
 using DemarVpn.Services;
+using DemarVpn.Services.Account;
 using DemarVpn.Services.Vpn;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
@@ -27,15 +28,20 @@ public sealed partial class TunSettingsPage
         return Card(WrapToggle(title, sub, toggle));
     }
 
-    private static Button BuildBuyButton()
+    private Button BuildBuyButton()
     {
         var buy = new Button
         {
             Content = Strings.AccountBuy,
+            Style = (Style)Application.Current.Resources["DemarAccentButtonStyle"],
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Height = 48,
         };
-        buy.Click += (_, _) => AppServices.Snackbar.ShowInfo(Strings.Soon);
+        buy.Click += (_, _) =>
+        {
+            if (Frame?.Parent is FrameworkElement grid && grid.Parent is ShellPage shell)
+                shell.OpenCheckout(CheckoutIntent.Buy);
+        };
         return buy;
     }
 
@@ -69,7 +75,6 @@ public sealed partial class TunSettingsPage
 
     private Border BuildGroupsSection<T>(
         string title,
-        bool isFree,
         IReadOnlyList<T> groups,
         Dictionary<string, GroupUi> map,
         HashSet<string> expanded,
@@ -77,8 +82,6 @@ public sealed partial class TunSettingsPage
     {
         var panel = new StackPanel { Spacing = 8 };
         panel.Children.Add(new TextBlock { Text = title, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-        if (isFree)
-            panel.Children.Add(new TextBlock { Text = Strings.SettingsTunGroupsFreeHint, Opacity = 0.7, FontSize = 12 });
 
         for (var i = 0; i < groups.Count; i++)
         {

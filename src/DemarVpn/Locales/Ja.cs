@@ -129,7 +129,6 @@ static class Ja
         ["Could not open File Explorer"] = "エクスプローラーを開けませんでした",
         ["Preset app groups"] = "プリセットアプリグループ",
         ["Preset site groups"] = "プリセットサイトグループ",
-        ["On Free all groups stay on"] = "Freeではすべてのグループがオンのままです",
         ["Launch at Windows sign-in"] = "Windowsサインイン時に起動",
         ["Open Demar VPN automatically after you sign in to Windows"] = "Windowsにサインインした後、Demar VPNを自動で開く",
         ["Install beta versions"] = "ベータ版をインストール",

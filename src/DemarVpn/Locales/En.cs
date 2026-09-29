@@ -129,7 +129,6 @@ static class En
         ["Could not open File Explorer"] = "Could not open File Explorer",
         ["Preset app groups"] = "Preset app groups",
         ["Preset site groups"] = "Preset site groups",
-        ["On Free all groups stay on"] = "On Free all groups stay on",
         ["Launch at Windows sign-in"] = "Launch at Windows sign-in",
         ["Open Demar VPN automatically after you sign in to Windows"] = "Open Demar VPN automatically after you sign in to Windows",
         ["Install beta versions"] = "Install beta versions",

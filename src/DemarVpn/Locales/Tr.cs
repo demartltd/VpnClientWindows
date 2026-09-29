@@ -129,7 +129,6 @@ static class Tr
         ["Could not open File Explorer"] = "Dosya Gezgini açılamadı",
         ["Preset app groups"] = "Hazır uygulama grupları",
         ["Preset site groups"] = "Hazır site grupları",
-        ["On Free all groups stay on"] = "Free’de tüm gruplar açık kalır",
         ["Launch at Windows sign-in"] = "Windows oturum açılışında başlat",
         ["Open Demar VPN automatically after you sign in to Windows"] = "Windows’a giriş yaptıktan sonra Demar VPN’i otomatik aç",
         ["Install beta versions"] = "Beta sürümlerini yükle",

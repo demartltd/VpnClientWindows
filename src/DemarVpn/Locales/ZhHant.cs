@@ -129,7 +129,6 @@ static class ZhHant
         ["Could not open File Explorer"] = "無法開啟檔案總管",
         ["Preset app groups"] = "預設應用程式群組",
         ["Preset site groups"] = "預設網站群組",
-        ["On Free all groups stay on"] = "Free 方案下所有群組保持開啟",
         ["Launch at Windows sign-in"] = "Windows 登入時啟動",
         ["Open Demar VPN automatically after you sign in to Windows"] = "登入 Windows 後自動開啟 Demar VPN",
         ["Install beta versions"] = "安裝測試版",

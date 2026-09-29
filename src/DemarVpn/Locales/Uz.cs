@@ -129,7 +129,6 @@ static class Uz
         ["Could not open File Explorer"] = "Fayl Explorer’ni ochib bo‘lmadi",
         ["Preset app groups"] = "Tayyor ilova guruhlari",
         ["Preset site groups"] = "Tayyor sayt guruhlari",
-        ["On Free all groups stay on"] = "Free’da barcha guruhlar yoqilgan holatda",
         ["Launch at Windows sign-in"] = "Windows’ga kirishda ishga tushirish",
         ["Open Demar VPN automatically after you sign in to Windows"] = "Windows’ga kirgach Demar VPN’ni avtomatik ochish",
         ["Install beta versions"] = "Beta versiyalarni o‘rnatish",

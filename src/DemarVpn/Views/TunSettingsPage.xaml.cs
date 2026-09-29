@@ -94,9 +94,9 @@ public sealed partial class TunSettingsPage : OverlayPage
         if (isFree) RootPanel.Children.Add(BuildBuyButton());
         RootPanel.Children.Add(BuildCustomCard(isFree));
         if (catalog.AppGroups.Count > 0)
-            RootPanel.Children.Add(BuildGroupsSection(Strings.SettingsTunGroupsTitle, isFree, catalog.AppGroups, _appGroups, _expandedAppGroups, true));
+            RootPanel.Children.Add(BuildGroupsSection(Strings.SettingsTunGroupsTitle, catalog.AppGroups, _appGroups, _expandedAppGroups, true));
         if (catalog.SiteGroups.Count > 0)
-            RootPanel.Children.Add(BuildGroupsSection(Strings.SettingsTunSiteGroupsTitle, isFree, catalog.SiteGroups, _siteGroups, _expandedSiteGroups, false));
+            RootPanel.Children.Add(BuildGroupsSection(Strings.SettingsTunSiteGroupsTitle, catalog.SiteGroups, _siteGroups, _expandedSiteGroups, false));
 
         DispatcherQueue.TryEnqueue(() => _uiReady = true);
     }

@@ -91,9 +91,13 @@ public static class TunEffective
             .Where(g => settings.IsAppGroupEnabled(g, isFree))
             .SelectMany(g => g.Apps.Select(a => TunExeNames.Normalize(a.Id)))
             .Where(id => id.Length > 0 && !TunExeNames.IsSelf(id));
-        return settings.BypassExes
-            .Select(TunExeNames.Normalize)
-            .Where(id => id.Length > 0 && !TunExeNames.IsSelf(id))
+        // Free: custom BypassExes ignored (Plus feature); prefs kept for Renew.
+        var custom = isFree
+            ? Enumerable.Empty<string>()
+            : settings.BypassExes
+                .Select(TunExeNames.Normalize)
+                .Where(id => id.Length > 0 && !TunExeNames.IsSelf(id));
+        return custom
             .Concat(fromGroups)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
@@ -139,7 +143,7 @@ public static class TunEffective
         string groupId,
         bool enabledByDefault)
     {
-        if (isFree) return true;
+        if (isFree) return enabledByDefault;
         if (overrides is not null && overrides.TryGetValue(groupId, out var user)) return user;
         return enabledByDefault;
     }

@@ -129,7 +129,6 @@ static class Uk
         ["Could not open File Explorer"] = "Не вдалося відкрити Провідник",
         ["Preset app groups"] = "Готові групи програм",
         ["Preset site groups"] = "Готові групи сайтів",
-        ["On Free all groups stay on"] = "На Free усі групи увімкнені",
         ["Launch at Windows sign-in"] = "Запускати при вході в Windows",
         ["Open Demar VPN automatically after you sign in to Windows"] = "Автоматично відкривати Demar VPN після входу в Windows",
         ["Install beta versions"] = "Встановлювати бета-версії",

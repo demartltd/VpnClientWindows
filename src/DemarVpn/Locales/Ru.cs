@@ -129,7 +129,6 @@ static class Ru
         ["Could not open File Explorer"] = "Не удалось открыть проводник",
         ["Preset app groups"] = "Готовые группы приложений",
         ["Preset site groups"] = "Готовые группы сайтов",
-        ["On Free all groups stay on"] = "На Free все группы включены",
         ["Launch at Windows sign-in"] = "Запускать при включении ПК",
         ["Open Demar VPN automatically after you sign in to Windows"] = "Автоматически открывать Demar VPN после входа в Windows",
         ["Install beta versions"] = "Устанавливать бета-версии",

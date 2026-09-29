@@ -129,7 +129,6 @@ static class Ko
         ["Could not open File Explorer"] = "파일 탐색기를 열 수 없습니다",
         ["Preset app groups"] = "사전 설정 앱 그룹",
         ["Preset site groups"] = "사전 설정 사이트 그룹",
-        ["On Free all groups stay on"] = "Free에서는 모든 그룹이 켜진 상태입니다",
         ["Launch at Windows sign-in"] = "Windows 로그인 시 실행",
         ["Open Demar VPN automatically after you sign in to Windows"] = "Windows에 로그인한 후 Demar VPN 자동 실행",
         ["Install beta versions"] = "베타 버전 설치",
