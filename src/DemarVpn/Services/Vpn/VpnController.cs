@@ -118,6 +118,14 @@ public sealed class VpnController : NotifyBase
         AppLog.Append($"tun_rules={(enabled ? "on" : "off")}");
     }
 
+    public void SetAdBlockEnabled(bool? enabled)
+    {
+        if (IsFreeSubscription() && enabled is not null) return;
+        TunSettingsStore.SetAdBlockEnabled(enabled);
+        if (enabled is not null)
+            AppLog.Append($"tun_adblock={(enabled.Value ? "on" : "off")}");
+    }
+
     private string TunSettingsFingerprint() => TunSettingsStore.SettingsFingerprint(IsFreeSubscription());
 
     /// <summary>Open account traffic sheet (connect block + demarvpn://settings/traffic).</summary>
@@ -428,11 +436,14 @@ public sealed class VpnController : NotifyBase
             }
 
             await EnsureConnectPrereqsAsync(ct).ConfigureAwait(false);
-            var bypass = TunSettingsStore.EffectiveBypass(IsFreeSubscription());
-            var configJson = SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass);
+            var isFree = IsFreeSubscription();
+            var bypass = TunSettingsStore.EffectiveBypass(isFree);
+            var adBlock = TunSettingsStore.Settings.IsAdBlockEnabled(isFree);
+            var adsPath = adBlock ? await RuleSetPrefetch.TryEnsureAdsAsync(ct).ConfigureAwait(false) : null;
+            var configJson = SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass, adBlock, adsPath);
             AppLog.Append(
                 $"connect uplinkHost={plan.UplinkHost} uplinkPort={profile.UplinkPort} target={connectTarget} resolved={string.Join(",", resolved)} " +
-                $"tun={TunSettingsFingerprint()} exes={bypass.BypassExes.Count} hosts={bypass.BypassHosts.Count} rs={plan.BypassRuleSets.Count}");
+                $"tun={TunSettingsFingerprint()} adblock={adBlock} exes={bypass.BypassExes.Count} hosts={bypass.BypassHosts.Count} rs={plan.BypassRuleSets.Count}");
 
             _watchdog = CancellationTokenSource.CreateLinkedTokenSource(token);
             _ = WatchdogAsync(_watchdog.Token);
@@ -449,6 +460,7 @@ public sealed class VpnController : NotifyBase
             AppLog.Append($"[vpn] tunnel path ok {probe.ElapsedMs}ms");
             SetState(VpnState.Connected);
             AppLog.Append("[vpn] connected");
+            _ = Task.Run(WindowsDnsCache.Flush);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {

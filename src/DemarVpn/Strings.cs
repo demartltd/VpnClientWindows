@@ -29,7 +29,7 @@ public static class Strings
     public const string LoginEmailHint = "Email";
     public const string LoginMoreMethods = "More Login Methods";
     public const string PlatformWindows = "Windows";
-    public const string VersionName = "1.0.35";
+    public const string VersionName = "1.0.36";
 
     // Service menu — English only (no localization)
     public const string ServiceMenuTitle = "Service menu";
@@ -155,7 +155,7 @@ public static class Strings
     public static string PayCompareSpeed => L("Speed");
     public static string PayCompareTraffic => L("Traffic");
     public static string PayCompareFamily => L("Family invites*");
-    public static string PayCompareAds => L("Ad blocking*");
+    public const string PayCompareAds = "Ad Block";
     public static string PayCompareTun => L("TUN settings");
     public static string PayCompareIp => L("Dedicated IP*");
     public static string PayCompareFootnote => L("*Not available yet.");
@@ -176,6 +176,8 @@ public static class Strings
     public static string SettingsTun => L("TUN settings");
     public static string SettingsTunSub => L("Apps and sites excluded from the VPN tunnel");
     public static string SettingsTunTitle => L("TUN settings");
+    public const string SettingsTunAdBlockTitle = PayCompareAds;
+    public static string SettingsTunAdBlockSub => L("Block ads via DNS");
     public static string SettingsTunRulesTitle => L("TUN settings");
     public static string SettingsTunRulesSub => L("Exclude selected apps and groups from the VPN");
     public static string SettingsTunCustomTitle => L("Custom apps");

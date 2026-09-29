@@ -1,5 +1,6 @@
 using DemarVpn.Controls;
 using DemarVpn.Domain.Vpn.Tun;
+using DemarVpn.Services;
 using DemarVpn.Services.Account;
 using DemarVpn.Services.Vpn;
 using Microsoft.UI.Xaml;
@@ -12,6 +13,8 @@ public sealed partial class TunSettingsPage : OverlayPage
     private bool _uiReady;
     private bool _picking;
     private string? _catalogKey;
+    private DemarToggle? _adBlockToggle;
+    private UIElement? _adBlockCard;
     private DemarToggle? _rulesToggle;
     private readonly HashSet<string> _expandedAppGroups = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _expandedSiteGroups = new(StringComparer.OrdinalIgnoreCase);
@@ -85,6 +88,8 @@ public sealed partial class TunSettingsPage : OverlayPage
         RootPanel.Children.Clear();
 
         var isFree = VpnController.IsFreeSubscription();
+        _adBlockCard = BuildAdBlockCard(isFree);
+        RootPanel.Children.Add(_adBlockCard);
         RootPanel.Children.Add(BuildRulesCard(isFree));
         if (isFree) RootPanel.Children.Add(BuildBuyButton());
         RootPanel.Children.Add(BuildCustomCard(isFree));
@@ -100,10 +105,20 @@ public sealed partial class TunSettingsPage : OverlayPage
     {
         var isFree = VpnController.IsFreeSubscription();
         var settings = TunSettingsStore.Settings;
+        if (isFree && settings.AdBlockEnabled is not null)
+        {
+            AppServices.Vpn.SetAdBlockEnabled(null);
+            return;
+        }
         var catalog = TunSettingsStore.Catalog;
         var rulesOn = settings.IsRulesEnabled(isFree);
 
-        RootPanel.Opacity = rulesOn ? 1 : 0.45;
+        foreach (var child in RootPanel.Children)
+        {
+            if (child is FrameworkElement fe)
+                fe.Opacity = child == _adBlockCard || rulesOn ? 1 : 0.45;
+        }
+        SetToggle(_adBlockToggle, settings.IsAdBlockEnabled(isFree), !isFree);
         SetToggle(_rulesToggle, rulesOn, !isFree);
         RefreshCustomChips(settings, isFree);
 

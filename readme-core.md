@@ -88,13 +88,21 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 | `dns-direct` | UDP `1.1.1.1` | bootstrap, domain resolver |
 | `dns-remote` | HTTPS `1.1.1.1` | DoH через proxy |
 
-Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); TUN process bypass → `dns-direct`; bootstrap domains (uplink hostname + TLS name) → `dns-direct`; site bypass hosts → `dns-direct`; geosite rule-sets from API → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`, `optimistic: true` (sing-box 1.14). `experimental.cache_file`: всегда `enabled` + `store_dns` (path inject → `%LOCALAPPDATA%\DemarVpn\demar\cache.db`).
+Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); TUN process bypass → `dns-direct`; bootstrap domains (uplink hostname + TLS name) → `dns-direct`; site bypass hosts → `dns-direct`; **Ad block** (Plus/VIP, default on) → DNS `reject` by remote `geosite-category-ads`; geosite rule-sets from API → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`, `optimistic: true` (sing-box 1.14). `experimental.cache_file`: всегда `enabled` + `store_dns` (path inject → `%LOCALAPPDATA%\DemarVpn\demar\cache.db`).
+
+### Ad block (DNS)
+
+- Free: always off. Plus/VIP: default **on** (`tun_settings.json` `AdBlockEnabled` null → on); user can disable.
+- Before Connect: `RuleSetPrefetch` → `%LOCALAPPDATA%\DemarVpn\demar\rule-sets\geosite-category-ads.srs` + `initial_path` (parity Android cold start).
+- Remote rule-set: `geosite-category-ads` URL; updates via `http_clients` `rs-dl` → `detour: proxy` + `route.default_http_client` (not deprecated `download_detour`).
+- DNS only: `{ "rule_set": ["geosite-category-ads"], "action": "reject" }` — **не** route-direct; ads alone does not flip `dns-direct`.
+- Apply on next Connect (no live reconnect). UI: Settings → App settings → TUN settings.
 
 ---
 
 ## Route и TUN
 
-- TUN: **Wintun** (Windows), `strict_route: false`, `172.19.0.1/30`
+- TUN: **Wintun** (Windows), `strict_route: true` (blocks Windows multihomed DNS leak → adblock), `172.19.0.1/30`
 - Split `0.0.0.0/1` + `128.0.0.0/1` — всегда в `route_address`
 - `route_exclude_address` **всегда**: `127.0.0.0/8`, RFC1918 (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`) + uplink IPs
 - Route: **process bypass** → `127.0.0.0/8` / private direct → **geoip** rule-sets → uplink IPs → sniff (`timeout: 50ms`) → hijack-dns → QUIC reject (`method: default`) → **geosite** / site hosts / bootstrap → IPv6 reject (`method: default`) → proxy

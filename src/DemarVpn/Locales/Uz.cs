@@ -100,7 +100,7 @@ static class Uz
         ["Speed"] = "Tezlik",
         ["Traffic"] = "Trafik",
         ["Family invites*"] = "Oilaviy takliflar*",
-        ["Ad blocking*"] = "Reklama bloklash*",
+        ["Block ads via DNS"] = "DNS orqali reklamalarni bloklash",
         ["TUN settings"] = "TUN sozlamalari",
         ["Dedicated IP*"] = "Ajratilgan IP*",
         ["*Not available yet."] = "*Hali mavjud emas.",

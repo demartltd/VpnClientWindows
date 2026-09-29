@@ -100,7 +100,7 @@ static class Hi
         ["Speed"] = "स्पीड",
         ["Traffic"] = "ट्रैफ़िक",
         ["Family invites*"] = "फ़ैमिली आमंत्रण*",
-        ["Ad blocking*"] = "विज्ञापन ब्लॉक*",
+        ["Block ads via DNS"] = "DNS से विज्ञापन ब्लॉक करें",
         ["TUN settings"] = "TUN सेटिंग्स",
         ["Dedicated IP*"] = "समर्पित IP*",
         ["*Not available yet."] = "*अभी उपलब्ध नहीं।",

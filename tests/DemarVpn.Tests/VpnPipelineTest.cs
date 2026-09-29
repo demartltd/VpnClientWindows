@@ -77,7 +77,7 @@ public class VpnPipelineTest
 
         var inbounds = cfg["inbounds"]!.AsArray();
         var tun = inbounds.First(i => i!["type"]!.GetValue<string>() == "tun")!.AsObject();
-        Assert.False(tun["strict_route"]!.GetValue<bool>());
+        Assert.True(tun["strict_route"]!.GetValue<bool>());
         Assert.Equal("system", tun["stack"]!.GetValue<string>());
 
         var diag = inbounds.First(i => i!["type"]!.GetValue<string>() == "mixed")!.AsObject();
@@ -521,5 +521,48 @@ public class VpnPipelineTest
         var json = SingBoxConfigBuilder.BuildTunConfigJson(plan);
         Assert.Contains("\"up_mbps\": 10", json);
         Assert.Contains("\"down_mbps\": 10", json);
+    }
+
+    [Fact]
+    public void AdBlock_dnsRejectRuleSetAndNotRouteDirect()
+    {
+        var plan = Fixture().ConnectPlan;
+        const string seed = @"C:\tmp\geosite-category-ads.srs";
+        var on = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, adBlock: true, adsInitialPath: seed))!.AsObject();
+        Assert.Contains(
+            on["dns"]!["rules"]!.AsArray(),
+            r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true &&
+                 r!["action"]?.GetValue<string>() == "reject" &&
+                 r!["server"] is null);
+        Assert.Equal(SingBoxTags.HttpRuleSetDownload, on["route"]!["default_http_client"]!.GetValue<string>());
+        Assert.Equal(SingBoxTags.HttpRuleSetDownload, on["http_clients"]![0]!["tag"]!.GetValue<string>());
+        Assert.Equal(SingBoxTags.Proxy, on["http_clients"]![0]!["detour"]!.GetValue<string>());
+        Assert.Contains(
+            on["route"]!["rule_set"]!.AsArray(),
+            rs => rs!["tag"]!.GetValue<string>() == SingBoxTags.AdsRuleSetTag &&
+                  rs!["url"]!.GetValue<string>() == SingBoxTags.AdsRuleSetUrl &&
+                  rs!["initial_path"]!.GetValue<string>() == seed &&
+                  rs!["download_detour"] is null);
+        Assert.DoesNotContain(
+            on["route"]!["rules"]!.AsArray(),
+            r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true &&
+                 r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
+
+        var off = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, adBlock: false))!.AsObject();
+        Assert.DoesNotContain(
+            off["dns"]!["rules"]!.AsArray(),
+            r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true);
+        Assert.False(off["route"]!.AsObject().ContainsKey("rule_set"));
+        Assert.False(off.ContainsKey("http_clients"));
+    }
+
+    [Fact]
+    public void AdBlock_effectiveGate()
+    {
+        var paid = new TunSettings([], new Dictionary<string, bool>(), new Dictionary<string, bool>());
+        Assert.True(paid.IsAdBlockEnabled(false));
+        Assert.False(paid.IsAdBlockEnabled(true));
+        Assert.False((paid with { AdBlockEnabled = false }).IsAdBlockEnabled(false));
+        Assert.True((paid with { AdBlockEnabled = true }).IsAdBlockEnabled(false));
     }
 }

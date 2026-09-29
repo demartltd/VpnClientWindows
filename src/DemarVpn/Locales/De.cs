@@ -100,7 +100,7 @@ static class De
         ["Speed"] = "Geschwindigkeit",
         ["Traffic"] = "Traffic",
         ["Family invites*"] = "Familieneinladungen*",
-        ["Ad blocking*"] = "Werbeblocker*",
+        ["Block ads via DNS"] = "Werbung über DNS blockieren",
         ["TUN settings"] = "TUN-Einstellungen",
         ["Dedicated IP*"] = "Dedizierte IP*",
         ["*Not available yet."] = "*Noch nicht verfügbar.",

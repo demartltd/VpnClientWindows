@@ -35,7 +35,8 @@ public sealed record TunSettings(
     IReadOnlyList<string> BypassExes,
     IReadOnlyDictionary<string, bool> AppGroupOverrides,
     IReadOnlyDictionary<string, bool> SiteGroupOverrides,
-    bool RulesEnabled = true)
+    bool RulesEnabled = true,
+    bool? AdBlockEnabled = null)
 {
     private static readonly Dictionary<string, bool> EmptyOverrides = new(StringComparer.OrdinalIgnoreCase);
 
@@ -72,6 +73,9 @@ public static class TunEffective
 {
     public static bool IsRulesEnabled(this TunSettings settings, bool isFree) =>
         isFree || settings.RulesEnabled;
+
+    public static bool IsAdBlockEnabled(this TunSettings settings, bool isFree) =>
+        !isFree && (settings.AdBlockEnabled ?? true);
 
     public static bool IsAppGroupEnabled(this TunSettings settings, TunAppGroup group, bool isFree) =>
         ResolveEnabled(isFree, settings.AppGroupOverrides, group.Id, group.EnabledByDefault);

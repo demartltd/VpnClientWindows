@@ -100,7 +100,7 @@ static class ZhHant
         ["Speed"] = "速度",
         ["Traffic"] = "流量",
         ["Family invites*"] = "家庭邀請*",
-        ["Ad blocking*"] = "廣告封鎖*",
+        ["Block ads via DNS"] = "透過 DNS 封鎖廣告",
         ["TUN settings"] = "TUN 設定",
         ["Dedicated IP*"] = "專用 IP*",
         ["*Not available yet."] = "*尚未提供。",

@@ -100,7 +100,7 @@ static class Ru
         ["Speed"] = "Скорость",
         ["Traffic"] = "Трафик",
         ["Family invites*"] = "Семейные приглашения*",
-        ["Ad blocking*"] = "Блокировка рекламы*",
+        ["Block ads via DNS"] = "Блокировка рекламы через DNS",
         ["TUN settings"] = "Настройки TUN",
         ["Dedicated IP*"] = "Выделенный IP*",
         ["*Not available yet."] = "*Пока недоступно.",

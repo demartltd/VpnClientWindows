@@ -100,7 +100,7 @@ static class ZhHans
         ["Speed"] = "速度",
         ["Traffic"] = "流量",
         ["Family invites*"] = "家庭邀请*",
-        ["Ad blocking*"] = "广告拦截*",
+        ["Block ads via DNS"] = "通过 DNS 拦截广告",
         ["TUN settings"] = "TUN 设置",
         ["Dedicated IP*"] = "专属 IP*",
         ["*Not available yet."] = "*暂未提供。",

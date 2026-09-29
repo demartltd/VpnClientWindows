@@ -11,14 +11,20 @@ namespace DemarVpn.Views;
 
 public sealed partial class TunSettingsPage
 {
-    private Border BuildRulesCard(bool isFree)
+    private Border BuildAdBlockCard(bool isFree) =>
+        BuildToggleCard(Strings.SettingsTunAdBlockTitle, Strings.SettingsTunAdBlockSub, !isFree,
+            t => _adBlockToggle = t, v => AppServices.Vpn.SetAdBlockEnabled(v));
+
+    private Border BuildRulesCard(bool isFree) =>
+        BuildToggleCard(Strings.SettingsTunRulesTitle, Strings.SettingsTunRulesSub, !isFree,
+            t => _rulesToggle = t, AppServices.Vpn.SetTunRulesEnabled);
+
+    private Border BuildToggleCard(string title, string sub, bool enabled, Action<DemarToggle> bind, Action<bool> onToggle)
     {
-        _rulesToggle = new DemarToggle { IsEnabled = !isFree };
-        _rulesToggle.Toggled += (_, _) =>
-        {
-            if (_uiReady) AppServices.Vpn.SetTunRulesEnabled(_rulesToggle.IsOn);
-        };
-        return Card(WrapToggle(Strings.SettingsTunRulesTitle, Strings.SettingsTunRulesSub, _rulesToggle));
+        var toggle = new DemarToggle { IsEnabled = enabled };
+        toggle.Toggled += (_, _) => { if (_uiReady) onToggle(toggle.IsOn); };
+        bind(toggle);
+        return Card(WrapToggle(title, sub, toggle));
     }
 
     private static Button BuildBuyButton()

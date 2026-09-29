@@ -100,7 +100,7 @@ static class Ko
         ["Speed"] = "속도",
         ["Traffic"] = "트래픽",
         ["Family invites*"] = "패밀리 초대*",
-        ["Ad blocking*"] = "광고 차단*",
+        ["Block ads via DNS"] = "DNS로 광고 차단",
         ["TUN settings"] = "TUN 설정",
         ["Dedicated IP*"] = "전용 IP*",
         ["*Not available yet."] = "*아직 제공되지 않습니다.",

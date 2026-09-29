@@ -100,7 +100,7 @@ static class Tr
         ["Speed"] = "Hız",
         ["Traffic"] = "Trafik",
         ["Family invites*"] = "Aile davetleri*",
-        ["Ad blocking*"] = "Reklam engelleme*",
+        ["Block ads via DNS"] = "DNS ile reklamları engelle",
         ["TUN settings"] = "TUN ayarları",
         ["Dedicated IP*"] = "Özel IP*",
         ["*Not available yet."] = "*Henüz kullanılamıyor.",

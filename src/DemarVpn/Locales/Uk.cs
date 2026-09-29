@@ -100,7 +100,7 @@ static class Uk
         ["Speed"] = "Швидкість",
         ["Traffic"] = "Трафік",
         ["Family invites*"] = "Сімейні запрошення*",
-        ["Ad blocking*"] = "Блокування реклами*",
+        ["Block ads via DNS"] = "Блокувати рекламу через DNS",
         ["TUN settings"] = "Налаштування TUN",
         ["Dedicated IP*"] = "Виділений IP*",
         ["*Not available yet."] = "*Поки недоступно.",

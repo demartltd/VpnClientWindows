@@ -100,7 +100,7 @@ static class En
         ["Speed"] = "Speed",
         ["Traffic"] = "Traffic",
         ["Family invites*"] = "Family invites*",
-        ["Ad blocking*"] = "Ad blocking*",
+        ["Block ads via DNS"] = "Block ads via DNS",
         ["TUN settings"] = "TUN settings",
         ["Dedicated IP*"] = "Dedicated IP*",
         ["*Not available yet."] = "*Not available yet.",

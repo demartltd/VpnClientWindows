@@ -100,7 +100,7 @@ static class Ja
         ["Speed"] = "速度",
         ["Traffic"] = "トラフィック",
         ["Family invites*"] = "ファミリー招待*",
-        ["Ad blocking*"] = "広告ブロック*",
+        ["Block ads via DNS"] = "DNS で広告をブロック",
         ["TUN settings"] = "TUN 設定",
         ["Dedicated IP*"] = "専用 IP*",
         ["*Not available yet."] = "*まだ利用できません。",

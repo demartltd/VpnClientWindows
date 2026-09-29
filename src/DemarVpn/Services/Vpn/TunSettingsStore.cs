@@ -79,12 +79,19 @@ public static class TunSettingsStore
             return _settings.Fingerprint(_catalog, isFree);
     }
 
-    public static void SetRulesEnabled(bool enabled)
+    public static void SetRulesEnabled(bool enabled) =>
+        Mutate(s => s.RulesEnabled == enabled ? null : s with { RulesEnabled = enabled });
+
+    public static void SetAdBlockEnabled(bool? enabled) =>
+        Mutate(s => s.AdBlockEnabled == enabled ? null : s with { AdBlockEnabled = enabled });
+
+    static void Mutate(Func<TunSettings, TunSettings?> update)
     {
         lock (Gate)
         {
-            if (_settings.RulesEnabled == enabled) return;
-            _settings = _settings with { RulesEnabled = enabled };
+            var next = update(_settings);
+            if (next is null) return;
+            _settings = next;
             SaveToDisk();
         }
         Changed?.Invoke();
@@ -159,7 +166,8 @@ public static class TunSettingsStore
                 dto.BypassExes ?? [],
                 ToDict(dto.AppGroupOverrides),
                 ToDict(dto.SiteGroupOverrides),
-                dto.RulesEnabled ?? true);
+                dto.RulesEnabled ?? true,
+                dto.AdBlockEnabled);
             _groupsJson = dto.GroupsJson;
             if (!string.IsNullOrEmpty(_groupsJson))
                 _catalog = TunGroupsApi.Parse(_groupsJson);
@@ -178,6 +186,7 @@ public static class TunSettingsStore
                 AppGroupOverrides = _settings.AppGroupOverrides.ToDictionary(x => x.Key, x => x.Value),
                 SiteGroupOverrides = _settings.SiteGroupOverrides.ToDictionary(x => x.Key, x => x.Value),
                 RulesEnabled = _settings.RulesEnabled,
+                AdBlockEnabled = _settings.AdBlockEnabled,
                 GroupsJson = _groupsJson,
             };
             File.WriteAllText(FilePath, JsonSerializer.Serialize(dto, JsonOpts));
@@ -197,6 +206,7 @@ public static class TunSettingsStore
         public Dictionary<string, bool>? AppGroupOverrides { get; set; }
         public Dictionary<string, bool>? SiteGroupOverrides { get; set; }
         public bool? RulesEnabled { get; set; }
+        public bool? AdBlockEnabled { get; set; }
         public string? GroupsJson { get; set; }
     }
 }

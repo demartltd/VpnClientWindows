@@ -12,4 +12,8 @@ public static class SingBoxTags
     public const string Direct = "direct";
     public const string DnsDirect = "dns-direct";
     public const string DnsRemote = "dns-remote";
+    public const string AdsRuleSetTag = "geosite-category-ads";
+    public const string AdsRuleSetUrl =
+        "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads.srs";
+    public const string HttpRuleSetDownload = "rs-dl";
 }

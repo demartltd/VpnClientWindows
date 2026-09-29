@@ -100,7 +100,7 @@ static class Fr
         ["Speed"] = "Vitesse",
         ["Traffic"] = "Trafic",
         ["Family invites*"] = "Invitations famille*",
-        ["Ad blocking*"] = "Blocage des pubs*",
+        ["Block ads via DNS"] = "Bloquer les pubs via DNS",
         ["TUN settings"] = "Réglages TUN",
         ["Dedicated IP*"] = "IP dédiée*",
         ["*Not available yet."] = "*Pas encore disponible.",
