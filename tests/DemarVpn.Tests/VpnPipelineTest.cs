@@ -55,7 +55,7 @@ public class VpnPipelineTest
         Assert.True(route["rules"]!.AsArray().Any(r => r!["action"]?.GetValue<string>() == "hijack-dns"));
         Assert.Contains(route["rules"]!.AsArray(), r =>
             r!["action"]?.GetValue<string>() == "sniff" &&
-            r!["timeout"]?.GetValue<string>() == "50ms");
+            r!["timeout"]?.GetValue<string>() == "300ms");
         Assert.Contains(route["rules"]!.AsArray(), r =>
             r!["action"]?.GetValue<string>() == "reject" &&
             r!["method"]?.GetValue<string>() == "default" &&
@@ -65,6 +65,7 @@ public class VpnPipelineTest
         var dns = cfg["dns"]!.AsObject();
         Assert.Equal(SingBoxTags.DnsRemote, dns["final"]!.GetValue<string>());
         Assert.True(dns["optimistic"]!.GetValue<bool>());
+        Assert.True(dns["reverse_mapping"]!.GetValue<bool>());
         var dnsRemote = dns["servers"]!.AsArray()
             .First(s => s!["tag"]!.GetValue<string>() == SingBoxTags.DnsRemote)!.AsObject();
         Assert.Equal("8s", dnsRemote["connect_timeout"]!.GetValue<string>());
@@ -177,7 +178,7 @@ public class VpnPipelineTest
             r!["port"]?.AsArray().Any(p => p!.GetValue<int>() == 443) == true);
 
         Assert.True(processIdx < privateIdx && privateIdx < sniffIdx && sniffIdx < hijackIdx && hijackIdx < quicIdx);
-        Assert.Equal("50ms", rules[sniffIdx]!["timeout"]!.GetValue<string>());
+        Assert.Equal("300ms", rules[sniffIdx]!["timeout"]!.GetValue<string>());
     }
 
     [Fact]
@@ -509,6 +510,7 @@ public class VpnPipelineTest
         Assert.True(cache["enabled"]!.GetValue<bool>());
         Assert.True(cache["store_dns"]!.GetValue<bool>());
         Assert.True(cfg["dns"]!["optimistic"]!.GetValue<bool>());
+        Assert.True(cfg["dns"]!["reverse_mapping"]!.GetValue<bool>());
     }
 
     [Fact]
@@ -524,36 +526,84 @@ public class VpnPipelineTest
     }
 
     [Fact]
-    public void AdBlock_dnsRejectRuleSetAndNotRouteDirect()
+    public void AdBlock_localRuleSetDnsAndRouteReject()
     {
         var plan = Fixture().ConnectPlan;
         const string seed = @"C:\tmp\geosite-category-ads.srs";
-        var on = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, adBlock: true, adsInitialPath: seed))!.AsObject();
+        var on = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, adsPath: seed))!.AsObject();
+
         Assert.Contains(
             on["dns"]!["rules"]!.AsArray(),
             r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true &&
                  r!["action"]?.GetValue<string>() == "reject" &&
-                 r!["server"] is null);
-        Assert.Equal(SingBoxTags.HttpRuleSetDownload, on["route"]!["default_http_client"]!.GetValue<string>());
-        Assert.Equal(SingBoxTags.HttpRuleSetDownload, on["http_clients"]![0]!["tag"]!.GetValue<string>());
-        Assert.Equal(SingBoxTags.Proxy, on["http_clients"]![0]!["detour"]!.GetValue<string>());
+                 r!["no_drop"]?.GetValue<bool>() == true);
+        var routeRules = on["route"]!["rules"]!.AsArray();
+        Assert.Contains(
+            routeRules,
+            r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true &&
+                 r!["action"]?.GetValue<string>() == "reject" &&
+                 r!["no_drop"]?.GetValue<bool>() == true);
+        var sniffIdx = IndexOf(routeRules, r => r!["action"]?.GetValue<string>() == "sniff");
+        var adsIdx = IndexOf(routeRules, r =>
+            r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true &&
+            r!["action"]?.GetValue<string>() == "reject");
+        Assert.True(sniffIdx >= 0 && adsIdx > sniffIdx);
         Assert.Contains(
             on["route"]!["rule_set"]!.AsArray(),
             rs => rs!["tag"]!.GetValue<string>() == SingBoxTags.AdsRuleSetTag &&
-                  rs!["url"]!.GetValue<string>() == SingBoxTags.AdsRuleSetUrl &&
-                  rs!["initial_path"]!.GetValue<string>() == seed &&
-                  rs!["download_detour"] is null);
+                  rs!["type"]!.GetValue<string>() == "local" &&
+                  rs!["path"]!.GetValue<string>() == seed &&
+                  rs!["url"] is null);
+        Assert.False(on.ContainsKey("http_clients"));
         Assert.DoesNotContain(
-            on["route"]!["rules"]!.AsArray(),
+            routeRules,
             r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true &&
                  r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
 
-        var off = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, adBlock: false))!.AsObject();
+        var off = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan))!.AsObject();
         Assert.DoesNotContain(
             off["dns"]!["rules"]!.AsArray(),
             r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true);
         Assert.False(off["route"]!.AsObject().ContainsKey("rule_set"));
-        Assert.False(off.ContainsKey("http_clients"));
+    }
+
+    [Fact]
+    public void AdBlock_blankAdsPath_omitsAds()
+    {
+        var plan = Fixture().ConnectPlan;
+        foreach (var blank in new[] { null, "", "  " })
+        {
+            var cfg = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, adsPath: blank))!.AsObject();
+            Assert.DoesNotContain(
+                cfg["dns"]!["rules"]!.AsArray(),
+                r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true);
+            Assert.False(cfg["route"]!.AsObject().ContainsKey("rule_set"));
+        }
+    }
+
+    [Fact]
+    public void AdBlock_withGeosite_keepsAdsAndBypass()
+    {
+        var plan = SingBoxConnectPlan.Hysteria2(
+            Fixture().Profile,
+            [
+                new ApiBypassRuleSet(
+                    "geosite-category-ru",
+                    "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ru.srs"),
+            ]);
+        const string seed = @"C:\tmp\geosite-category-ads.srs";
+        var cfg = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, adsPath: seed))!.AsObject();
+        var sets = cfg["route"]!["rule_set"]!.AsArray();
+        Assert.Contains(sets, rs => rs!["tag"]!.GetValue<string>() == SingBoxTags.AdsRuleSetTag && rs!["type"]!.GetValue<string>() == "local");
+        Assert.Contains(sets, rs => rs!["tag"]!.GetValue<string>() == "geosite-category-ru" && rs!["type"]!.GetValue<string>() == "remote");
+        Assert.Contains(
+            cfg["dns"]!["rules"]!.AsArray(),
+            r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true &&
+                 r!["action"]?.GetValue<string>() == "reject");
+        Assert.Contains(
+            cfg["dns"]!["rules"]!.AsArray(),
+            r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == "geosite-category-ru") == true &&
+                 r!["server"]?.GetValue<string>() == SingBoxTags.DnsDirect);
     }
 
     [Fact]

@@ -88,14 +88,14 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 | `dns-direct` | UDP `1.1.1.1` | bootstrap, domain resolver |
 | `dns-remote` | HTTPS `1.1.1.1` | DoH через proxy |
 
-Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); TUN process bypass → `dns-direct`; bootstrap domains (uplink hostname + TLS name) → `dns-direct`; site bypass hosts → `dns-direct`; **Ad block** (Plus/VIP, default on) → DNS `reject` by remote `geosite-category-ads`; geosite rule-sets from API → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`, `optimistic: true` (sing-box 1.14). `experimental.cache_file`: всегда `enabled` + `store_dns` (path inject → `%LOCALAPPDATA%\DemarVpn\demar\cache.db`).
+Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); TUN process bypass → `dns-direct`; bootstrap domains (uplink hostname + TLS name) → `dns-direct`; site bypass hosts → `dns-direct`; **Ad block** (Plus/VIP, default on) → DNS `reject` by local `geosite-category-ads`; geosite rule-sets from API → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`, `reverse_mapping: true` (parity Apple; IP→domain for route without FakeIP), `optimistic: true` (sing-box 1.14). `experimental.cache_file`: всегда `enabled` + `store_dns` (path inject → `%LOCALAPPDATA%\DemarVpn\demar\cache.db`).
 
-### Ad block (DNS)
+### Ad block (DNS + route)
 
 - Free: always off. Plus/VIP: default **on** (`tun_settings.json` `AdBlockEnabled` null → on); user can disable.
-- Before Connect: `RuleSetPrefetch` → `%LOCALAPPDATA%\DemarVpn\demar\rule-sets\geosite-category-ads.srs` + `initial_path` (parity Android cold start).
-- Remote rule-set: `geosite-category-ads` URL; updates via `http_clients` `rs-dl` → `detour: proxy` + `route.default_http_client` (not deprecated `download_detour`).
-- DNS only: `{ "rule_set": ["geosite-category-ads"], "action": "reject" }` — **не** route-direct; ads alone does not flip `dns-direct`.
+- Build: `scripts/for_builds/sync_ads_ruleset.ps1` → DustinWin `ads.srs` as `Assets/rule-sets/geosite-category-ads.srs` (gitignore; called from `build_windows.ps1`).
+- Connect: bundled path → sing-box `type: local` / `format: binary` (parity Apple/Android; offline, no network).
+- DNS + route: `{ "rule_set": ["geosite-category-ads"], "action": "reject" }` — DNS uses `no_drop: true` (avoid sing-box drop-after-50 → Chrome DoH fallback on rapid ad-block tests).
 - Apply on next Connect (no live reconnect). UI: Settings → App settings → TUN settings.
 
 ---
@@ -105,7 +105,7 @@ Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); TUN process byp
 - TUN: **Wintun** (Windows), `strict_route: true` (blocks Windows multihomed DNS leak → adblock), `172.19.0.1/30`
 - Split `0.0.0.0/1` + `128.0.0.0/1` — всегда в `route_address`
 - `route_exclude_address` **всегда**: `127.0.0.0/8`, RFC1918 (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`) + uplink IPs
-- Route: **process bypass** → `127.0.0.0/8` / private direct → **geoip** rule-sets → uplink IPs → sniff (`timeout: 50ms`) → hijack-dns → QUIC reject (`method: default`) → **geosite** / site hosts / bootstrap → IPv6 reject (`method: default`) → proxy
+- Route: **process bypass** → `127.0.0.0/8` / private direct → **geoip** rule-sets → uplink IPs → sniff (`timeout: 300ms`) → hijack-dns → QUIC reject (`method: default`) → **ads reject** (if on; after sniff for SNI) → **geosite** / site hosts / bootstrap → IPv6 reject (`method: default`) → proxy
 - Windows process bypass = route + DNS `process_name` (не OS `exclude_package`); список из API-групп + свои `.exe` + всегда `sing-box.exe` / app; смена TUN → reconnect; IP/process **до** sniff (TCP pre-match останавливается на sniff)
 - `default_domain_resolver`: `dns-direct`, `ipv4_only`
 

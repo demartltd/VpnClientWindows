@@ -13,19 +13,17 @@ public static class SingBoxConfigBuilder
     public static string BuildTunConfigJson(
         SingBoxConnectPlan plan,
         TunBypassOptions? bypass = null,
-        bool adBlock = false,
-        string? adsInitialPath = null,
+        string? adsPath = null,
         string tunName = "DemarVPN",
         int mtu = 1492,
         string logLevel = "warning") =>
-        BuildTunConfig(plan, bypass ?? TunBypassOptions.Empty, adBlock, adsInitialPath, tunName, mtu, logLevel)
+        BuildTunConfig(plan, bypass ?? TunBypassOptions.Empty, adsPath, tunName, mtu, logLevel)
             .ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 
     private static JsonObject BuildTunConfig(
         SingBoxConnectPlan plan,
         TunBypassOptions bypass,
-        bool adBlock,
-        string? adsInitialPath,
+        string? adsPath,
         string tunName,
         int mtu,
         string logLevel)
@@ -34,10 +32,11 @@ public static class SingBoxConfigBuilder
         var ruleSets = plan.BypassRuleSets.DistinctBy(rs => rs.Tag).ToList();
         var bypassExes = SelfBypassExes(bypass.BypassExes);
         var bypassHosts = CleanedDomains(bypass.BypassHosts);
-        var cfg = new JsonObject
+        var ads = string.IsNullOrWhiteSpace(adsPath) ? null : adsPath.Trim();
+        return new JsonObject
         {
             ["log"] = new JsonObject { ["level"] = logLevel, ["timestamp"] = true },
-            ["dns"] = MakeDns(plan.Tun.DnsFinal, bootstrap, ruleSets, bypassExes, bypassHosts, adBlock),
+            ["dns"] = MakeDns(plan.Tun.DnsFinal, bootstrap, ruleSets, bypassExes, bypassHosts, ads),
             ["inbounds"] = new JsonArray(MakeTunInbound(tunName, mtu, plan.DirectIPs), new JsonObject
             {
                 ["type"] = "mixed",
@@ -45,7 +44,7 @@ public static class SingBoxConfigBuilder
                 ["listen"] = SingBoxTags.DiagListenHost,
                 ["listen_port"] = SingBoxTags.DiagListenPort,
             }),
-            ["route"] = MakeRoute(SingBoxTags.TunInbound, plan.DirectIPs, bootstrap, ruleSets, bypassExes, bypassHosts, adBlock, adsInitialPath),
+            ["route"] = MakeRoute(SingBoxTags.TunInbound, plan.DirectIPs, bootstrap, ruleSets, bypassExes, bypassHosts, ads),
             ["outbounds"] = new JsonArray(ToJson(plan.ProxyOutbound), new JsonObject
             {
                 ["type"] = "direct",
@@ -60,15 +59,6 @@ public static class SingBoxConfigBuilder
                 ["cache_file"] = new JsonObject { ["enabled"] = true, ["store_dns"] = true },
             },
         };
-        if (adBlock)
-        {
-            cfg["http_clients"] = new JsonArray(new JsonObject
-            {
-                ["tag"] = SingBoxTags.HttpRuleSetDownload,
-                ["detour"] = SingBoxTags.Proxy,
-            });
-        }
-        return cfg;
     }
 
     private static JsonObject MakeDns(
@@ -77,7 +67,7 @@ public static class SingBoxConfigBuilder
         IReadOnlyList<ApiBypassRuleSet> ruleSets,
         IReadOnlyList<string> bypassExes,
         IReadOnlyList<string> bypassHosts,
-        bool adBlock)
+        string? adsPath)
     {
         var rules = new JsonArray(
             new JsonObject { ["query_type"] = Arr("PTR"), ["action"] = "reject", ["method"] = "drop" },
@@ -93,8 +83,8 @@ public static class SingBoxConfigBuilder
             rules.Add(DnsRoute("domain", bootstrap));
         if (bypassHosts.Count > 0)
             rules.Add(DnsRoute("domain_suffix", bypassHosts));
-        if (adBlock)
-            rules.Add(new JsonObject { ["rule_set"] = Arr(SingBoxTags.AdsRuleSetTag), ["action"] = "reject" });
+        if (adsPath is not null)
+            rules.Add(AdsReject());
         foreach (var rs in ruleSets.Where(r => r.IsGeosite))
             rules.Add(DnsRoute("rule_set", [rs.Tag]));
         return new JsonObject
@@ -112,6 +102,7 @@ public static class SingBoxConfigBuilder
             ["rules"] = rules,
             ["final"] = dnsFinal,
             ["strategy"] = "ipv4_only",
+            ["reverse_mapping"] = true,
             ["optimistic"] = true,
         };
     }
@@ -123,8 +114,7 @@ public static class SingBoxConfigBuilder
         IReadOnlyList<ApiBypassRuleSet> ruleSets,
         IReadOnlyList<string> bypassExes,
         IReadOnlyList<string> bypassHosts,
-        bool adBlock,
-        string? adsInitialPath)
+        string? adsPath)
     {
         var rules = new JsonArray();
         if (bypassExes.Count > 0)
@@ -136,10 +126,12 @@ public static class SingBoxConfigBuilder
         foreach (var ip in directIPs)
             rules.Add(OutRoute("ip_cidr", [$"{ip}/32"]));
 
-        rules.Add(new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "sniff", ["timeout"] = "50ms" });
+        // Sniff before domain rule-sets (ads / geosite) — SNI unknown earlier.
+        rules.Add(new JsonObject { ["inbound"] = Arr(inboundTag), ["action"] = "sniff", ["timeout"] = "300ms" });
         rules.Add(new JsonObject { ["protocol"] = "dns", ["action"] = "hijack-dns" });
         rules.Add(new JsonObject { ["network"] = Arr("udp"), ["port"] = Arr(443), ["action"] = "reject", ["method"] = "default" });
-
+        if (adsPath is not null)
+            rules.Add(AdsReject());
         foreach (var rs in ruleSets.Where(r => r.IsGeosite))
             rules.Add(OutRoute("rule_set", [rs.Tag]));
         if (bypassHosts.Count > 0)
@@ -158,16 +150,13 @@ public static class SingBoxConfigBuilder
             ["final"] = SingBoxTags.Proxy,
             ["rules"] = rules,
         };
-        if (ruleSets.Count > 0 || adBlock)
+        if (ruleSets.Count > 0 || adsPath is not null)
         {
             var sets = new JsonArray();
             foreach (var rs in ruleSets)
-                sets.Add(RemoteRuleSet(rs.Tag, rs.Url, SingBoxTags.Direct));
-            if (adBlock)
-            {
-                sets.Add(RemoteRuleSet(SingBoxTags.AdsRuleSetTag, SingBoxTags.AdsRuleSetUrl, initialPath: adsInitialPath));
-                route["default_http_client"] = SingBoxTags.HttpRuleSetDownload;
-            }
+                sets.Add(RemoteRuleSet(rs.Tag, rs.Url));
+            if (adsPath is not null)
+                sets.Add(LocalAds(adsPath));
             route["rule_set"] = sets;
         }
         return route;
@@ -195,6 +184,22 @@ public static class SingBoxConfigBuilder
         };
     }
 
+    /// <summary>DNS+route ads reject. <c>no_drop</c> keeps REFUSED (not drop-after-50 → Chrome DoH).</summary>
+    private static JsonObject AdsReject() => new()
+    {
+        ["rule_set"] = Arr(SingBoxTags.AdsRuleSetTag),
+        ["action"] = "reject",
+        ["no_drop"] = true,
+    };
+
+    private static JsonObject LocalAds(string path) => new()
+    {
+        ["tag"] = SingBoxTags.AdsRuleSetTag,
+        ["type"] = "local",
+        ["format"] = "binary",
+        ["path"] = path,
+    };
+
     private static JsonObject DnsRoute(string key, IEnumerable<object?> vals) => new()
     {
         [key] = Arr(vals),
@@ -209,19 +214,14 @@ public static class SingBoxConfigBuilder
         ["outbound"] = outbound,
     };
 
-    private static JsonObject RemoteRuleSet(string tag, string url, string? downloadDetour = null, string? initialPath = null)
+    private static JsonObject RemoteRuleSet(string tag, string url) => new()
     {
-        var o = new JsonObject
-        {
-            ["tag"] = tag,
-            ["type"] = "remote",
-            ["format"] = "binary",
-            ["url"] = url,
-        };
-        if (downloadDetour is not null) o["download_detour"] = downloadDetour;
-        if (!string.IsNullOrWhiteSpace(initialPath)) o["initial_path"] = initialPath;
-        return o;
-    }
+        ["tag"] = tag,
+        ["type"] = "remote",
+        ["format"] = "binary",
+        ["url"] = url,
+        ["download_detour"] = SingBoxTags.Direct,
+    };
 
     private static List<string> SelfBypassExes(IReadOnlyList<string> bypassExes)
     {

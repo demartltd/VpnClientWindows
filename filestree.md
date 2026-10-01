@@ -69,7 +69,7 @@ src/DemarVpn/
 │   ├── ProtocolRegistration.cs    # demarvpn:// HKCU
 │   └── SnackbarService.cs
 ├── Models/
-├── Assets/                        # AppIcon.ico, logos, BrandIcons.xaml, Flags/, singbox/
+├── Assets/                        # AppIcon.ico, logos, BrandIcons.xaml, Flags/, singbox/, rule-sets/ (ads .srs synced on build)
 └── Native/
     └── bin/                       # sing-box.exe, wintun.dll, libcronet.dll (gitignore)
 ```
@@ -117,7 +117,8 @@ scripts/
 ├── journal.ps1                    # AppLog journal (parity adb/journal.sh)
 ├── for_builds/
 │   ├── singbox-build-windows.py
-│   └── build_windows.ps1          # publish app + Updater.exe
+│   ├── sync_ads_ruleset.ps1       # DustinWin ads.srs → Assets/rule-sets/
+│   └── build_windows.ps1          # sync ads + publish app + Updater.exe
 ├── port_brand_icons.py
 ├── other/
 │   └── port_country_flags.py

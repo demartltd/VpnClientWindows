@@ -37,6 +37,9 @@ src/DemarVpn/Native/bin/
 !**/singbox/bundled_version.txt
 !**/singbox/README.txt
 
+# Ads rule-set — fetched by scripts/for_builds/build_windows.ps1
+src/DemarVpn/Assets/rule-sets/*.srs
+
 # Python
 .venv/
 __pycache__/
