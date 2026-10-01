@@ -1,8 +1,10 @@
 using DemarVpn.Services;
+using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Windows.Graphics;
+using Windows.UI;
 
 namespace DemarVpn;
 
@@ -17,6 +19,7 @@ public sealed partial class MainWindow : Window
         Title = Strings.AppName;
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+        ApplyDarkCaptionButtons();
         var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
         if (File.Exists(iconPath))
             AppWindow.SetIcon(iconPath);
@@ -60,6 +63,24 @@ public sealed partial class MainWindow : Window
     {
         if (MicaController.IsSupported())
             SystemBackdrop = new MicaBackdrop { Kind = MicaKind.BaseAlt };
+    }
+
+    // Caption glyphs follow OS theme; force light icons for our dark-only chrome.
+    private void ApplyDarkCaptionButtons()
+    {
+        if (!AppWindowTitleBar.IsCustomizationSupported()) return;
+        var tb = AppWindow.TitleBar;
+        var fg = Colors.White;
+        var hover = Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF);
+        var pressed = Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF);
+        tb.ButtonBackgroundColor = Colors.Transparent;
+        tb.ButtonInactiveBackgroundColor = Colors.Transparent;
+        tb.ButtonForegroundColor = fg;
+        tb.ButtonInactiveForegroundColor = Color.FromArgb(0x99, 0xFF, 0xFF, 0xFF);
+        tb.ButtonHoverForegroundColor = fg;
+        tb.ButtonPressedForegroundColor = fg;
+        tb.ButtonHoverBackgroundColor = hover;
+        tb.ButtonPressedBackgroundColor = pressed;
     }
 
     private void CenterOnScreen(SizeInt32 size, RectInt32 work)
