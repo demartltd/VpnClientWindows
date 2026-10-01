@@ -29,7 +29,7 @@ public sealed class AuthSession : NotifyBase
 
     public async Task SignOutAsync()
     {
-        await AuthRepository.SignOutAsync();
+        await AuthRepository.SignOutAsync().ConfigureAwait(false);
         NotifyChanged();
     }
 }

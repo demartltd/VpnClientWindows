@@ -42,7 +42,7 @@ public static class PayApi
 
     public static async Task WarmPlansAsync(CancellationToken ct = default)
     {
-        try { await FetchPlansAsync(ct); }
+        try { await FetchPlansAsync(ct).ConfigureAwait(false); }
         catch { /* preload best-effort */ }
     }
 
@@ -60,7 +60,7 @@ public static class PayApi
         try
         {
             var catalog = ParseCatalog(
-                await DemarHttp.GetJsonAsync($"{DemarHttp.VpnApiBaseUrl}/vpn/pay/plans", ct: ct));
+                await DemarHttp.GetJsonAsync($"{DemarHttp.VpnApiBaseUrl}/vpn/pay/plans", ct: ct).ConfigureAwait(false));
             if (catalog.Tiers.Count > 0)
             {
                 lock (PlansGate) _cachedPlans = catalog;
@@ -86,7 +86,8 @@ public static class PayApi
             ["currency"] = currency.ToUpperInvariant(),
         };
         if (!string.IsNullOrWhiteSpace(code)) body["code"] = code;
-        return ParseCheckout(await DemarHttp.PostJsonAsync($"{DemarHttp.VpnApiBaseUrl}/vpn/pay/create", body, ct))
+        return ParseCheckout(await DemarHttp.PostJsonAsync($"{DemarHttp.VpnApiBaseUrl}/vpn/pay/create", body, ct)
+                   .ConfigureAwait(false))
                ?? throw new AuthException("invalid_checkout", 502);
     }
 

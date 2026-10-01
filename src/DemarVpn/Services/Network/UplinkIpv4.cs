@@ -33,7 +33,7 @@ public static class UplinkIpv4
             {
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 cts.CancelAfter(AttemptMs);
-                var ips = (await Dns.GetHostAddressesAsync(trimmed, cts.Token))
+                var ips = (await Dns.GetHostAddressesAsync(trimmed, cts.Token).ConfigureAwait(false))
                     .Where(a => a.AddressFamily == AddressFamily.InterNetwork)
                     .Select(a => a.ToString())
                     .Where(s => s.Length > 0)
@@ -53,7 +53,7 @@ public static class UplinkIpv4
             {
                 last = ex is OperationCanceledException ? $"timeout {AttemptMs}ms" : ex.Message;
             }
-            if (attempt < attempts - 1) await Task.Delay(100, ct);
+            if (attempt < attempts - 1) await Task.Delay(100, ct).ConfigureAwait(false);
         }
 
         if (Cache.TryGetValue(trimmed, out cached) && cached.Length > 0)
@@ -65,7 +65,7 @@ public static class UplinkIpv4
     public static async Task<IReadOnlyList<string>> ResolveAsync(
         string host, int attempts, CancellationToken ct = default)
     {
-        var (ips, _) = await ResolveDetailedAsync(host, attempts, ct);
+        var (ips, _) = await ResolveDetailedAsync(host, attempts, ct).ConfigureAwait(false);
         return ips;
     }
 }

@@ -45,7 +45,7 @@ internal sealed class ProcessJobLink : IDisposable
     }
 
     [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern IntPtr CreateJobObject(IntPtr? lpJobAttributes, string? lpName);
+    private static extern IntPtr CreateJobObject(IntPtr lpJobAttributes, string? lpName);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool SetInformationJobObject(

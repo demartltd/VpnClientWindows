@@ -72,9 +72,9 @@ public static class AccountStore
             VpnAccount? account = null;
             VpnTraffic? traffic = null;
             Exception? err = null;
-            try { account = await accountTask; }
+            try { account = await accountTask.ConfigureAwait(false); }
             catch (Exception e) { err = e; }
-            try { traffic = await trafficTask; }
+            try { traffic = await trafficTask.ConfigureAwait(false); }
             catch (Exception e) { err ??= e; }
 
             lock (Gate)

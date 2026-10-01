@@ -9,10 +9,10 @@ namespace DemarVpn.Services.Account;
 public static class VpnAccountApi
 {
     public static async Task<VpnAccount> FetchAccountAsync(string userId, string loginAt, CancellationToken ct = default) =>
-        ParseAccount(await PostAsync("/vpn/account", SessionBody(userId, loginAt), ct));
+        ParseAccount(await PostAsync("/vpn/account", SessionBody(userId, loginAt), ct).ConfigureAwait(false));
 
     public static async Task<VpnTraffic> FetchTrafficAsync(string userId, string loginAt, CancellationToken ct = default) =>
-        ParseTraffic(await PostAsync("/vpn/traffic", SessionBody(userId, loginAt), ct));
+        ParseTraffic(await PostAsync("/vpn/traffic", SessionBody(userId, loginAt), ct).ConfigureAwait(false));
 
     public static async Task<VpnNotify> UpdateNotifyAsync(
         string userId, string loginAt, bool? notifyNews = null, bool? notifyImportant = null, CancellationToken ct = default)
@@ -20,14 +20,14 @@ public static class VpnAccountApi
         var body = SessionBody(userId, loginAt);
         if (notifyNews is not null) body["notifyNews"] = notifyNews;
         if (notifyImportant is not null) body["notifyImportant"] = notifyImportant;
-        var json = await PostAsync("/vpn/notify", body, ct);
+        var json = await PostAsync("/vpn/notify", body, ct).ConfigureAwait(false);
         return new(
             DemarHttp.OptBool(json, "notifyNews", true),
             DemarHttp.OptBool(json, "notifyImportant", true));
     }
 
     public static async Task<PromoResult> ActivatePromoAsync(string userId, string loginAt, string code, CancellationToken ct = default) =>
-        await PostPromoAsync("/vpn/promo/activate", userId, loginAt, code, ct);
+        await PostPromoAsync("/vpn/promo/activate", userId, loginAt, code, ct).ConfigureAwait(false);
 
     /** Discount preview for checkout (does not consume the code). */
     public static Task<PromoResult> ApplyPromoAsync(string userId, string loginAt, string code, CancellationToken ct = default) =>
@@ -55,7 +55,7 @@ public static class VpnAccountApi
     {
         var body = SessionBody(userId, loginAt);
         body["code"] = code.Trim().ToUpperInvariant();
-        return ParsePromo(await PostAsync(path, body, ct));
+        return ParsePromo(await PostAsync(path, body, ct).ConfigureAwait(false));
     }
 
     public static VpnAccount ParseAccount(JsonObject json) => new(

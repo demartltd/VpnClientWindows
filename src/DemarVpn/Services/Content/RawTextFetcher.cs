@@ -26,8 +26,9 @@ public static class RawTextFetcher
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
         linked.CancelAfter(TimeoutMs);
-        using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseContentRead, linked.Token);
-        var bytes = await resp.Content.ReadAsByteArrayAsync(linked.Token);
+        using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseContentRead, linked.Token)
+            .ConfigureAwait(false);
+        var bytes = await resp.Content.ReadAsByteArrayAsync(linked.Token).ConfigureAwait(false);
         return Decode((int)resp.StatusCode, bytes);
     }
 

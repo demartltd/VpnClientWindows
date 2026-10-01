@@ -100,16 +100,13 @@ public static class DemarHttp
     {
         try
         {
-            return await Task.Run(async () =>
-            {
-                using var req = createRequest();
-                using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                linked.CancelAfter(ConnectTimeoutMs + ReadTimeoutMs);
-                using var res = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, linked.Token)
-                    .ConfigureAwait(false);
-                var raw = await res.Content.ReadAsStringAsync(linked.Token).ConfigureAwait(false);
-                return res.IsSuccessStatusCode ? raw : null;
-            }, ct).ConfigureAwait(false);
+            using var req = createRequest();
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            linked.CancelAfter(ConnectTimeoutMs + ReadTimeoutMs);
+            using var res = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, linked.Token)
+                .ConfigureAwait(false);
+            var raw = await res.Content.ReadAsStringAsync(linked.Token).ConfigureAwait(false);
+            return res.IsSuccessStatusCode ? raw : null;
         }
         catch
         {
@@ -119,47 +116,44 @@ public static class DemarHttp
 
     private static async Task<JsonObject> SendAsync(Func<HttpRequestMessage> createRequest, CancellationToken ct)
     {
-        return await Task.Run(async () =>
+        using var req = createRequest();
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        linked.CancelAfter(ConnectTimeoutMs + ReadTimeoutMs);
+        try
         {
-            using var req = createRequest();
-            using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            linked.CancelAfter(ConnectTimeoutMs + ReadTimeoutMs);
-            try
+            using var res = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, linked.Token)
+                .ConfigureAwait(false);
+            var raw = await res.Content.ReadAsStringAsync(linked.Token).ConfigureAwait(false);
+            var json = ParseObject(raw);
+            if (!res.IsSuccessStatusCode)
             {
-                using var res = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, linked.Token)
-                    .ConfigureAwait(false);
-                var raw = await res.Content.ReadAsStringAsync(linked.Token).ConfigureAwait(false);
-                var json = ParseObject(raw);
-                if (!res.IsSuccessStatusCode)
-                {
-                    var message = OptString(json, "error") ?? $"HTTP {(int)res.StatusCode}";
-                    var retry = OptInt(json, "retryAfterSeconds");
-                    var hint = OptString(json, "hint");
-                    AppLog.Append($"auth http: {(int)res.StatusCode} {message} hint={hint}");
-                    throw new AuthException(message, (int)res.StatusCode, retry > 0 ? retry : null, hint);
-                }
-                return json;
+                var message = OptString(json, "error") ?? $"HTTP {(int)res.StatusCode}";
+                var retry = OptInt(json, "retryAfterSeconds");
+                var hint = OptString(json, "hint");
+                AppLog.Append($"auth http: {(int)res.StatusCode} {message} hint={hint}");
+                throw new AuthException(message, (int)res.StatusCode, retry > 0 ? retry : null, hint);
             }
-            catch (AuthException)
-            {
-                throw;
-            }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-            {
-                AppLog.Append("auth http: timeout");
-                throw new AuthException(Strings.LoginErrorNetwork);
-            }
-            catch (HttpRequestException ex)
-            {
-                AppLog.Append($"auth http: network — {ex.Message}");
-                throw new AuthException(Strings.LoginErrorNetwork);
-            }
-            catch (Exception ex)
-            {
-                AppLog.Append($"auth http: failed — {ex.GetType().Name}: {ex.Message}");
-                throw new AuthException(Strings.LoginErrorGeneric);
-            }
-        }, ct).ConfigureAwait(false);
+            return json;
+        }
+        catch (AuthException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            AppLog.Append("auth http: timeout");
+            throw new AuthException(Strings.LoginErrorNetwork);
+        }
+        catch (HttpRequestException ex)
+        {
+            AppLog.Append($"auth http: network — {ex.Message}");
+            throw new AuthException(Strings.LoginErrorNetwork);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Append($"auth http: failed — {ex.GetType().Name}: {ex.Message}");
+            throw new AuthException(Strings.LoginErrorGeneric);
+        }
     }
 
     public static JsonObject ParseObject(string raw)

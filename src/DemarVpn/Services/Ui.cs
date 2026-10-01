@@ -2,7 +2,7 @@ using Microsoft.UI.Dispatching;
 
 namespace DemarVpn.Services;
 
-/// <summary>Always marshal to DispatcherQueue — SyncContext is unreliable after DemarHttp Task.Run.</summary>
+/// <summary>Always marshal to DispatcherQueue — service code uses ConfigureAwait(false).</summary>
 public static class Ui
 {
     public static void Run(DispatcherQueue? dq, Action action)

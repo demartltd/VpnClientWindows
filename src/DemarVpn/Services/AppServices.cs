@@ -37,17 +37,17 @@ public static class AppServices
         {
             if (!AuthRepository.IsSignedIn)
             {
-                await Vpn.RefreshTunGroupsAsync();
+                await Vpn.RefreshTunGroupsAsync().ConfigureAwait(false);
                 return;
             }
-            var ok = await AuthRepository.RefreshSessionAsync();
+            var ok = await AuthRepository.RefreshSessionAsync().ConfigureAwait(false);
             Auth.NotifyChanged();
-            if (ok) await Vpn.RefreshServersAsync();
-            else await Vpn.OnSignedOutAsync();
+            if (ok) await Vpn.RefreshServersAsync().ConfigureAwait(false);
+            else await Vpn.OnSignedOutAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            AppLog.Append($"auth: bootstrap failed — {ex.Message}");
+            AppLog.Append($"auth: bootstrap failed — {ex}");
         }
     }
 
@@ -69,8 +69,8 @@ public static class AppServices
 
     public static async Task SignOutFullyAsync()
     {
-        await Auth.SignOutAsync();
-        await Vpn.OnSignedOutAsync();
+        await Auth.SignOutAsync().ConfigureAwait(false);
+        await Vpn.OnSignedOutAsync().ConfigureAwait(false);
     }
 
     private static async Task RunBackgroundRefreshAsync(CancellationToken ct)

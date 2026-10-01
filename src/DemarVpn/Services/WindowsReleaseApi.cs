@@ -16,7 +16,8 @@ public static class WindowsReleaseApi
     {
         try
         {
-            var json = await DemarHttp.GetJsonAsync($"{DemarHttp.VpnApiBaseUrl}/windows/version", ct: ct);
+            var json = await DemarHttp.GetJsonAsync($"{DemarHttp.VpnApiBaseUrl}/windows/version", ct: ct)
+                .ConfigureAwait(false);
             return Parse(json, preferBeta);
         }
         catch (Exception ex)

@@ -21,7 +21,7 @@ public static class ServersApi
         var json = await DemarHttp.PostJsonAsync(
             $"{DemarHttp.VpnApiBaseUrl}/vpn/servers",
             new JsonObject { ["userId"] = userId, ["loginAt"] = loginAt },
-            ct);
+            ct).ConfigureAwait(false);
         return ParseServersResponse(json);
     }
 

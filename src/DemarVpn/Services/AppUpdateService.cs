@@ -95,7 +95,8 @@ public sealed class AppUpdateService : NotifyBase
         WindowsRelease? release;
         try
         {
-            release = await WindowsReleaseApi.FetchAsync(UpdateChannelStore.PreferBeta, ct);
+            release = await WindowsReleaseApi.FetchAsync(UpdateChannelStore.PreferBeta, ct)
+                .ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -124,7 +125,7 @@ public sealed class AppUpdateService : NotifyBase
         if (Interlocked.Exchange(ref _downloadInFlight, 1) == 1) return;
         try
         {
-            await DownloadAsync(release, ct);
+            await DownloadAsync(release, ct).ConfigureAwait(false);
         }
         finally
         {

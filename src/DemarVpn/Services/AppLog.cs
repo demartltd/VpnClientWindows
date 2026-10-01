@@ -236,7 +236,7 @@ public static class AppLog
         {
             try
             {
-                await Task.Delay(300, cts.Token);
+                await Task.Delay(300, cts.Token).ConfigureAwait(false);
                 if (ReferenceEquals(Volatile.Read(ref _notifyCts), cts))
                     Changed?.Invoke();
             }

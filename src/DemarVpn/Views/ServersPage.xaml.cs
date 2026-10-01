@@ -16,6 +16,7 @@ public sealed partial class ServersPage : Page
     private bool _wired;
     private int _tierBarServersHash;
     private bool _refreshing;
+    private bool _listDirty;
     private Storyboard? _spin;
 
     public event Action? NeedUpgrade;
@@ -67,15 +68,26 @@ public sealed partial class ServersPage : Page
 
     private void OnVpnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        // Never touch DependencyProperties here — PropertyChanged may fire off the UI thread.
         if (e.PropertyName == nameof(Services.Vpn.VpnController.Selected))
-            DispatcherQueue.TryEnqueue(SyncSelection);
+            DispatcherQueue.TryEnqueue(() => { if (IsTabVisible()) SyncSelection(); });
         else if (e.PropertyName == nameof(Services.Vpn.VpnController.ServerReachability))
-            DispatcherQueue.TryEnqueue(SyncReachability);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (IsTabVisible()) SyncReachability();
+                else _listDirty = true;
+            });
         else if (e.PropertyName is nameof(Services.Vpn.VpnController.Servers)
             or nameof(Services.Vpn.VpnController.ServersLoading)
             or nameof(Services.Vpn.VpnController.ServersError))
-            DispatcherQueue.TryEnqueue(Rebuild);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (IsTabVisible()) Rebuild();
+                else _listDirty = true;
+            });
     }
+
+    private bool IsTabVisible() => Visibility == Visibility.Visible;
 
     public void OnTabVisible()
     {
@@ -85,7 +97,11 @@ public sealed partial class ServersPage : Page
             _ = vpn.RefreshServersAsync();
         else if (vpn.Servers.Count > 0 && vpn.ServerReachability.Count == 0)
             _ = vpn.RefreshServerReachabilityAsync();
-        Rebuild();
+        if (_listDirty || ListHost.Children.Count == 0)
+        {
+            _listDirty = false;
+            Rebuild();
+        }
     }
 
     private async void OnRefreshClick(object sender, RoutedEventArgs e)
@@ -97,7 +113,8 @@ public sealed partial class ServersPage : Page
         try
         {
             await AppServices.Vpn.RefreshServersAsync();
-            if (AppServices.Vpn.ServersError is { } err)
+            var err = AppServices.Vpn.ServersError;
+            if (err is not null)
                 AppServices.Snackbar.ShowError(string.IsNullOrWhiteSpace(err) ? Strings.ServersRefreshFail : err);
             else
                 AppServices.Snackbar.ShowSuccess(Strings.ServersRefreshOk);

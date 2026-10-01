@@ -13,7 +13,7 @@ public static class LegalDocumentRepository
             if (Cache.TryGetValue(document, out var hit)) return hit;
         }
 
-        var md = await RawTextFetcher.GetAsync(document.Url(), ct);
+        var md = await RawTextFetcher.GetAsync(document.Url(), ct).ConfigureAwait(false);
         lock (Cache) Cache[document] = md;
         return md;
     }

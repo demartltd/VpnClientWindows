@@ -38,7 +38,7 @@ public static class AuthApi
         var json = await DemarHttp.PostJsonAsync(
             $"{DemarHttp.BaseUrl}/auth/mobile/email/confirm",
             new JsonObject { ["email"] = email, ["code"] = code },
-            ct);
+            ct).ConfigureAwait(false);
         if (DemarHttp.OptBool(json, "requiresTotp"))
         {
             var token = DemarHttp.OptString(json, "challengeToken")
@@ -55,7 +55,7 @@ public static class AuthApi
         var json = await DemarHttp.PostJsonAsync(
             $"{DemarHttp.BaseUrl}/auth/mobile/totp/verify",
             new JsonObject { ["challengeToken"] = challengeToken, ["code"] = code },
-            ct);
+            ct).ConfigureAwait(false);
         return DemarHttp.OptString(json, "exchangeCode")
                ?? throw new AuthException("Missing exchangeCode");
     }
@@ -65,7 +65,7 @@ public static class AuthApi
         var json = await DemarHttp.PostJsonAsync(
             $"{DemarHttp.BaseUrl}/auth/mobile/session/exchange",
             new JsonObject { ["code"] = code },
-            ct);
+            ct).ConfigureAwait(false);
         return ParseSession(json);
     }
 
@@ -74,7 +74,7 @@ public static class AuthApi
         var json = await DemarHttp.PostJsonAsync(
             $"{DemarHttp.BaseUrl}/auth/mobile/session/check",
             new JsonObject { ["userId"] = userId, ["loginAt"] = loginAt },
-            ct);
+            ct).ConfigureAwait(false);
         return ParseSession(json);
     }
 
@@ -87,7 +87,7 @@ public static class AuthApi
     public static async Task<SessionExchange> SessionFromClientTokenAsync(string token, CancellationToken ct = default)
     {
         var json = await DemarHttp.GetJsonAsync(
-            $"{DemarHttp.AccountBaseUrl}/api/auth/client/me", token, ct);
+            $"{DemarHttp.AccountBaseUrl}/api/auth/client/me", token, ct).ConfigureAwait(false);
         var loginAt = DemarHttp.OptString(json, "loginAt")
                       ?? throw new AuthException("Missing loginAt");
         if (json["profile"] is not JsonObject profile)
