@@ -1,5 +1,6 @@
 using DemarVpn.Controls;
 using DemarVpn.Domain.Vpn;
+using DemarVpn.Services;
 using DemarVpn.Services.Account;
 using DemarVpn.Services.Auth;
 using Microsoft.UI.Xaml;
@@ -70,9 +71,9 @@ public sealed partial class ServersPage : Page
     {
         // Never touch DependencyProperties here — PropertyChanged may fire off the UI thread.
         if (e.PropertyName == nameof(Services.Vpn.VpnController.Selected))
-            DispatcherQueue.TryEnqueue(() => { if (IsTabVisible()) SyncSelection(); });
+            Ui.Run(DispatcherQueue, () => { if (IsTabVisible()) SyncSelection(); });
         else if (e.PropertyName == nameof(Services.Vpn.VpnController.ServerReachability))
-            DispatcherQueue.TryEnqueue(() =>
+            Ui.Run(DispatcherQueue, () =>
             {
                 if (IsTabVisible()) SyncReachability();
                 else _listDirty = true;
@@ -80,7 +81,7 @@ public sealed partial class ServersPage : Page
         else if (e.PropertyName is nameof(Services.Vpn.VpnController.Servers)
             or nameof(Services.Vpn.VpnController.ServersLoading)
             or nameof(Services.Vpn.VpnController.ServersError))
-            DispatcherQueue.TryEnqueue(() =>
+            Ui.Run(DispatcherQueue, () =>
             {
                 if (IsTabVisible()) Rebuild();
                 else _listDirty = true;
@@ -112,7 +113,7 @@ public sealed partial class ServersPage : Page
         StartSpin();
         try
         {
-            await AppServices.Vpn.RefreshServersAsync();
+            await Ui.ApiAsync(DispatcherQueue, () => AppServices.Vpn.RefreshServersAsync());
             var err = AppServices.Vpn.ServersError;
             if (err is not null)
                 AppServices.Snackbar.ShowError(string.IsNullOrWhiteSpace(err) ? Strings.ServersRefreshFail : err);
@@ -126,12 +127,9 @@ public sealed partial class ServersPage : Page
         }
         finally
         {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                StopSpin();
-                _refreshing = false;
-                RefreshButton.IsEnabled = true;
-            });
+            StopSpin();
+            _refreshing = false;
+            RefreshButton.IsEnabled = true;
         }
     }
 

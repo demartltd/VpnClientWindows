@@ -16,6 +16,8 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Without this, await after ConfigureAwait(false) resumes on the thread pool (APPCRASH on XAML).
+        Ui.EnsureSyncContext(DispatcherQueue);
         Title = Strings.AppName;
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -53,10 +55,15 @@ public sealed partial class MainWindow : Window
             if (!e.DidSizeChange && !e.DidVisibilityChange) return;
             if (AppWindow.Presenter is OverlappedPresenter { State: not OverlappedPresenterState.Restored })
                 return;
-            DispatcherQueue.TryEnqueue(() => Root.InvalidateArrange());
+            Ui.Run(DispatcherQueue, () => Root.InvalidateArrange());
         };
         TryMicaBackdrop();
         Root.Navigate(typeof(Views.ShellPage));
+        Activated += (_, e) =>
+        {
+            if (e.WindowActivationState != WindowActivationState.Deactivated)
+                Shell?.EvaluateSubscriptionAlerts();
+        };
     }
 
     private void TryMicaBackdrop()

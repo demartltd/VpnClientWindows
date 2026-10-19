@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DemarVpn.Models;
+using DemarVpn.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -35,7 +36,7 @@ public sealed partial class DemarSnackbarHost : UserControl
     private void OnSnackbarChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(Services.SnackbarService.Current))
-            DispatcherQueue.TryEnqueue(Refresh);
+            Ui.Run(DispatcherQueue, Refresh);
     }
 
     public void SetWideLayout(bool wide)

@@ -51,7 +51,7 @@ public sealed partial class AccountPage : Page
         AccountStore.Changed -= OnStoreChanged;
 
     private void OnStoreChanged() =>
-        DispatcherQueue.TryEnqueue(Refresh);
+        Ui.Run(DispatcherQueue, Refresh);
 
     public void Refresh()
     {

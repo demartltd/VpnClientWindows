@@ -57,6 +57,16 @@
           </StackPanel>
         </Border>
         <Border Style="{StaticResource DemarCard}">
+          <StackPanel Spacing="12">
+            <TextBlock x:Name="InfoSheetsHeader" FontWeight="SemiBold" />
+            <controls:SettingsActionButton x:Name="ExpiryBtn" Glyph="&#xE787;" Click="OnInfoExpiry" />
+            <controls:SettingsActionButton x:Name="FreeTrafficBtn" Glyph="&#xE9D9;" Click="OnInfoFreeTraffic" />
+            <controls:SettingsActionButton x:Name="TrafficBtn" Glyph="&#xE9D9;" Click="OnInfoTraffic" />
+            <controls:SettingsActionButton x:Name="PayOkBtn" Glyph="&#xE73E;" Click="OnInfoPayOk" />
+            <controls:SettingsActionButton x:Name="PayFailBtn" Glyph="&#xE711;" Click="OnInfoPayFail" />
+          </StackPanel>
+        </Border>
+        <Border Style="{StaticResource DemarCard}">
           <StackPanel Spacing="8">
             <TextBlock x:Name="DebugHeader" FontWeight="SemiBold" />
             <Button x:Name="RestartBtn" Click="OnRestartCore" HorizontalAlignment="Stretch" />

@@ -188,6 +188,19 @@ static class Ja
         ["{0} day"] = "{0} 日",
         ["{0} days_few"] = "{0} 日",
         ["{0} days"] = "{0} 日",
+        ["Subscription is expiring!"] = "サブスクリプションの期限が近づいています！",
+        ["You will lose internet in"] = "インターネットが使えなくなるまで",
+        ["Buy a subscription"] = "サブスクリプションを購入してください",
+        ["Free version expires in"] = "無料版の残り",
+        ["Secure internet"] = "安全なインターネット",
+        ["Now"] = "現在",
+        ["After"] = "期限後",
+        ["{0} hour"] = "{0}時間",
+        ["{0} hours_few"] = "{0}時間",
+        ["{0} hours"] = "{0}時間",
+        ["{0} minute"] = "{0}分",
+        ["{0} minutes_few"] = "{0}分",
+        ["{0} minutes"] = "{0}分",
     };
 }
 

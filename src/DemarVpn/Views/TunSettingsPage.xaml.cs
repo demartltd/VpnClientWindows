@@ -66,12 +66,8 @@ public sealed partial class TunSettingsPage : OverlayPage
         AccountStore.Changed -= OnAccountChanged;
     }
 
-    private void OnStoreChanged()
-    {
-        void Apply() { EnsureBuilt(); ApplySettings(); }
-        if (DispatcherQueue.HasThreadAccess) Apply();
-        else DispatcherQueue.TryEnqueue(Apply);
-    }
+    private void OnStoreChanged() =>
+        Ui.Run(DispatcherQueue, () => { EnsureBuilt(); ApplySettings(); });
 
     private void OnAccountChanged() => OnStoreChanged();
 
@@ -98,7 +94,7 @@ public sealed partial class TunSettingsPage : OverlayPage
         if (catalog.SiteGroups.Count > 0)
             RootPanel.Children.Add(BuildGroupsSection(Strings.SettingsTunSiteGroupsTitle, catalog.SiteGroups, _siteGroups, _expandedSiteGroups, false));
 
-        DispatcherQueue.TryEnqueue(() => _uiReady = true);
+        Ui.Run(DispatcherQueue, () => _uiReady = true);
     }
 
     private void ApplySettings()

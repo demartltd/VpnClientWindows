@@ -188,6 +188,19 @@ static class ZhHans
         ["{0} day"] = "{0} 天",
         ["{0} days_few"] = "{0} 天",
         ["{0} days"] = "{0} 天",
+        ["Subscription is expiring!"] = "订阅即将到期！",
+        ["You will lose internet in"] = "您将在以下时间后失去网络",
+        ["Buy a subscription"] = "请购买订阅",
+        ["Free version expires in"] = "免费版将在以下流量后到期",
+        ["Secure internet"] = "安全网络",
+        ["Now"] = "现在",
+        ["After"] = "到期后",
+        ["{0} hour"] = "{0} 小时",
+        ["{0} hours_few"] = "{0} 小时",
+        ["{0} hours"] = "{0} 小时",
+        ["{0} minute"] = "{0} 分钟",
+        ["{0} minutes_few"] = "{0} 分钟",
+        ["{0} minutes"] = "{0} 分钟",
     };
 }
 

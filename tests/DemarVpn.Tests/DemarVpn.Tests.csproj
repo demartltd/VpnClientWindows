@@ -32,6 +32,8 @@
     <Compile Include="..\..\src\DemarVpn\Services\Account\VpnAccountApi.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Account\PayApi.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Account\CheckoutIntent.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Account\SubscriptionAlertKind.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Account\SubscriptionAlertStore.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Servers\ServersApi.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Servers\SessionRefreshPolicy.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Servers\SessionCacheStore.cs" />

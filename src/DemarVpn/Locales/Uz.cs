@@ -188,6 +188,19 @@ static class Uz
         ["{0} day"] = "{0} kun",
         ["{0} days_few"] = "{0} kun",
         ["{0} days"] = "{0} kun",
+        ["Subscription is expiring!"] = "Obuna tugayapti!",
+        ["You will lose internet in"] = "Internetdan mahrum bo‘lasiz:",
+        ["Buy a subscription"] = "Obuna sotib oling",
+        ["Free version expires in"] = "Bepul versiya tugaydi:",
+        ["Secure internet"] = "Xavfsiz internet",
+        ["Now"] = "Hozir",
+        ["After"] = "Keyin",
+        ["{0} hour"] = "{0} soat",
+        ["{0} hours_few"] = "{0} soat",
+        ["{0} hours"] = "{0} soat",
+        ["{0} minute"] = "{0} daqiqa",
+        ["{0} minutes_few"] = "{0} daqiqa",
+        ["{0} minutes"] = "{0} daqiqa",
     };
 }
 

@@ -38,7 +38,7 @@ public sealed partial class AppSettingsPage : OverlayPage
         UpdateExpandLabel();
     }
 
-    private void OnLogChanged() => DispatcherQueue.TryEnqueue(RefreshJournal);
+    private void OnLogChanged() => Ui.Run(DispatcherQueue, RefreshJournal);
 
     private async void OnLanguage(object? sender, EventArgs e)
     {

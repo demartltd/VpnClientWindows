@@ -188,6 +188,19 @@ static class Ko
         ["{0} day"] = "{0}일",
         ["{0} days_few"] = "{0}일",
         ["{0} days"] = "{0}일",
+        ["Subscription is expiring!"] = "구독이 만료됩니다!",
+        ["You will lose internet in"] = "인터넷을 사용할 수 없게 되기까지",
+        ["Buy a subscription"] = "구독을 구매하세요",
+        ["Free version expires in"] = "무료 버전 만료까지",
+        ["Secure internet"] = "안전한 인터넷",
+        ["Now"] = "지금",
+        ["After"] = "이후",
+        ["{0} hour"] = "{0}시간",
+        ["{0} hours_few"] = "{0}시간",
+        ["{0} hours"] = "{0}시간",
+        ["{0} minute"] = "{0}분",
+        ["{0} minutes_few"] = "{0}분",
+        ["{0} minutes"] = "{0}분",
     };
 }
 

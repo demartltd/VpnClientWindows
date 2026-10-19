@@ -35,7 +35,7 @@ public sealed partial class SettingsPage : Page
     }
 
     private void OnSupportUnreadChanged() =>
-        DispatcherQueue.TryEnqueue(() =>
+        Ui.Run(DispatcherQueue, () =>
         {
             if (_supportRow is not null)
                 _supportRow.ShowUnread = SupportStore.HasUnread;
@@ -96,11 +96,13 @@ public sealed partial class SettingsPage : Page
 
         try
         {
-            var result = await VpnAccountApi.ActivatePromoAsync(session.UserId, session.LoginAt, code);
+            var result = await Ui.ApiAsync(DispatcherQueue,
+                () => VpnAccountApi.ActivatePromoAsync(session.UserId, session.LoginAt, code));
             if (result.IsActivated)
-                await AppServices.Vpn.RefreshServersAsync();
-            if (result.IsActivated)
+            {
+                await Ui.ApiAsync(DispatcherQueue, () => AppServices.Vpn.RefreshServersAsync());
                 AppServices.Snackbar.ShowSuccess(result.LocalizedMessage);
+            }
             else
                 AppServices.Snackbar.ShowError(result.LocalizedMessage);
         }

@@ -35,9 +35,8 @@ public sealed partial class LoginBottomSheet : UserControl
     private static void OpenTelegramOAuth()
     {
         ProtocolRegistration.EnsureRegistered();
-        var url = AuthApi.TelegramOAuthStartUrl;
         AppLog.Append("auth: open telegram oauth in browser");
-        _ = IconLinkChip.OpenUrlAsync(url);
+        _ = IconLinkChip.OpenUrlAsync(AuthApi.TelegramOAuthStartUrl);
     }
 
     public void Show()
@@ -45,7 +44,7 @@ public sealed partial class LoginBottomSheet : UserControl
         ResetSteps();
         Visibility = Visibility.Visible;
         Chrome.Show();
-        DispatcherQueue.TryEnqueue(() => EmailBox.Focus(FocusState.Programmatic));
+        Ui.Run(DispatcherQueue, () => EmailBox.Focus(FocusState.Programmatic));
     }
 
     public void Dismiss() => Chrome.Dismiss();
@@ -90,18 +89,15 @@ public sealed partial class LoginBottomSheet : UserControl
         if (code.Length != 6 || _busy) return;
         await RunAuthAsync(async () =>
         {
-            var result = await AuthRepository.ConfirmEmailAsync(_email, code);
+            var result = await Ui.ApiAsync(DispatcherQueue, () => AuthRepository.ConfirmEmailAsync(_email, code));
             if (result is EmailConfirmResult.NeedsTotp totp)
             {
                 _challengeToken = totp.ChallengeToken;
-                OnUi(() =>
-                {
-                    StepTitle.Text = Strings.LoginTotp;
-                    StepSubtitle.Visibility = Visibility.Collapsed;
-                    VerifyStep.Visibility = Visibility.Collapsed;
-                    TotpStep.Visibility = Visibility.Visible;
-                    TotpOtp.Reset();
-                });
+                StepTitle.Text = Strings.LoginTotp;
+                StepSubtitle.Visibility = Visibility.Collapsed;
+                VerifyStep.Visibility = Visibility.Collapsed;
+                TotpStep.Visibility = Visibility.Visible;
+                TotpOtp.Reset();
                 return;
             }
             FinishSignedIn();
@@ -114,7 +110,7 @@ public sealed partial class LoginBottomSheet : UserControl
         if (_challengeToken is null || code.Length != 6 || _busy) return;
         await RunAuthAsync(async () =>
         {
-            await AuthRepository.VerifyTotpAsync(_challengeToken, code);
+            await Ui.ApiAsync(DispatcherQueue, () => AuthRepository.VerifyTotpAsync(_challengeToken, code));
             FinishSignedIn();
         });
     }
@@ -131,7 +127,7 @@ public sealed partial class LoginBottomSheet : UserControl
         {
             try
             {
-                await AuthRepository.SendEmailAsync(_email, purpose);
+                await Ui.ApiAsync(DispatcherQueue, () => AuthRepository.SendEmailAsync(_email, purpose));
             }
             catch (AuthException ex) when (purpose == "login" && ex.StatusCode == 404 && ex.Hint == "register")
             {
@@ -142,31 +138,25 @@ public sealed partial class LoginBottomSheet : UserControl
                 return;
             }
 
-            var onUi = DispatcherQueue?.HasThreadAccess == true;
-            AppLog.AppendCrash($"auth: after await ui={onUi}");
             _registering = purpose == "register";
-            OnUi(() =>
-            {
-                StepTitle.Text = Strings.LoginOtpTitle;
-                StepSubtitle.Text = _email;
-                StepSubtitle.Visibility = Visibility.Visible;
-                EmailStep.Visibility = Visibility.Collapsed;
-                VerifyStep.Visibility = Visibility.Visible;
-                TotpStep.Visibility = Visibility.Collapsed;
-                VerifyOtp.Reset();
-                AppLog.AppendCrash("auth: otp step ready");
-            });
+            StepTitle.Text = Strings.LoginOtpTitle;
+            StepSubtitle.Text = _email;
+            StepSubtitle.Visibility = Visibility.Visible;
+            EmailStep.Visibility = Visibility.Collapsed;
+            VerifyStep.Visibility = Visibility.Visible;
+            TotpStep.Visibility = Visibility.Collapsed;
+            VerifyOtp.Reset();
         }
         catch (AuthException ex)
         {
             ShowError(string.IsNullOrWhiteSpace(ex.Message) ? Strings.LoginErrorGeneric : ex.Message);
-            OnUi(() => VerifyOtp.Reset());
+            VerifyOtp.Reset();
         }
         catch (Exception ex)
         {
             AppLog.AppendCrash($"auth: send failed — {ex}");
             ShowError(Strings.LoginErrorGeneric);
-            OnUi(() => VerifyOtp.Reset());
+            VerifyOtp.Reset();
         }
         finally
         {
@@ -201,21 +191,15 @@ public sealed partial class LoginBottomSheet : UserControl
         catch (AuthException ex)
         {
             ShowError(string.IsNullOrWhiteSpace(ex.Message) ? Strings.LoginErrorGeneric : ex.Message);
-            OnUi(() =>
-            {
-                if (TotpStep.Visibility == Visibility.Visible) TotpOtp.Reset();
-                else if (VerifyStep.Visibility == Visibility.Visible) VerifyOtp.Reset();
-            });
+            if (TotpStep.Visibility == Visibility.Visible) TotpOtp.Reset();
+            else if (VerifyStep.Visibility == Visibility.Visible) VerifyOtp.Reset();
         }
         catch (Exception ex)
         {
             AppLog.AppendCrash($"auth: failed — {ex}");
             ShowError(Strings.LoginErrorGeneric);
-            OnUi(() =>
-            {
-                if (TotpStep.Visibility == Visibility.Visible) TotpOtp.Reset();
-                else if (VerifyStep.Visibility == Visibility.Visible) VerifyOtp.Reset();
-            });
+            if (TotpStep.Visibility == Visibility.Visible) TotpOtp.Reset();
+            else if (VerifyStep.Visibility == Visibility.Visible) VerifyOtp.Reset();
         }
         finally
         {
@@ -226,35 +210,30 @@ public sealed partial class LoginBottomSheet : UserControl
     private void SetBusy(bool busy)
     {
         _busy = busy;
-        OnUi(() =>
-        {
-            Chrome.BlockDismiss = busy;
-            ContinueBtn.IsEnabled = !busy;
-            ResendBtn.IsEnabled = !busy;
-            EmailBox.IsEnabled = !busy;
-        });
+        Chrome.BlockDismiss = busy;
+        ContinueBtn.IsEnabled = !busy;
+        ResendBtn.IsEnabled = !busy;
+        EmailBox.IsEnabled = !busy;
     }
 
-    private void ShowError(string message) => OnUi(() =>
+    private void ShowError(string message)
     {
         ErrorText.Text = message;
         ErrorText.Visibility = Visibility.Visible;
-    });
+    }
 
-    private void ClearError() => OnUi(() =>
+    private void ClearError()
     {
         ErrorText.Text = string.Empty;
         ErrorText.Visibility = Visibility.Collapsed;
-    });
+    }
 
-    private void FinishSignedIn() => OnUi(() =>
+    private void FinishSignedIn()
     {
         AppServices.Auth.NotifyChanged();
         SignedIn?.Invoke(this, EventArgs.Empty);
         Dismiss();
-    });
-
-    private void OnUi(Action action) => Ui.Run(DispatcherQueue, action);
+    }
 
     private static bool LooksLikeEmail(string email) =>
         email.Contains('@') && email.Contains('.') && email.Length >= 5;

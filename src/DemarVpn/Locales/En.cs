@@ -188,6 +188,19 @@ static class En
         ["{0} day"] = "{0} day",
         ["{0} days_few"] = "{0} days",
         ["{0} days"] = "{0} days",
+        ["Subscription is expiring!"] = "Subscription is expiring!",
+        ["You will lose internet in"] = "You will lose internet in",
+        ["Buy a subscription"] = "Buy a subscription",
+        ["Free version expires in"] = "Free version expires in",
+        ["Secure internet"] = "Secure internet",
+        ["Now"] = "Now",
+        ["After"] = "After",
+        ["{0} hour"] = "{0} hour",
+        ["{0} hours_few"] = "{0} hours",
+        ["{0} hours"] = "{0} hours",
+        ["{0} minute"] = "{0} minute",
+        ["{0} minutes_few"] = "{0} minutes",
+        ["{0} minutes"] = "{0} minutes",
     };
 }
 

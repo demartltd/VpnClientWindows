@@ -36,6 +36,7 @@ src/DemarVpn/
 │   ├── DocumentsBottomSheet.xaml  # Terms / Privacy picker
 │   ├── NotifyBottomSheet.xaml     # account notify toggles
 │   ├── TrafficBottomSheet.xaml    # monthly traffic pie
+│   ├── SubscriptionInfoSheet.xaml # expiry / freeTraffic upsell (Now/After)
 │   ├── SubscriptionCheckoutSheet.xaml  # pay checkout (narrow≈iOS / wide≈macOS @ 800)
 │   ├── PlanCompareSheet.xaml      # Free/Plus/VIP compare
 │   ├── PayResultSheet.xaml        # pay/ok|fail result
@@ -52,7 +53,7 @@ src/DemarVpn/
 │   ├── UpdateChannelStore.cs      # prefer_beta prefs
 │   ├── LocaleStore.cs             # UI language 13 tags (OS if supported); ru→RUB else EUR
 │   ├── RunAtStartup.cs            # logon Task Scheduler autostart (default ON)
-│   ├── Account/                   # VpnAccountApi, AccountStore, PayApi (plans/create + promo/apply)
+│   ├── Account/                   # VpnAccountApi, AccountStore, PayApi, SubscriptionAlertStore
 │   ├── Support/                   # SupportApi → csauth.example.invalid ticket chat (channel=windows; album ≤10 WebP)
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi, SessionCacheStore (servers/account/traffic/tun), SessionRefreshPolicy
@@ -67,6 +68,7 @@ src/DemarVpn/
 │   ├── AppLog.cs
 │   ├── DemarNavigation.cs         # demarvpn:// auth + support + pay + account deep links
 │   ├── ProtocolRegistration.cs    # demarvpn:// HKCU
+│   ├── Ui.cs                      # ApiAsync / SwitchTo / Run — UI hop after ConfigureAwait(false)
 │   └── SnackbarService.cs
 ├── Models/
 ├── Assets/                        # AppIcon.ico, logos, BrandIcons.xaml, Flags/, singbox/, rule-sets/ (ads .srs synced on build)
@@ -85,6 +87,7 @@ tests/DemarVpn.Tests/
 ├── RunAtStartupTest.cs          # run_at_startup prefs (default ON)
 ├── LocaleStoreTest.cs           # first-launch locale resolve + currency (13 langs)
 ├── VpnAccountApiTest.cs         # account/traffic parse + promo + pieSlices + formatBytes
+├── SubscriptionAlertStoreTest.cs # expiry windows + free traffic threshold
 ├── PayApiParseTest.cs           # pay catalog/checkout/formatPrice + CheckoutIntent
 ├── SupportApiTest.cs            # support ticket JSON parse / encode cache
 ├── SessionRefreshPolicyTest.cs  # session TTL 600s

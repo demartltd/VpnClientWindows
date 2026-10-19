@@ -104,7 +104,8 @@ public sealed partial class SupportPage : OverlayPage
         if (_tickets.Count == 0) SetListLoading(true);
         try
         {
-            var fresh = await SupportApi.ListTicketsAsync(session.UserId, session.LoginAt);
+            var fresh = await Ui.ApiAsync(DispatcherQueue,
+                () => SupportApi.ListTicketsAsync(session.UserId, session.LoginAt));
             _tickets = fresh.ToList();
             SupportStore.SaveList(session.UserId, fresh);
             SupportStore.Apply(fresh);
@@ -128,7 +129,8 @@ public sealed partial class SupportPage : OverlayPage
         if (session is null) return;
         try
         {
-            _themes = (await SupportApi.ListThemesAsync(session.UserId, session.LoginAt)).ToList();
+            _themes = (await Ui.ApiAsync(DispatcherQueue,
+                () => SupportApi.ListThemesAsync(session.UserId, session.LoginAt))).ToList();
         }
         catch (Exception ex)
         {

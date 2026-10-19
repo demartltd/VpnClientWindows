@@ -188,6 +188,19 @@ static class Es
         ["{0} day"] = "{0} día",
         ["{0} days_few"] = "{0} días",
         ["{0} days"] = "{0} días",
+        ["Subscription is expiring!"] = "¡La suscripción caduca!",
+        ["You will lose internet in"] = "Te quedarás sin internet en",
+        ["Buy a subscription"] = "Compre una suscripción",
+        ["Free version expires in"] = "La versión gratuita caduca en",
+        ["Secure internet"] = "Internet seguro",
+        ["Now"] = "Ahora",
+        ["After"] = "Después",
+        ["{0} hour"] = "{0} hora",
+        ["{0} hours_few"] = "{0} horas",
+        ["{0} hours"] = "{0} horas",
+        ["{0} minute"] = "{0} minuto",
+        ["{0} minutes_few"] = "{0} minutos",
+        ["{0} minutes"] = "{0} minutos",
     };
 }
 

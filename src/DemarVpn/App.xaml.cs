@@ -36,7 +36,7 @@ public partial class App : Application
         if (main is null) return;
         main.RootFrame.Navigate(typeof(Views.ShellPage));
         if (openAppSettings)
-            main.DispatcherQueue.TryEnqueue(() => main.Shell?.OpenAppSettings());
+            Ui.Run(main.DispatcherQueue, () => main.Shell?.OpenAppSettings());
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
@@ -83,7 +83,7 @@ public partial class App : Application
 
     private void OnRedirectedActivation(AppActivationArguments args)
     {
-        _window?.DispatcherQueue.TryEnqueue(() =>
+        Ui.Run(_window?.DispatcherQueue, () =>
         {
             _window?.AppWindow.Show(true);
             _window?.Activate();
@@ -129,19 +129,19 @@ public partial class App : Application
         {
             AppLog.Append($"auth: oauth callback {uri.GetLeftPart(UriPartial.Path)}");
             if (token is not null)
-                await AuthRepository.CompleteClientTokenAsync(token);
+                await Ui.ApiAsync(_main?.DispatcherQueue, () => AuthRepository.CompleteClientTokenAsync(token));
             else if (code is not null)
-                await AuthRepository.CompleteExchangeAsync(code);
+                await Ui.ApiAsync(_main?.DispatcherQueue, () => AuthRepository.CompleteExchangeAsync(code));
             else return;
 
             AppServices.Auth.NotifyChanged();
-            await AppServices.Vpn.RefreshServersAsync();
+            await Ui.ApiAsync(_main?.DispatcherQueue, () => AppServices.Vpn.RefreshServersAsync());
             _main?.Shell?.OnExternalSignIn();
         }
         catch (Exception ex)
         {
             AppLog.Append($"auth: oauth handoff failed — {ex.Message}");
-            _main?.Shell?.ShowLogin();
+            Ui.Run(_main?.DispatcherQueue, () => _main?.Shell?.ShowLogin());
         }
         finally
         {

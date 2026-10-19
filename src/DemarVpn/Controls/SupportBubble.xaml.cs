@@ -185,7 +185,8 @@ public sealed partial class SupportBubble : UserControl
         var (maxW, maxH) = host.Tag is ValueTuple<double, double> t ? t : (BubbleMax, 320.0);
         try
         {
-            var bytes = await SupportApi.LoadMediaBytesAsync(_userId, _loginAt, media.Url!, _ticketId);
+            var bytes = await Ui.ApiAsync(DispatcherQueue,
+                () => SupportApi.LoadMediaBytesAsync(_userId, _loginAt, media.Url!, _ticketId));
             if (epoch != _bindEpoch) return;
             using var stream = new InMemoryRandomAccessStream();
             await stream.WriteAsync(bytes.AsBuffer());

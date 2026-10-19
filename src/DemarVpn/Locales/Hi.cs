@@ -188,6 +188,19 @@ static class Hi
         ["{0} day"] = "{0} दिन",
         ["{0} days_few"] = "{0} दिन",
         ["{0} days"] = "{0} दिन",
+        ["Subscription is expiring!"] = "सदस्यता समाप्त हो रही है!",
+        ["You will lose internet in"] = "आप इंटरनेट खो देंगे",
+        ["Buy a subscription"] = "सदस्यता खरीदें",
+        ["Free version expires in"] = "मुफ़्त संस्करण समाप्त होगा",
+        ["Secure internet"] = "सुरक्षित इंटरनेट",
+        ["Now"] = "अभी",
+        ["After"] = "बाद में",
+        ["{0} hour"] = "{0} घंटा",
+        ["{0} hours_few"] = "{0} घंटे",
+        ["{0} hours"] = "{0} घंटे",
+        ["{0} minute"] = "{0} मिनट",
+        ["{0} minutes_few"] = "{0} मिनट",
+        ["{0} minutes"] = "{0} मिनट",
     };
 }
 

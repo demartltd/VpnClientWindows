@@ -55,6 +55,17 @@ public static class Strings
     public const string ServiceRestartFail = "VPN not connected";
     public const string ServiceCore = "Core";
     public const string ServiceSnackDemo = "Demo: {0}";
+    public const string ServiceInfoSheets = "Info sheets";
+    public const string ServiceInfoExpiry = "Subscription is expiring!";
+    public const string ServiceInfoFreeTraffic = "Buy subscription";
+    public const string ServiceInfoTraffic = "Traffic this month";
+    public const string ServiceInfoPayOk = "Pay result — success";
+    public const string ServiceInfoPayFail = "Pay result — fail";
+    public const string ServiceInfoExpirySub = "Renew subscription";
+    public const string ServiceInfoFreeTrafficSub = "Free traffic upsell";
+    public const string ServiceInfoTrafficSub = "Increase limits";
+    public const string ServiceInfoPayOkSub = "demarvpn://pay/ok";
+    public const string ServiceInfoPayFailSub = "demarvpn://pay/fail";
 
     static string L(string key) => Catalog.Get(key);
 
@@ -249,4 +260,17 @@ public static class Strings
     public static string AccountInDaysOne => L("{0} day");
     public static string AccountInDaysFew => L("{0} days_few");
     public static string AccountInDaysMany => L("{0} days");
+    public static string SubAlertExpiryTitle => L("Subscription is expiring!");
+    public static string SubAlertExpiryBody => L("You will lose internet in");
+    public static string SubAlertFreeTitle => L("Buy a subscription");
+    public static string SubAlertFreeBody => L("Free version expires in");
+    public static string SubAlertSecure => L("Secure internet");
+    public static string SubAlertColNow => L("Now");
+    public static string SubAlertColAfter => L("After");
+    public static string SubAlertInHoursOne => L("{0} hour");
+    public static string SubAlertInHoursFew => L("{0} hours_few");
+    public static string SubAlertInHoursMany => L("{0} hours");
+    public static string SubAlertInMinutesOne => L("{0} minute");
+    public static string SubAlertInMinutesFew => L("{0} minutes_few");
+    public static string SubAlertInMinutesMany => L("{0} minutes");
 }

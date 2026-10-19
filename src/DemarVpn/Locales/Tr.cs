@@ -188,6 +188,19 @@ static class Tr
         ["{0} day"] = "{0} gün",
         ["{0} days_few"] = "{0} gün",
         ["{0} days"] = "{0} gün",
+        ["Subscription is expiring!"] = "Abonelik sona eriyor!",
+        ["You will lose internet in"] = "İnternetiniz kesilecek:",
+        ["Buy a subscription"] = "Abonelik satın alın",
+        ["Free version expires in"] = "Ücretsiz sürüm şu kadar sonra bitecek:",
+        ["Secure internet"] = "Güvenli internet",
+        ["Now"] = "Şimdi",
+        ["After"] = "Sonra",
+        ["{0} hour"] = "{0} saat",
+        ["{0} hours_few"] = "{0} saat",
+        ["{0} hours"] = "{0} saat",
+        ["{0} minute"] = "{0} dakika",
+        ["{0} minutes_few"] = "{0} dakika",
+        ["{0} minutes"] = "{0} dakika",
     };
 }
 

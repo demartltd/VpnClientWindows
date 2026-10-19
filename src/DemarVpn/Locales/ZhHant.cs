@@ -188,6 +188,19 @@ static class ZhHant
         ["{0} day"] = "{0} 天",
         ["{0} days_few"] = "{0} 天",
         ["{0} days"] = "{0} 天",
+        ["Subscription is expiring!"] = "訂閱即將到期！",
+        ["You will lose internet in"] = "您將在以下時間後失去網路",
+        ["Buy a subscription"] = "請購買訂閱",
+        ["Free version expires in"] = "免費版將在以下流量後到期",
+        ["Secure internet"] = "安全網路",
+        ["Now"] = "現在",
+        ["After"] = "到期後",
+        ["{0} hour"] = "{0} 小時",
+        ["{0} hours_few"] = "{0} 小時",
+        ["{0} hours"] = "{0} 小時",
+        ["{0} minute"] = "{0} 分鐘",
+        ["{0} minutes_few"] = "{0} 分鐘",
+        ["{0} minutes"] = "{0} 分鐘",
     };
 }
 

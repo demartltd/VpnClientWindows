@@ -1,0 +1,17 @@
+<UserControl
+    x:Class="DemarVpn.Controls.SubscriptionInfoSheet"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DemarVpn.Controls"
+    Visibility="Collapsed">
+  <controls:BottomSheetChrome x:Name="Chrome">
+    <StackPanel Spacing="16" HorizontalAlignment="Stretch">
+      <TextBlock x:Name="TitleText" FontSize="24" FontWeight="Bold" TextWrapping="Wrap" />
+      <Border Background="{StaticResource DemarSurfaceHighBrush}" CornerRadius="12">
+        <StackPanel x:Name="TableHost" />
+      </Border>
+      <Button x:Name="ActionButton" Style="{StaticResource DemarAccentButtonStyle}"
+              HorizontalAlignment="Stretch" Height="48" Click="OnAction" />
+    </StackPanel>
+  </controls:BottomSheetChrome>
+</UserControl>

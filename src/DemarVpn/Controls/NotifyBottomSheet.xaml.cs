@@ -88,8 +88,8 @@ public sealed partial class NotifyBottomSheet : UserControl
         BindFromStore();
         try
         {
-            var updated = await VpnAccountApi.UpdateNotifyAsync(
-                session.UserId, session.LoginAt, news, important);
+            var updated = await Ui.ApiAsync(DispatcherQueue, () =>
+                VpnAccountApi.UpdateNotifyAsync(session.UserId, session.LoginAt, news, important));
             AccountStore.ApplyAccount(next with
             {
                 NotifyNews = updated.NotifyNews,

@@ -80,7 +80,7 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
         Visibility = Visibility.Visible;
         Chrome.Show();
         PaintSelection();
-        DispatcherQueue.TryEnqueue(() =>
+        Ui.Run(DispatcherQueue, () =>
         {
             PaintSelection();
             InvalidateArrange();
@@ -124,7 +124,7 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
         PaintSelection();
         try
         {
-            _catalog = await PayApi.FetchPlansAsync();
+            _catalog = await Ui.ApiAsync(DispatcherQueue, () => PayApi.FetchPlansAsync());
         }
         catch
         {
@@ -135,11 +135,8 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
         finally
         {
             _loadingPlans = false;
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                PaintSelection();
-                UpdatePayEnabled();
-            });
+            PaintSelection();
+            UpdatePayEnabled();
         }
     }
 
@@ -555,7 +552,8 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
         if (session is null) return;
         try
         {
-            var result = await VpnAccountApi.ApplyPromoAsync(session.UserId, session.LoginAt, code);
+            var result = await Ui.ApiAsync(DispatcherQueue,
+                () => VpnAccountApi.ApplyPromoAsync(session.UserId, session.LoginAt, code));
             if (result.IsApplied)
             {
                 _appliedCode = code.ToUpperInvariant();
@@ -590,10 +588,12 @@ public sealed partial class SubscriptionCheckoutSheet : UserControl
         UpdatePayEnabled();
         try
         {
-            var checkout = await PayApi.CreateAsync(
-                session.UserId, session.LoginAt, _tier, _period, _currency, _appliedCode);
+            var checkout = await Ui.ApiAsync(DispatcherQueue, () => PayApi.CreateAsync(
+                session.UserId, session.LoginAt, _tier, _period, _currency, _appliedCode));
             Dismiss();
-            await IconLinkChip.OpenUrlAsync(checkout.PayUrl);
+            _paying = false;
+            UpdatePayEnabled();
+            _ = IconLinkChip.OpenUrlAsync(checkout.PayUrl);
         }
         catch (AuthException ex) when (ex.IsSessionInvalid)
         {

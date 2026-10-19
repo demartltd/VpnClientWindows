@@ -52,18 +52,18 @@ public sealed partial class HomePage : Page
     {
         if (e.PropertyName == nameof(Services.Vpn.VpnController.Throughput))
         {
-            DispatcherQueue.TryEnqueue(() => Throughput.Text = FormatThroughput(AppServices.Vpn.Throughput));
+            Ui.Run(DispatcherQueue, () => Throughput.Text = FormatThroughput(AppServices.Vpn.Throughput));
             return;
         }
         if (e.PropertyName is nameof(Services.Vpn.VpnController.State)
             or nameof(Services.Vpn.VpnController.Selected)
             or null)
-            DispatcherQueue.TryEnqueue(Refresh);
+            Ui.Run(DispatcherQueue, Refresh);
     }
 
     private void OnUpdateChanged(object? sender, PropertyChangedEventArgs e)
     {
-        DispatcherQueue.TryEnqueue(() =>
+        Ui.Run(DispatcherQueue, () =>
         {
             SyncUpdateFab();
             if (e.PropertyName is nameof(AppUpdateService.State)
@@ -145,7 +145,7 @@ public sealed partial class HomePage : Page
         var vpn = AppServices.Vpn;
         if (vpn.State.Kind == VpnStateKind.Connected)
         {
-            await vpn.DisconnectAsync();
+            await Ui.ApiAsync(DispatcherQueue, () => vpn.DisconnectAsync());
             return;
         }
         if (vpn.State.IsBusy) return;
@@ -160,7 +160,7 @@ public sealed partial class HomePage : Page
             FindShell()?.GoToServers();
             return;
         }
-        await vpn.ConnectAsync();
+        await Ui.ApiAsync(DispatcherQueue, () => vpn.ConnectAsync());
     }
 
     private ShellPage? FindShell()

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using DemarVpn.Controls;
 using DemarVpn.Models;
 using DemarVpn.Services;
+using DemarVpn.Services.Account;
 using DemarVpn.Services.Device;
 using DemarVpn.Services.Network;
 using DemarVpn.Services.Vpn;
@@ -25,6 +26,17 @@ public sealed partial class ServiceMenuPage : OverlayPage
         InternetHeader.Text = Strings.ServiceInternet;
         DeviceHeader.Text = Strings.ServiceDevice;
         DebugHeader.Text = Strings.ServiceDebug;
+        InfoSheetsHeader.Text = Strings.ServiceInfoSheets;
+        ExpiryBtn.Title = Strings.ServiceInfoExpiry;
+        ExpiryBtn.Subtitle = Strings.ServiceInfoExpirySub;
+        FreeTrafficBtn.Title = Strings.ServiceInfoFreeTraffic;
+        FreeTrafficBtn.Subtitle = Strings.ServiceInfoFreeTrafficSub;
+        TrafficBtn.Title = Strings.ServiceInfoTraffic;
+        TrafficBtn.Subtitle = Strings.ServiceInfoTrafficSub;
+        PayOkBtn.Title = Strings.ServiceInfoPayOk;
+        PayOkBtn.Subtitle = Strings.ServiceInfoPayOkSub;
+        PayFailBtn.Title = Strings.ServiceInfoPayFail;
+        PayFailBtn.Subtitle = Strings.ServiceInfoPayFailSub;
         NameRow.Key = Strings.ServiceName;
         NameRow.Value = Strings.AppName;
         PackageRow.Key = Strings.ServicePackage;
@@ -60,26 +72,29 @@ public sealed partial class ServiceMenuPage : OverlayPage
 
     private async Task ReloadLatestVersionAsync()
     {
-        void Set(string v) => DispatcherQueue.TryEnqueue(() => LatestVersionRow.Value = v);
-
         if (AppServices.Update.LatestVersion is { } cached)
         {
-            Set(cached);
+            LatestVersionRow.Value = cached;
             return;
         }
 
-        Set("…");
+        LatestVersionRow.Value = "…";
         for (var i = 0; i < 2; i++)
         {
-            if (i > 0) await Task.Delay(400);
-            var release = await WindowsReleaseApi.FetchAsync(UpdateChannelStore.PreferBeta);
+            if (i > 0)
+            {
+                await Task.Delay(400).ConfigureAwait(false);
+                await Ui.SwitchTo(DispatcherQueue);
+            }
+            var release = await Ui.ApiAsync(DispatcherQueue,
+                () => WindowsReleaseApi.FetchAsync(UpdateChannelStore.PreferBeta));
             if (release?.Version is { } v)
             {
-                Set(v);
+                LatestVersionRow.Value = v;
                 return;
             }
         }
-        Set("—");
+        LatestVersionRow.Value = "—";
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -99,20 +114,15 @@ public sealed partial class ServiceMenuPage : OverlayPage
 
     private async Task ReloadDeviceAsync()
     {
-        DispatcherQueue.TryEnqueue(() =>
-        {
-            DeviceBusy.Visibility = Visibility.Visible;
-            DevicePanel.Visibility = Visibility.Collapsed;
-            DevicePanel.Children.Clear();
-        });
-        var rows = await DeviceIdentity.LoadAsync();
-        DispatcherQueue.TryEnqueue(() =>
-        {
-            foreach (var (key, value) in rows)
-                DevicePanel.Children.Add(new DemarKvRow { Key = key, Value = value, KeyWidth = 108 });
-            DeviceBusy.Visibility = Visibility.Collapsed;
-            DevicePanel.Visibility = Visibility.Visible;
-        });
+        await Ui.SwitchTo(DispatcherQueue);
+        DeviceBusy.Visibility = Visibility.Visible;
+        DevicePanel.Visibility = Visibility.Collapsed;
+        DevicePanel.Children.Clear();
+        var rows = await Ui.ApiAsync(DispatcherQueue, () => DeviceIdentity.LoadAsync());
+        foreach (var (key, value) in rows)
+            DevicePanel.Children.Add(new DemarKvRow { Key = key, Value = value, KeyWidth = 108 });
+        DeviceBusy.Visibility = Visibility.Collapsed;
+        DevicePanel.Visibility = Visibility.Visible;
     }
 
     private async Task ReloadEgressAsync()
@@ -122,29 +132,29 @@ public sealed partial class ServiceMenuPage : OverlayPage
         _egressCts = new CancellationTokenSource();
         var ct = _egressCts.Token;
 
-        void SetRows(string route, string ip, string country)
-        {
-            DispatcherQueue.TryEnqueue(() =>
+        void SetRows(string route, string ip, string country) =>
+            Ui.Run(DispatcherQueue, () =>
             {
                 if (ct.IsCancellationRequested) return;
                 RouteRow.Value = route;
                 IpRow.Value = ip;
                 CountryRow.Value = country;
             });
-        }
 
         SetRows("…", "…", "…");
         foreach (var row in _hostRows)
-            DispatcherQueue.TryEnqueue(() => { if (!ct.IsCancellationRequested) row.Value = "…"; });
-        StartRefreshSpin();
+            Ui.Run(DispatcherQueue, () => { if (!ct.IsCancellationRequested) row.Value = "…"; });
+        Ui.Run(DispatcherQueue, StartRefreshSpin);
 
         try
         {
             var state = AppServices.Vpn.State;
-            var route = await PublicEgressDiagnostics.ResolveRouteAsync(state);
+            var route = await Ui.ApiAsync(DispatcherQueue,
+                () => PublicEgressDiagnostics.ResolveRouteAsync(state));
             if (ct.IsCancellationRequested) return;
             var useTunnel = PublicEgressDiagnostics.ShouldUseTunnel(route);
-            var geo = await PublicEgressDiagnostics.FetchGeoAsync(useTunnel, ct);
+            var geo = await Ui.ApiAsync(DispatcherQueue,
+                () => PublicEgressDiagnostics.FetchGeoAsync(useTunnel, ct));
             if (ct.IsCancellationRequested) return;
             SetRows(
                 PublicEgressDiagnostics.RouteLabel(route),
@@ -153,7 +163,7 @@ public sealed partial class ServiceMenuPage : OverlayPage
 
             await PublicEgressDiagnostics.ProbeAllHostsAsync(useTunnel, (i, probe) =>
             {
-                DispatcherQueue.TryEnqueue(() =>
+                Ui.Run(DispatcherQueue, () =>
                 {
                     if (!ct.IsCancellationRequested)
                         _hostRows[i].Value = PublicEgressDiagnostics.ProbeLabel(probe);
@@ -210,4 +220,19 @@ public sealed partial class ServiceMenuPage : OverlayPage
 
     private static void ShowSnack(SnackKind kind) =>
         AppServices.Snackbar.Show(kind, string.Format(Strings.ServiceSnackDemo, kind));
+
+    private void OnInfoExpiry(object sender, EventArgs e) =>
+        FindShell()?.OpenSubscriptionAlert(SubscriptionAlertKind.Expiry);
+
+    private void OnInfoFreeTraffic(object sender, EventArgs e) =>
+        FindShell()?.OpenSubscriptionAlert(SubscriptionAlertKind.FreeTraffic);
+
+    private void OnInfoTraffic(object sender, EventArgs e) =>
+        FindShell()?.OpenTrafficSheet();
+
+    private void OnInfoPayOk(object sender, EventArgs e) =>
+        FindShell()?.PresentPayResult(true);
+
+    private void OnInfoPayFail(object sender, EventArgs e) =>
+        FindShell()?.PresentPayResult(false);
 }

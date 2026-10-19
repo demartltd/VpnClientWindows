@@ -152,7 +152,8 @@ public sealed partial class SupportChatPane : UserControl
             if (ct.IsCancellationRequested || epoch != _sessionEpoch || _ticketId != id) return;
             try
             {
-                var fresh = await SupportApi.GetTicketAsync(session.UserId, session.LoginAt, id, ct);
+                var fresh = await Ui.ApiAsync(DispatcherQueue,
+                    () => SupportApi.GetTicketAsync(session.UserId, session.LoginAt, id, ct));
                 if (ct.IsCancellationRequested || epoch != _sessionEpoch || _ticketId != id) return;
                 if (fresh.Id != id) return;
                 var changed = _ticket is null || !TicketEquals(_ticket, fresh);
@@ -181,7 +182,8 @@ public sealed partial class SupportChatPane : UserControl
                 if (ct.IsCancellationRequested || epoch != _sessionEpoch) return;
                 if (attempt < 2 && SupportApi.IsTransient(ex))
                 {
-                    await Task.Delay(delayMs, ct);
+                    await Task.Delay(delayMs, ct).ConfigureAwait(false);
+                    await Ui.SwitchTo(DispatcherQueue);
                     delayMs *= 2;
                     continue;
                 }
@@ -196,8 +198,9 @@ public sealed partial class SupportChatPane : UserControl
     {
         try
         {
-            await SupportApi.MarkTicketReadAsync(session.UserId, session.LoginAt, id);
-            await SupportStore.RefreshUnreadAsync();
+            await Ui.ApiAsync(DispatcherQueue, () => SupportApi.MarkTicketReadAsync(
+                session.UserId, session.LoginAt, id));
+            await Ui.ApiAsync(DispatcherQueue, () => SupportStore.RefreshUnreadAsync());
         }
         catch { /* quiet */ }
     }
@@ -249,9 +252,9 @@ public sealed partial class SupportChatPane : UserControl
             MsgScroll.UpdateLayout();
             MsgScroll.ChangeView(null, MsgScroll.ScrollableHeight, null, disableAnimation: !force);
         }
-        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, Go);
-        _ = Task.Delay(50).ContinueWith(_ => DispatcherQueue.TryEnqueue(Go));
-        _ = Task.Delay(200).ContinueWith(_ => DispatcherQueue.TryEnqueue(Go));
+        Ui.Run(DispatcherQueue, Go, Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
+        _ = Task.Delay(50).ContinueWith(_ => Ui.Run(DispatcherQueue, Go));
+        _ = Task.Delay(200).ContinueWith(_ => Ui.Run(DispatcherQueue, Go));
     }
 
     private void OnEdit(SupportMessage msg)
@@ -278,8 +281,8 @@ public sealed partial class SupportChatPane : UserControl
         if (!(ticket.IsOpen && ticket.Channel == SupportApi.Channel)) return;
         try
         {
-            _ticket = await SupportApi.PatchMessageAsync(
-                session.UserId, session.LoginAt, ticket.Id, msg.Id, deleted: true);
+            _ticket = await Ui.ApiAsync(DispatcherQueue, () => SupportApi.PatchMessageAsync(
+                session.UserId, session.LoginAt, ticket.Id, msg.Id, deleted: true));
             SupportStore.SaveTicket(session.UserId, _ticket);
             RenderMessages();
         }
@@ -399,7 +402,11 @@ public sealed partial class SupportChatPane : UserControl
             var room = SupportApi.MaxMediaFiles - _pending.Count;
             foreach (var f in files.Take(room))
             {
-                try { _pending.Add(await SupportApi.ReadFileAsUploadAsync(f.Path)); }
+                try
+                {
+                    _pending.Add(await Ui.ApiAsync(DispatcherQueue,
+                        () => SupportApi.ReadFileAsUploadAsync(f.Path)));
+                }
                 catch (Exception ex) { Error?.Invoke(ex); }
             }
             if (files.Count > room)
@@ -427,8 +434,8 @@ public sealed partial class SupportChatPane : UserControl
             UpdateComposerState();
             try
             {
-                _ticket = await SupportApi.PatchMessageAsync(
-                    session.UserId, session.LoginAt, _ticket.Id, _editTarget.Id, text: body);
+                _ticket = await Ui.ApiAsync(DispatcherQueue, () => SupportApi.PatchMessageAsync(
+                    session.UserId, session.LoginAt, _ticket.Id, _editTarget.Id, text: body));
                 SupportStore.SaveTicket(session.UserId, _ticket);
                 _editTarget = null;
                 InputBox.Text = "";
@@ -460,40 +467,40 @@ public sealed partial class SupportChatPane : UserControl
             SupportTicket fresh;
             if (creating)
             {
-                var diagnostics = await SupportApi.BuildSilentDiagnosticsAsync();
-                fresh = await SupportApi.PostTicketCreateAsync(
-                    session.UserId, session.LoginAt,
-                    text: body.Length > 0 ? body : null,
-                    log: diagnostics.LogText,
-                    logMedia: diagnostics.LogMedia,
-                    themeId: _themeId,
-                    forceNew: true);
+                fresh = await Ui.ApiAsync(DispatcherQueue, async () =>
+                {
+                    var diagnostics = await SupportApi.BuildSilentDiagnosticsAsync();
+                    var created = await SupportApi.PostTicketCreateAsync(
+                        session.UserId, session.LoginAt,
+                        text: body.Length > 0 ? body : null,
+                        log: diagnostics.LogText,
+                        logMedia: diagnostics.LogMedia,
+                        themeId: _themeId,
+                        forceNew: true);
+                    if (uploads.Count > 0)
+                        created = await SupportApi.PostMediaAlbumAsync(
+                            session.UserId, session.LoginAt, uploads, created.Id);
+                    return created;
+                });
                 _ticket = fresh;
                 _ticketId = fresh.Id;
                 SupportStore.SaveTicket(session.UserId, fresh);
-                if (uploads.Count > 0)
-                {
-                    fresh = await SupportApi.PostMediaAlbumAsync(
-                        session.UserId, session.LoginAt, uploads, fresh.Id);
-                    _ticket = fresh;
-                    SupportStore.SaveTicket(session.UserId, fresh);
-                }
                 TicketCreated?.Invoke(fresh);
             }
             else
             {
                 var id = _ticket?.Id ?? _ticketId!;
-                fresh = _ticket!;
-                if (body.Length > 0)
+                fresh = await Ui.ApiAsync(DispatcherQueue, async () =>
                 {
-                    fresh = await SupportApi.PostTicketAsync(
-                        session.UserId, session.LoginAt, text: body, ticketId: id);
-                }
-                if (uploads.Count > 0)
-                {
-                    fresh = await SupportApi.PostMediaAlbumAsync(
-                        session.UserId, session.LoginAt, uploads, id);
-                }
+                    var t = _ticket!;
+                    if (body.Length > 0)
+                        t = await SupportApi.PostTicketAsync(
+                            session.UserId, session.LoginAt, text: body, ticketId: id);
+                    if (uploads.Count > 0)
+                        t = await SupportApi.PostMediaAlbumAsync(
+                            session.UserId, session.LoginAt, uploads, id);
+                    return t;
+                });
                 _ticket = fresh;
                 SupportStore.SaveTicket(session.UserId, fresh);
             }

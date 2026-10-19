@@ -188,6 +188,19 @@ static class Ru
         ["{0} day"] = "{0} день",
         ["{0} days_few"] = "{0} дня",
         ["{0} days"] = "{0} дней",
+        ["Subscription is expiring!"] = "Подписка истекает!",
+        ["You will lose internet in"] = "Вы лишитесь интернета через",
+        ["Buy a subscription"] = "Купите подписку",
+        ["Free version expires in"] = "Бесплатная версия истечет через",
+        ["Secure internet"] = "Безопасный интернет",
+        ["Now"] = "Сейчас",
+        ["After"] = "После",
+        ["{0} hour"] = "{0} час",
+        ["{0} hours_few"] = "{0} часа",
+        ["{0} hours"] = "{0} часов",
+        ["{0} minute"] = "{0} минуту",
+        ["{0} minutes_few"] = "{0} минуты",
+        ["{0} minutes"] = "{0} минут",
     };
 }
 

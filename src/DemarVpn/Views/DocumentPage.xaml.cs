@@ -1,4 +1,5 @@
 using DemarVpn.Domain.Content;
+using DemarVpn.Services;
 using DemarVpn.Services.Content;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -59,21 +60,16 @@ public sealed partial class DocumentPage : OverlayPage
         ShowLoading();
         try
         {
-            var md = await LegalDocumentRepository.LoadAsync(doc, ct);
+            var md = await Ui.ApiAsync(DispatcherQueue, () => LegalDocumentRepository.LoadAsync(doc, ct));
             if (ct.IsCancellationRequested) return;
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                if (ct.IsCancellationRequested) return;
-                MarkdownBlocks.Fill(BlocksHost, md);
-                ShowContent();
-            });
+            MarkdownBlocks.Fill(BlocksHost, md);
+            ShowContent();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
         catch (Exception ex)
         {
             AppLog.Append($"DocumentPage load {doc} failed: {ex.Message}");
-            if (!ct.IsCancellationRequested)
-                DispatcherQueue.TryEnqueue(ShowError);
+            if (!ct.IsCancellationRequested) ShowError();
         }
     }
 
