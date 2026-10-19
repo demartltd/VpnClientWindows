@@ -83,14 +83,24 @@ public static class DemarDialog
             MinWidth = 280,
         };
         input.TextChanged += (_, _) => FilterPromoInput(input);
+        input.GotFocus += (_, _) => KeyboardLayout.PreferUsEnglish();
 
         var dialog = New(xamlRoot, Strings.PromoEnterTitle, CompactContent(input));
         dialog.PrimaryButtonText = primaryButtonText;
         dialog.CloseButtonText = Strings.Cancel;
         dialog.DefaultButton = ContentDialogButton.Primary;
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return null;
-        var code = input.Text.Trim();
-        return code.Length > 0 ? code : null;
+
+        var previousLayout = KeyboardLayout.Current();
+        try
+        {
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary) return null;
+            var code = input.Text.Trim();
+            return code.Length > 0 ? code : null;
+        }
+        finally
+        {
+            KeyboardLayout.Activate(previousLayout);
+        }
     }
 
     /// <summary>Build a styled dialog; caller may tweak buttons before ShowAsync.</summary>

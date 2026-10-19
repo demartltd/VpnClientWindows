@@ -69,6 +69,7 @@ src/DemarVpn/
 │   ├── DemarNavigation.cs         # demarvpn:// auth + support + pay + account deep links
 │   ├── ProtocolRegistration.cs    # demarvpn:// HKCU
 │   ├── Ui.cs                      # ApiAsync / SwitchTo / Run — UI hop after ConfigureAwait(false)
+│   ├── KeyboardLayout.cs          # Win32 PreferUsEnglish (promo TextBox)
 │   └── SnackbarService.cs
 ├── Models/
 ├── Assets/                        # AppIcon.ico, logos, BrandIcons.xaml, Flags/, singbox/, rule-sets/ (ads .srs synced on build)
