@@ -36,12 +36,14 @@ public sealed partial class IconLinkChip : UserControl
     private static void OnIconChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not IconLinkChip chip || e.NewValue is not SocialIcon icon) return;
+        var threads = icon == SocialIcon.Threads;
+        chip.ThreadsIcon.Visibility = threads ? Visibility.Visible : Visibility.Collapsed;
+        chip.BrandGlyph.Visibility = threads ? Visibility.Collapsed : Visibility.Visible;
+        if (threads) return;
         chip.BrandGlyph.Glyph = icon switch
         {
             SocialIcon.X => "\uE61B",
             SocialIcon.Bluesky => "\uE671",
-            SocialIcon.Instagram => "\uF16D",
-            SocialIcon.TikTok => "\uE07B",
             SocialIcon.Telegram => "\uF2C6",
             _ => string.Empty,
         };

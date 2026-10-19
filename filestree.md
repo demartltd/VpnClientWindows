@@ -12,7 +12,7 @@ src/DemarVpn/
 │   ├── Catalog.cs
 ├── Theme/                         # DemarPalette (MaterialColorUtilities TonalSpot)
 ├── Domain/
-│   ├── Vpn/                       # Hysteria2Profile, SingBoxConnectPlan, ApiBypassRuleSet, ServerProfile, ServerReachability
+│   ├── Vpn/                       # IProxyProfile, Hysteria2/Trojan/VlessReality profiles, SingBoxConnectPlan, ServerProfile, ServerReachability
 │   └── Content/LegalDocument.cs   # Terms / Privacy + GitHub MD URLs
 ├── Views/
 │   ├── ShellPage.xaml             # tabs + overlay frame + snackbar overlay

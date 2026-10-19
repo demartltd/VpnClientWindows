@@ -113,10 +113,9 @@ public static class SocialLinks
 {
     public static IReadOnlyList<(SocialIcon Icon, string Url)> All { get; } =
     [
-        (SocialIcon.X, "https://x.com/demargames"),
-        (SocialIcon.Bluesky, "https://bsky.app/profile/demargames.bsky.social"),
-        (SocialIcon.Instagram, "https://www.instagram.com/demargames/"),
-        (SocialIcon.TikTok, "https://www.tiktok.com/@demargames"),
-        (SocialIcon.Telegram, "https://t.me/demargames"),
+        (SocialIcon.X, "https://x.com/DemarLtd"),
+        (SocialIcon.Bluesky, "https://bsky.app/profile/demarltd.bsky.social/"),
+        (SocialIcon.Threads, "https://www.threads.com/@demarltd"),
+        (SocialIcon.Telegram, "https://t.me/demarproxy"),
     ];
 }

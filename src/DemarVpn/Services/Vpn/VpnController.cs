@@ -424,6 +424,8 @@ public sealed class VpnController : NotifyBase
             var plan = profile.ConnectPlan;
             var (resolved, dnsErr) = await UplinkIpv4.ResolveDetailedAsync(plan.UplinkHost).ConfigureAwait(false);
             if (resolved.Count > 0) plan = plan.WithExtraDirectIps(resolved);
+            if (resolved.Count > 0 && profile.Profile.PreferResolvedDial)
+                plan = plan.WithResolvedUplink(resolved[0]);
 
             var connectTarget = resolved.Count > 0
                 ? resolved[0]

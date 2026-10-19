@@ -4,7 +4,7 @@
 
 **Min OS:** Windows 10 19041+ (WinUI 3 / Windows App SDK).
 
-Ядро: **sing-box latest** (**Hysteria2**). Документация: [https://sing-box.sagernet.org/](https://sing-box.sagernet.org/)
+Ядро: **sing-box latest** (**Hysteria2 + Trojan + VLESS Reality**). Документация: [https://sing-box.sagernet.org/](https://sing-box.sagernet.org/)
 
 **UI:** Fluent Design, **тёмная тема only**, seed `#3A6EA5` — MaterialColorUtilities `TonalSpot`.
 
@@ -51,16 +51,16 @@ pwsh scripts/for_builds/build_windows.ps1 -Fast
 
 | Экран                         | Статус                                                                                                                             |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Home (VPN toggle)             | Hysteria2 connect/disconnect через `VpnController`                                                                                 |
+| Home (VPN toggle)             | Connect/disconnect через `VpnController` (HY2 / Trojan / VLESS)                                                                    |
 | Servers                       | SegmentBar протокол/тиры (drag), divider, `Country | TIER` + city, FAB refresh, reachability; Dev/Tester только если есть в списке |
-| Settings + social links       | FA6 brand icons (`IconLinkChip`: X / Bluesky / IG / TikTok / Telegram); промокод (`POST fastapi…/vpn/promo/activate` → refresh account+servers); Documents sheet → ToS/PP с GitHub Markdown; **Support** тикет-чат (`csauth.example.invalid`, `channel=windows`, альбом до 10 фото WebP, unread badge) |
+| Settings + social links       | FA6 brand icons (`IconLinkChip`: X / Bluesky / Threads / Telegram); промокод (`POST fastapi…/vpn/promo/activate` → refresh account+servers); Documents sheet → ToS/PP с GitHub Markdown; **Support** тикет-чат (`csauth.example.invalid`, `channel=windows`, альбом до 10 фото WebP, unread badge) |
 | Account + login + notify/traffic sheets | Email OTP + TOTP + Telegram OAuth → `auth.example.invalid`; Account: подписка / **checkout** (narrow≈iOS / wide≈macOS) / трафик pie / семья (stub) / уведомления / выход; `AccountStore` refresh при старте и при обновлении серверов (`fastapi…/vpn/account|traffic|notify`); оплата: `GET /vpn/pay/plans` → `POST /vpn/pay/create` → браузер → `demarvpn://pay/ok|fail` |
 | App settings (язык + журнал + beta + autostart) | **Language** 13 langs via `Locales/{En,Ru,…}.cs` (Apple/Android-style EN-key maps) + `Strings.L`; first launch = OS if supported, иначе EN; remount UI; checkout **ru→RUB**, else **EUR**; `AppLog` / beta / autostart / updates; **TUN settings**: Ad block (bundled local `geosite-category-ads.srs`, DNS+route reject, Free off / Plus·VIP default on) + app/site bypass |
 | Service menu (3× tap version) | English only — About, Route, egress probes, device identity |
 | Installer / Uninstall         | UI по языку ОС (en/ru/uk/tr/uz/zh-Hans/zh-Hant/ko/ja/es/de/fr/hi; иначе EN); без переключателя |
 
 
-VPN connect (Hysteria2) — **реализовано** (`SingBoxProcessEngine` + Wintun). При Connect появится **UAC для sing-box.exe** (TUN).
+VPN connect (HY2 / Trojan / VLESS) — **реализовано** (`SingBoxProcessEngine` + Wintun). При Connect появится **UAC для sing-box.exe** (TUN).
 
 ### Auth
 
@@ -68,7 +68,7 @@ Email OTP + TOTP (если включён) и Telegram OIDC через брау�
 
 ### Servers
 
-После входа `POST https://vpn.example.invalid/vpn/servers` → список по подписке. Session cache (`%LOCALAPPDATA%\DemarVpn\session_cache.json`): servers + account + traffic + tun — hydrate при старте до сети (parity Apple). Один background loop раз в 10 мин: app update + session refresh if stale; connect без единого refresh в процессе — сначала `RefreshServersAsync`. UI: SegmentBar протокола + All/тиры (Dev/Tester только при наличии), divider, строки `Country | TIER` / `City #N`, floating refresh (roll + snackbar), DNS reachability-dot. Неподдерживаемые протоколы пропускаются. Без сессии — CTA войти.
+После входа `POST https://vpn.example.invalid/vpn/servers` → список по подписке (HY2 / Trojan / VLESS Reality). Session cache (`%LOCALAPPDATA%\DemarVpn\session_cache.json`): servers + account + traffic + tun — hydrate при старте до сети (parity Apple). Один background loop раз в 10 мин: app update + session refresh if stale; connect без единого refresh в процессе — сначала `RefreshServersAsync`. UI: SegmentBar протокола (только присутствующие) + All/тиры (Dev/Tester только при наличии), divider, строки `Country | TIER` / `City #N`, floating refresh (roll + snackbar), DNS reachability-dot. Неподдерживаемые протоколы пропускаются. Без сессии — CTA войти.
 
 ---
 

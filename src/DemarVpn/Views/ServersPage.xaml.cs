@@ -165,15 +165,20 @@ public sealed partial class ServersPage : Page
 
     private void RebuildFilters()
     {
+        var servers = AppServices.Vpn.Servers;
+        var protocols = ServerProfile.VisibleProtocols(servers);
+        if (protocols.Count == 0)
+            protocols = [ServerProtocol.Hysteria2];
+        if (!protocols.Contains(_protocol))
+            _protocol = protocols[0];
         ProtocolBar.SetOptions(
-            Enum.GetValues<ServerProtocol>()
+            protocols
                 .Select(p => new SegmentOption(p.ToString().ToUpperInvariant(), p.Label()))
                 .ToList(),
             _protocol.ToString().ToUpperInvariant());
 
-        var servers = AppServices.Vpn.Servers;
         var hash = servers.Count;
-        foreach (var s in servers) hash = HashCode.Combine(hash, s.Id, s.Tier);
+        foreach (var s in servers) hash = HashCode.Combine(hash, s.Id, s.Tier, s.Protocol);
         if (hash == _tierBarServersHash && TierBar.SelectedId.Length > 0) return;
         _tierBarServersHash = hash;
 

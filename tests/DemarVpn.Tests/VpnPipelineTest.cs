@@ -15,10 +15,12 @@ public class VpnPipelineTest
         int port = 443,
         string? obfs = "obfs-secret",
         string? city = "Helsinki") =>
-        ServerProfile.Hysteria2FromTag(
+        ServerProfile.FromTag(
             new Hysteria2Profile(tag, server, port, "pass", server, ["h3"], obfs),
             city: city,
             id: $"id:{tag}");
+
+    private static Hysteria2Profile AsHy2(ServerProfile p) => (Hysteria2Profile)p.Profile;
 
     [Fact]
     public void Hysteria2_profileToTunConfig()
@@ -274,7 +276,7 @@ public class VpnPipelineTest
     [InlineData("SE-FREE-71", "SE", ServerTier.Free)]
     [InlineData("GR-FREE-22", "GR", ServerTier.Free)]
     [InlineData("DE-FREE-1", "DE", ServerTier.Free)]
-    public void Hysteria2FromTag_parsesCountryCode(string tag, string expectedCode, ServerTier expectedTier)
+    public void FromTag_parsesCountryCode(string tag, string expectedCode, ServerTier expectedTier)
     {
         var profile = Fixture(tag: tag);
         Assert.Equal(expectedCode, profile.CountryCode);
@@ -348,12 +350,18 @@ public class VpnPipelineTest
         Assert.Equal(443, profile.UplinkPort);
         Assert.Equal("Finland | FREE", profile.ListTitle);
         Assert.Equal("Helsinki #1", profile.ListSubtitle);
-        Assert.Null(profile.Profile.UpMbps);
-        Assert.Null(profile.Profile.DownMbps);
+        Assert.Null(AsHy2(profile).UpMbps);
+        Assert.Null(AsHy2(profile).DownMbps);
         Assert.Empty(profile.BypassRuleSets ?? []);
 
-        var skip = JsonNode.Parse("""
+        // Empty outbounds → parse fails (supported protocol, bad config).
+        var emptyTrojan = JsonNode.Parse("""
             {"id":"s2","name":"X","protocol":"trojan","clientConfigJson":"{}"}
+            """)!.AsObject();
+        Assert.Null(ServersApi.ParseServerItem(emptyTrojan));
+
+        var skip = JsonNode.Parse("""
+            {"id":"s2b","name":"Y","protocol":"shadowsocks","clientConfigJson":"{}"}
             """)!.AsObject();
         Assert.Null(ServersApi.ParseServerItem(skip));
     }
@@ -368,8 +376,121 @@ public class VpnPipelineTest
         Assert.NotNull(profile);
         Assert.Equal("s3", profile!.Id);
         Assert.Equal("DE-PLUS-1", profile.DisplayName);
-        Assert.Equal("", profile.Profile.Password);
+        Assert.Equal("", AsHy2(profile).Password);
+        Assert.False(profile.Profile.HasCredentials);
         Assert.Equal("Germany | PLUS", profile.ListTitle);
+    }
+
+    [Fact]
+    public void ServersApi_parseTrojan_andOutbound()
+    {
+        var item = JsonNode.Parse("""
+            {
+              "id": "t1",
+              "name": "DE-PLUS-1",
+              "city": "Berlin",
+              "protocol": "trojan",
+              "clientConfigJson": "{\"outbounds\":[{\"type\":\"trojan\",\"server\":\"trojan.example.com\",\"server_port\":443,\"password\":\"tp\",\"tls\":{\"server_name\":\"trojan.example.com\"}}]}"
+            }
+            """)!.AsObject();
+        var profile = ServersApi.ParseServerItem(item);
+        Assert.NotNull(profile);
+        Assert.Equal(ServerProtocol.Trojan, profile!.Protocol);
+        Assert.Equal("Trojan", profile.Protocol.Label());
+        Assert.True(profile.Profile.PreferResolvedDial);
+        Assert.True(profile.Profile.HasCredentials);
+
+        var plan = profile.ConnectPlan;
+        Assert.Equal("trojan", plan.ProxyOutbound["type"]);
+        Assert.Equal("tp", plan.ProxyOutbound["password"]);
+        var mux = Assert.IsType<Dictionary<string, object?>>(plan.ProxyOutbound["multiplex"]);
+        Assert.True((bool)mux["enabled"]!);
+        Assert.Contains("trojan.example.com", plan.Tun.BootstrapDomains);
+
+        var rewritten = plan.WithResolvedUplink("9.9.9.9");
+        Assert.Equal("9.9.9.9", rewritten.ProxyOutbound["server"]);
+        Assert.Equal("trojan.example.com", rewritten.UplinkHost);
+    }
+
+    [Fact]
+    public void ServersApi_parseVlessReality_andOutbound()
+    {
+        var item = JsonNode.Parse("""
+            {
+              "id": "v1",
+              "name": "NL-VIP-1",
+              "city": "Amsterdam",
+              "protocol": "vless_reality",
+              "clientConfigJson": "{\"outbounds\":[{\"type\":\"vless\",\"server\":\"vless.example.com\",\"server_port\":443,\"uuid\":\"bf000d23-0752-40b4-affe-68f7707a9661\",\"flow\":\"xtls-rprx-vision\",\"tls\":{\"server_name\":\"www.cloudflare.com\",\"reality\":{\"public_key\":\"pk\",\"short_id\":\"abcd\"}}}]}"
+            }
+            """)!.AsObject();
+        var profile = ServersApi.ParseServerItem(item);
+        Assert.NotNull(profile);
+        Assert.Equal(ServerProtocol.VlessReality, profile!.Protocol);
+        Assert.Equal("VLESS", profile.Protocol.Label());
+        Assert.True(profile.Profile.PreferResolvedDial);
+
+        var plan = profile.ConnectPlan;
+        Assert.Equal("vless", plan.ProxyOutbound["type"]);
+        Assert.Equal("xtls-rprx-vision", plan.ProxyOutbound["flow"]);
+        Assert.False(plan.ProxyOutbound.ContainsKey("multiplex"));
+        Assert.False(plan.ProxyOutbound.ContainsKey("network"));
+        Assert.Equal(["vless.example.com"], plan.Tun.BootstrapDomains);
+
+        var tls = Assert.IsType<Dictionary<string, object?>>(plan.ProxyOutbound["tls"]);
+        var utls = Assert.IsType<Dictionary<string, object?>>(tls["utls"]);
+        Assert.Equal("chrome", utls["fingerprint"]);
+        var reality = Assert.IsType<Dictionary<string, object?>>(tls["reality"]);
+        Assert.Equal("pk", reality["public_key"]);
+        Assert.Equal("abcd", reality["short_id"]);
+    }
+
+    [Fact]
+    public void ServersApi_vlessWithoutRealityKeys_skipped()
+    {
+        var item = JsonNode.Parse("""
+            {
+              "id": "v2",
+              "name": "NL-VIP-2",
+              "protocol": "vless_reality",
+              "clientConfigJson": "{\"outbounds\":[{\"type\":\"vless\",\"server\":\"v.example.com\",\"server_port\":443,\"uuid\":\"u\",\"tls\":{\"server_name\":\"www.cloudflare.com\"}}]}"
+            }
+            """)!.AsObject();
+        Assert.Null(ServersApi.ParseServerItem(item));
+    }
+
+    [Fact]
+    public void VisibleProtocols_onlyPresentInList()
+    {
+        var hy2 = Fixture("FI-FREE-1");
+        var trojan = ServerProfile.FromTag(
+            new TrojanProfile("DE-PLUS-1", "t.example.com", 443, "p", "t.example.com"),
+            city: "Berlin",
+            id: "t1");
+        Assert.Equal(
+            new[] { ServerProtocol.Hysteria2 },
+            ServerProfile.VisibleProtocols([hy2]));
+        Assert.Equal(
+            new[] { ServerProtocol.Hysteria2, ServerProtocol.Trojan },
+            ServerProfile.VisibleProtocols([hy2, trojan]));
+    }
+
+    [Fact]
+    public void ServersApi_previewTrojanAndVless()
+    {
+        var trojan = ServersApi.ParseServerItem(JsonNode.Parse("""
+            {"id":"pt","name":"DE-PLUS-1","city":"Berlin","protocol":"trojan"}
+            """)!.AsObject());
+        Assert.NotNull(trojan);
+        Assert.Equal(ServerProtocol.Trojan, trojan!.Protocol);
+        Assert.False(trojan.Profile.HasCredentials);
+
+        var vless = ServersApi.ParseServerItem(JsonNode.Parse("""
+            {"id":"pv","name":"NL-VIP-1","city":"Amsterdam","protocol":"vless_reality"}
+            """)!.AsObject());
+        Assert.NotNull(vless);
+        Assert.Equal(ServerProtocol.VlessReality, vless!.Protocol);
+        Assert.False(vless.Profile.HasCredentials);
     }
 
     [Fact]
@@ -444,8 +565,8 @@ public class VpnPipelineTest
 
         var profile = ServersApi.ParseServerItem(item);
         Assert.NotNull(profile);
-        Assert.Equal(10, profile!.Profile.UpMbps);
-        Assert.Equal(10, profile.Profile.DownMbps);
+        Assert.Equal(10, AsHy2(profile!).UpMbps);
+        Assert.Equal(10, AsHy2(profile).DownMbps);
         Assert.Equal(6, profile.BypassRuleSets!.Count);
         Assert.Contains(profile.BypassRuleSets, rs => rs.Tag == "geosite-ir" && rs.Url.Contains("Chocolate4U"));
         Assert.Contains(profile.BypassRuleSets, rs => rs.Tag == "geosite-cn");
@@ -492,8 +613,8 @@ public class VpnPipelineTest
             """)!.AsObject();
         var profile = ServersApi.ParseServerItem(zero);
         Assert.NotNull(profile);
-        Assert.Null(profile!.Profile.UpMbps);
-        Assert.Null(profile.Profile.DownMbps);
+        Assert.Null(AsHy2(profile!).UpMbps);
+        Assert.Null(AsHy2(profile).DownMbps);
         var plan = profile.ConnectPlan;
         Assert.False(plan.ProxyOutbound.ContainsKey("up_mbps"));
         Assert.False(plan.ProxyOutbound.ContainsKey("down_mbps"));
@@ -585,7 +706,7 @@ public class VpnPipelineTest
     public void AdBlock_withGeosite_keepsAdsAndBypass()
     {
         var plan = SingBoxConnectPlan.Hysteria2(
-            Fixture().Profile,
+            AsHy2(Fixture()),
             [
                 new ApiBypassRuleSet(
                     "geosite-category-ru",

@@ -4,7 +4,6 @@ public enum SocialIcon
 {
     X,
     Bluesky,
-    Instagram,
-    TikTok,
+    Threads,
     Telegram,
 }

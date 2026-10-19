@@ -54,7 +54,7 @@ public sealed partial class TrafficBottomSheet : UserControl
             traffic.Servers,
             Strings.AccountTrafficOther,
             VpnAccountApi.FormatBytes(traffic.Total),
-            AuthRepository.Session?.UserId ?? "");
+            AuthRepository.Session?.Username ?? "");
     }
 
     private void SetBusy(string status)

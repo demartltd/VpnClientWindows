@@ -1,10 +1,13 @@
-# Ядро VPN: Sing-box (Hysteria2) — Demar VPN Windows
+# Ядро VPN: Sing-box (Hysteria2 + Trojan + VLESS Reality) — Demar VPN Windows
 
 Целевая версия core: **sing-box latest**. Фактическая — в `src/DemarVpn/Assets/singbox/bundled_version.txt` после `scripts/for_builds/singbox-build-windows.py`.
 
 Документация: https://sing-box.sagernet.org/
 
 - [Hysteria2 outbound](https://sing-box.sagernet.org/configuration/outbound/hysteria2/)
+- [Trojan outbound](https://sing-box.sagernet.org/configuration/outbound/trojan/)
+- [VLESS outbound](https://sing-box.sagernet.org/configuration/outbound/vless/)
+- [TLS / Reality](https://sing-box.sagernet.org/configuration/shared/tls/)
 - [NaiveProxy outbound](https://sing-box.sagernet.org/configuration/outbound/naive/) (since 1.13; Windows → `libcronet.dll`)
 - [DNS rule action](https://sing-box.sagernet.org/configuration/dns/rule_action/) (since 1.11.0)
 - [Dial Fields](https://sing-box.sagernet.org/configuration/shared/dial/) — `domain_resolver`
@@ -13,7 +16,7 @@
 
 **Итерация:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine`). Auth — `auth.example.invalid`; servers — `vpn.example.invalid` (parity Android).
 
-Connect pipeline: `UplinkIpv4` (attempts=2) → DNS resolve success → config → subprocess (full stop before start) → diag `:10808` → `TunnelPathProbe` (poll CONNECT). Hysteria2 = QUIC/UDP — **без TCP preflight**.
+Connect pipeline: `UplinkIpv4` (attempts=2) → DNS resolve success → config → subprocess (full stop before start) → diag `:10808` → `TunnelPathProbe` (poll CONNECT). Hysteria2 = QUIC/UDP — **без TCP preflight**; Trojan/VLESS — `preferResolvedDial` → `withResolvedUplink`.
 
 ### Таймауты (`ConnectTimeouts`)
 
@@ -45,14 +48,15 @@ Connect pipeline: `UplinkIpv4` (attempts=2) → DNS resolve success → config �
 ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigBuilder → config.json
 ```
 
-`resolveUplinkIpv4s` — перед connect на Windows. Список серверов: `POST https://vpn.example.invalid/vpn/servers` → только `protocol=hysteria2`.
+`resolveUplinkIpv4s` — перед connect на Windows. Список: `POST https://vpn.example.invalid/vpn/servers` → `hysteria2` / `trojan` / `vless_reality` (остальное skip). Расширяемость: новый `IProxyProfile` + `ToConnectPlan` + `ServerProtocol` + parse ветка.
 
 ### Добавление протокола
 
-1. Profile struct (`FooProfile`) в `Domain/Vpn/`
-2. `SingBoxConnectPlan.Foo(profile)` — outbound + tun overrides
-3. Parser в `ServersApi`
-4. Official release zip уже включает Hysteria2 + Naive; `libcronet.dll` рядом с `sing-box.exe`
+1. `FooProfile : IProxyProfile` — `Protocol`, `PreferResolvedDial`, `ToConnectPlan` → `SingBoxConnectPlan.Foo()`
+2. `ServerProtocol` entry (`ApiKey` / `Label`)
+3. Parse/preview ветка в `ServersApi` (+ `ServerProfile.FromTag`)
+4. Test / API seed (не hardcode в runtime)
+5. Official release zip уже включает HY2 + Trojan + VLESS/Reality/uTLS + Naive; `libcronet.dll` рядом с `sing-box.exe`
 
 ---
 
@@ -78,6 +82,61 @@ ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigB
 | `domain_resolver` | `dns-direct`, `ipv4_only` |
 | `obfs` | optional salamander |
 | `up_mbps` / `down_mbps` | omitted → BBR |
+| dial | `PreferResolvedDial = false` (hostname в outbound) |
+
+---
+
+## Trojan
+
+API `protocol`: `trojan`. Outbound type: `trojan`. TCP + TLS + multiplex.
+
+| App field | sing-box key |
+|-----------|--------------|
+| `server` | `server` |
+| `port` | `server_port` |
+| `password` | `password` |
+| `tlsServerName` | `tls.server_name` |
+
+### Outbound defaults (`SingBoxConnectPlan.Trojan`)
+
+| Поле | Значение |
+|------|----------|
+| `tls` | enabled + `server_name` |
+| `multiplex` | `{ enabled: true }` |
+| `domain_resolver` | `dns-direct`, `ipv4_only` |
+| dial | `PreferResolvedDial` → `WithResolvedUplink` после resolve |
+
+Bootstrap DNS/route: hostname сервера + TLS SNI (обычно совпадают).
+
+---
+
+## VLESS Reality
+
+Стек: **VLESS + TCP + xtls-rprx-vision + REALITY** (не XHTTP — в stock sing-box 1.14 нет).
+
+API `protocol`: `vless_reality`. Outbound type: `vless`.
+
+| App field | sing-box key |
+|-----------|--------------|
+| `server` | `server` (VPS domain) |
+| `port` | `server_port` |
+| `uuid` | `uuid` |
+| `flow` | `flow` (default `xtls-rprx-vision`) |
+| `tlsServerName` | `tls.server_name` (handshake host, often `www.cloudflare.com`) |
+| `publicKey` | `tls.reality.public_key` |
+| `shortId` | `tls.reality.short_id` |
+
+### Outbound defaults (`SingBoxConnectPlan.VlessReality`)
+
+| Поле | Значение |
+|------|----------|
+| `tls.reality` | enabled + public_key + short_id |
+| `tls.utls` | enabled + fingerprint `chrome` |
+| `domain_resolver` | `dns-direct`, `ipv4_only` |
+| `network` / `multiplex` | **не эмитятся** (Vision ∌ mux) |
+| dial | `PreferResolvedDial` → `WithResolvedUplink` после resolve |
+
+Uplink host = VPS `server`, не SNI. Bootstrap DNS/route: только uplink hostname (без handshake SNI).
 
 ---
 
@@ -163,7 +222,7 @@ Mixed `127.0.0.1:10808` (`SingBoxTags.diagInbound`):
 | `POST /auth/mobile/email/send\|confirm` | Email OTP |
 | `POST /auth/mobile/totp/verify` | TOTP |
 | `POST /auth/mobile/session/exchange\|check` | сессия |
-| `POST vpn.example.invalid/vpn/servers` | список hy2 по подписке; UI: SegmentBar + listTitle/`City #N` + DNS reachability |
+| `POST vpn.example.invalid/vpn/servers` | список HY2/Trojan/VLESS по подписке; UI: SegmentBar + listTitle/`City #N` + DNS reachability |
 | `GET account.example.invalid/api/auth/client/me` | Telegram OAuth token |
 
 Headers: `X-Demar-Client: demar-vpn`, `User-Agent: DemarVPN/{ver} (windows)`. Protocol: `demarvpn://auth/callback`.
@@ -178,7 +237,7 @@ py -3 scripts/for_builds/singbox-build-windows.py
 pwsh scripts/for_builds/build_windows.ps1
 ```
 
-Runtime в `Native/bin/`: `sing-box.exe`, `wintun.dll`, `libcronet.dll` (NaiveProxy). Official release zip уже включает Hysteria2.
+Runtime в `Native/bin/`: `sing-box.exe`, `wintun.dll`, `libcronet.dll` (NaiveProxy). Official release zip уже включает HY2 + Trojan + VLESS/Reality/uTLS.
 
 Очистка: `python3 scripts/singbox-cleaner.py -y`
 
@@ -188,7 +247,7 @@ Runtime в `Native/bin/`: `sing-box.exe`, `wintun.dll`, `libcronet.dll` (NaivePr
 
 | Путь | Роль |
 |------|------|
-| `Domain/Vpn/*` | Profiles, `SingBoxConnectPlan`, `ApiBypassRuleSet` |
+| `Domain/Vpn/*` | `IProxyProfile`, HY2/Trojan/VLESS profiles, `SingBoxConnectPlan`, `ApiBypassRuleSet` |
 | `Services/Auth/*` | API + session store |
 | `Services/Servers/*` | servers fetch/parse |
 | `Services/Vpn/SingBoxConfigBuilder.cs` | TUN + DNS + route JSON (`stack: system`) |

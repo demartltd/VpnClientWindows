@@ -45,29 +45,49 @@ public static class ServerTierLabels
 public enum ServerProtocol
 {
     Hysteria2,
+    Trojan,
+    VlessReality,
 }
 
 public static class ServerProtocolLabels
 {
+    public static string ApiKey(this ServerProtocol protocol) => protocol switch
+    {
+        ServerProtocol.Trojan => "trojan",
+        ServerProtocol.VlessReality => "vless_reality",
+        _ => "hysteria2",
+    };
+
     public static string Label(this ServerProtocol protocol) => protocol switch
     {
-        _ => "Hysteria2",
+        ServerProtocol.Trojan => "Trojan",
+        ServerProtocol.VlessReality => "VLESS",
+        _ => "HY2",
     };
+
+    public static ServerProtocol? FromApi(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var key = raw.Trim().ToLowerInvariant();
+        foreach (var p in Enum.GetValues<ServerProtocol>())
+            if (p.ApiKey() == key) return p;
+        return null;
+    }
 }
 
 public sealed record ServerProfile(
     string Id,
     string DisplayName,
-    Hysteria2Profile Profile,
+    IProxyProfile Profile,
     string? CountryCode = null,
     string? CountryName = null,
     string? City = null,
     IReadOnlyList<ApiBypassRuleSet>? BypassRuleSets = null)
 {
     public SingBoxConnectPlan ConnectPlan =>
-        SingBoxConnectPlan.Hysteria2(Profile, BypassRuleSets ?? []);
+        Profile.ToConnectPlan(BypassRuleSets ?? []);
     public int UplinkPort => Profile.Port;
-    public ServerProtocol Protocol => ServerProtocol.Hysteria2;
+    public ServerProtocol Protocol => Profile.Protocol;
 
     public ServerTier Tier
     {
@@ -113,14 +133,14 @@ public sealed record ServerProfile(
         }
     }
 
-    public static ServerProfile Hysteria2(
-        Hysteria2Profile profile,
+    public static ServerProfile FromProxy(
+        IProxyProfile profile,
         string? countryCode = null,
         string? countryName = null,
         string? city = null,
         string? id = null,
         IReadOnlyList<ApiBypassRuleSet>? bypassRuleSets = null) => new(
-        id ?? $"hysteria2:{profile.DisplayName}",
+        id ?? $"{profile.Protocol.ApiKey()}:{profile.DisplayName}",
         profile.DisplayName,
         profile,
         countryCode,
@@ -128,14 +148,14 @@ public sealed record ServerProfile(
         city,
         bypassRuleSets ?? []);
 
-    public static ServerProfile Hysteria2FromTag(
-        Hysteria2Profile profile,
+    public static ServerProfile FromTag(
+        IProxyProfile profile,
         string? city = null,
         string? id = null,
         IReadOnlyList<ApiBypassRuleSet>? bypassRuleSets = null)
     {
         var code = CountryCodeFromTag(profile.DisplayName);
-        return Hysteria2(profile, code, CountryNameFromCode(code), city, id, bypassRuleSets);
+        return FromProxy(profile, code, CountryNameFromCode(code), city, id, bypassRuleSets);
     }
 
     public static string? CountryCodeFromTag(string tag)
@@ -158,6 +178,15 @@ public sealed record ServerProfile(
         var list = servers as IList<ServerProfile> ?? servers.ToList();
         return Enum.GetValues<ServerTier>()
             .Where(t => (t != ServerTier.Dev && t != ServerTier.Tester) || list.Any(p => p.Tier == t))
+            .ToList();
+    }
+
+    /// <summary>Only protocols present in the list (supported enum ∩ API).</summary>
+    public static IReadOnlyList<ServerProtocol> VisibleProtocols(IEnumerable<ServerProfile> servers)
+    {
+        var list = servers as IList<ServerProfile> ?? servers.ToList();
+        return Enum.GetValues<ServerProtocol>()
+            .Where(p => list.Any(s => s.Protocol == p))
             .ToList();
     }
 

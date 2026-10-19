@@ -55,42 +55,50 @@ public static class ServersApi
         var name = DemarHttp.OptString(item, "name");
         if (id is null || name is null) return null;
 
-        var protocol = DemarHttp.OptString(item, "protocol")?.ToLowerInvariant();
-        if (protocol is not null and not "" and not "hysteria2") return null;
+        var protocol = ServerProtocolLabels.FromApi(DemarHttp.OptString(item, "protocol"));
+        if (protocol is null) return null;
 
         var city = DemarHttp.OptString(item, "city");
         var configRaw = DemarHttp.OptString(item, "clientConfigJson");
         // No credentials (traffic exceeded / preview): show in UI, block connect separately.
         if (string.IsNullOrWhiteSpace(configRaw))
-            return PreviewHysteria2(id, name, city);
+            return Preview(protocol.Value, id, name, city);
 
         JsonObject? config;
         try { config = JsonNode.Parse(configRaw) as JsonObject; }
         catch (JsonException) { return null; }
         if (config is null) return null;
 
-        return ParseHysteria2(id, name, city, config);
+        return protocol.Value switch
+        {
+            ServerProtocol.Hysteria2 => ParseHysteria2(id, name, city, config),
+            ServerProtocol.Trojan => ParseTrojan(id, name, city, config),
+            ServerProtocol.VlessReality => ParseVlessReality(id, name, city, config),
+            _ => null,
+        };
     }
 
-    /// <summary>Metadata-only row when API omits <c>clientConfigJson</c> (parity Android/Apple).</summary>
-    private static ServerProfile PreviewHysteria2(string id, string name, string? city) =>
-        ServerProfile.Hysteria2FromTag(
-            new Hysteria2Profile(name, "", 443, "", name),
-            city: city,
-            id: id);
+    private static ServerProfile Preview(ServerProtocol protocol, string id, string name, string? city)
+    {
+        IProxyProfile empty = protocol switch
+        {
+            ServerProtocol.Trojan =>
+                new TrojanProfile(name, "", 443, "", name),
+            ServerProtocol.VlessReality =>
+                new VlessRealityProfile(name, "", 443, "", name, "", ""),
+            _ =>
+                new Hysteria2Profile(name, "", 443, "", name),
+        };
+        return ServerProfile.FromTag(empty, city: city, id: id);
+    }
 
     private static ServerProfile? ParseHysteria2(string id, string name, string? city, JsonObject config)
     {
-        if (config["outbounds"] is not JsonArray outbounds) return null;
-        var hy2 = outbounds.OfType<JsonObject>()
-            .FirstOrDefault(o => DemarHttp.OptString(o, "type") == "hysteria2");
-        if (hy2 is null) return null;
+        var hy2 = FirstOutbound(config, "hysteria2");
+        if (hy2 is null || DialFields(hy2) is not { } dial) return null;
+        var (server, port) = dial;
 
-        var server = DemarHttp.OptString(hy2, "server");
-        var port = DemarHttp.OptInt(hy2, "server_port");
         var password = DemarHttp.OptString(hy2, "password") ?? "";
-        if (server is null || port <= 0) return null;
-
         var tls = hy2["tls"] as JsonObject;
         var tlsName = (tls is not null ? DemarHttp.OptString(tls, "server_name") : null) ?? server;
         var alpn = tls?["alpn"] is JsonArray alpnArr
@@ -102,7 +110,7 @@ public static class ServersApi
             : null;
         var obfs = hy2["obfs"] is JsonObject obfsObj ? DemarHttp.OptString(obfsObj, "password") : null;
 
-        return ServerProfile.Hysteria2FromTag(
+        return ServerProfile.FromTag(
             new Hysteria2Profile(
                 name, server, port, password, tlsName,
                 alpn is { Count: > 0 } ? alpn : null,
@@ -112,6 +120,64 @@ public static class ServersApi
             city: DemarHttp.OptString(hy2, "city") ?? city,
             id: id,
             bypassRuleSets: ParseBypassRuleSets(config));
+    }
+
+    private static ServerProfile? ParseTrojan(string id, string name, string? city, JsonObject config)
+    {
+        var trojan = FirstOutbound(config, "trojan");
+        if (trojan is null || DialFields(trojan) is not { } dial) return null;
+        var (server, port) = dial;
+
+        var password = DemarHttp.OptString(trojan, "password") ?? "";
+        var tls = trojan["tls"] as JsonObject;
+        var tlsName = (tls is not null ? DemarHttp.OptString(tls, "server_name") : null) ?? server;
+
+        return ServerProfile.FromTag(
+            new TrojanProfile(name, server, port, password, tlsName),
+            city: DemarHttp.OptString(trojan, "city") ?? city,
+            id: id,
+            bypassRuleSets: ParseBypassRuleSets(config));
+    }
+
+    private static ServerProfile? ParseVlessReality(string id, string name, string? city, JsonObject config)
+    {
+        var vless = FirstOutbound(config, "vless");
+        if (vless is null || DialFields(vless) is not { } dial) return null;
+        var (server, port) = dial;
+
+        var uuid = DemarHttp.OptString(vless, "uuid") ?? "";
+        var tls = vless["tls"] as JsonObject;
+        var reality = tls?["reality"] as JsonObject;
+        var publicKey = reality is not null ? DemarHttp.OptString(reality, "public_key") : null;
+        var shortId = reality is not null ? DemarHttp.OptString(reality, "short_id") : null;
+        if (string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(shortId)) return null;
+
+        var tlsName = (tls is not null ? DemarHttp.OptString(tls, "server_name") : null)
+            ?? "www.cloudflare.com";
+        var flow = DemarHttp.OptString(vless, "flow");
+
+        return ServerProfile.FromTag(
+            new VlessRealityProfile(
+                name, server, port, uuid, tlsName, publicKey, shortId,
+                string.IsNullOrWhiteSpace(flow) ? "xtls-rprx-vision" : flow),
+            city: DemarHttp.OptString(vless, "city") ?? city,
+            id: id,
+            bypassRuleSets: ParseBypassRuleSets(config));
+    }
+
+    private static JsonObject? FirstOutbound(JsonObject config, string type)
+    {
+        if (config["outbounds"] is not JsonArray outbounds) return null;
+        return outbounds.OfType<JsonObject>()
+            .FirstOrDefault(o => DemarHttp.OptString(o, "type") == type);
+    }
+
+    private static (string Server, int Port)? DialFields(JsonObject outbound)
+    {
+        var server = DemarHttp.OptString(outbound, "server");
+        var port = DemarHttp.OptInt(outbound, "server_port");
+        if (server is null || port <= 0) return null;
+        return (server, port);
     }
 
     private static int? PositiveMbps(JsonObject obj, string key)
