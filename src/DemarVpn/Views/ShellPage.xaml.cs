@@ -17,6 +17,7 @@ public sealed partial class ShellPage : Page
     private bool _openSupportAfterLogin;
     private SupportRoute? _pendingSupportRoute;
     private CheckoutIntent? _pendingCheckout;
+    private DemarNavigation.AccountSheet? _pendingAccountSheet;
     private long _lastPayRefreshAt;
 
     public ShellPage()
@@ -31,7 +32,7 @@ public sealed partial class ShellPage : Page
         DocumentsSheet.DocumentSelected += doc => ShowOverlay(typeof(DocumentPage), doc);
         AccountTab.SignOutRequested += OnSignOutRequested;
         AccountTab.NotifySheetRequested += () => NotifySheet.Show();
-        AccountTab.TrafficSheetRequested += () => OpenTrafficOrFreeAlert();
+        AccountTab.TrafficSheetRequested += () => OpenTrafficSheet();
         AccountTab.CheckoutRequested += OpenCheckout;
         ServersTab.NeedUpgrade += () => OpenCheckout(CheckoutIntent.Buy);
         TrafficSheet.UpgradeTrafficRequested += () => OpenCheckout(CheckoutIntent.UpgradeTraffic);
@@ -72,6 +73,7 @@ public sealed partial class ShellPage : Page
         AccountTab.Refresh();
         MaybeOpenPendingSupport();
         MaybeOpenPendingCheckout();
+        MaybeOpenPendingAccountSheet();
     }
 
     public void ShowLogin(int returnTab = 3)
@@ -86,11 +88,15 @@ public sealed partial class ShellPage : Page
     {
         if (!AppServices.Auth.SignedIn)
         {
-            if (sheet == DemarNavigation.AccountSheet.Buy)
-                _pendingCheckout = CheckoutIntent.Buy;
+            _pendingAccountSheet = sheet;
             ShowLogin(3);
             return;
         }
+        PresentAccountSheet(sheet);
+    }
+
+    void PresentAccountSheet(DemarNavigation.AccountSheet sheet)
+    {
         GoToTab(3);
         switch (sheet)
         {
@@ -101,7 +107,7 @@ public sealed partial class ShellPage : Page
                 OpenPlanCompare();
                 break;
             case DemarNavigation.AccountSheet.Traffic:
-                OpenTrafficOrFreeAlert();
+                OpenTrafficSheet();
                 break;
         }
     }
@@ -160,7 +166,7 @@ public sealed partial class ShellPage : Page
         TrafficSheet.Show();
     }
 
-    /// <summary>Paid → traffic pie; free → FreeTraffic upsell.</summary>
+    /// <summary>Connect blocked: paid → traffic pie; free → FreeTraffic upsell.</summary>
     public void OpenTrafficOrFreeAlert()
     {
         if (VpnController.IsFreeSubscription())
@@ -278,6 +284,13 @@ public sealed partial class ShellPage : Page
         OpenCheckout(intent);
     }
 
+    private void MaybeOpenPendingAccountSheet()
+    {
+        if (_pendingAccountSheet is not { } sheet) return;
+        _pendingAccountSheet = null;
+        PresentAccountSheet(sheet);
+    }
+
     private void UpdateToolbarLayout()
     {
         var wide = ActualWidth >= (double)Application.Current.Resources["ToolbarWideBreakpoint"];
@@ -320,6 +333,7 @@ public sealed partial class ShellPage : Page
             if (target == 1) ServersTab.OnTabVisible();
             MaybeOpenPendingSupport();
             MaybeOpenPendingCheckout();
+            MaybeOpenPendingAccountSheet();
             EvaluateSubscriptionAlerts();
         }
         catch (Exception ex)
@@ -328,6 +342,7 @@ public sealed partial class ShellPage : Page
             if (target == 1) ServersTab.OnTabVisible();
             MaybeOpenPendingSupport();
             MaybeOpenPendingCheckout();
+            MaybeOpenPendingAccountSheet();
         }
     }
 

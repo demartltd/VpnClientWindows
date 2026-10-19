@@ -52,14 +52,6 @@ public class DemarNavigationTest
     }
 
     [Theory]
-    [InlineData("demarvpn://settings/traffic")]
-    [InlineData("demarvpn://open/settings/traffic")]
-    public void Traffic_accepts_settings_traffic(string raw)
-    {
-        Assert.True(DemarNavigation.TryParseTrafficRoute(new Uri(raw)));
-    }
-
-    [Theory]
     [InlineData("demarvpn://pay/ok", true)]
     [InlineData("demarvpn://pay/fail", false)]
     [InlineData("demarvpn://open/pay/ok", true)]
@@ -80,6 +72,8 @@ public class DemarNavigationTest
     [InlineData("demarvpn://account/buy", DemarNavigation.AccountSheet.Buy)]
     [InlineData("demarvpn://account/plans", DemarNavigation.AccountSheet.Plans)]
     [InlineData("demarvpn://account/traffic", DemarNavigation.AccountSheet.Traffic)]
+    [InlineData("demarvpn://settings/traffic", DemarNavigation.AccountSheet.Traffic)]
+    [InlineData("demarvpn://open/settings/traffic", DemarNavigation.AccountSheet.Traffic)]
     [InlineData("demarvpn://open/account/buy", DemarNavigation.AccountSheet.Buy)]
     public void Account_accepts_sheet_routes(string raw, DemarNavigation.AccountSheet sheet)
     {

@@ -108,11 +108,6 @@ public partial class App : Application
             _main?.Shell?.OpenAccountSheet(accountSheet);
             return;
         }
-        if (DemarNavigation.TryParseTrafficRoute(uri))
-        {
-            AppServices.Vpn.RaiseTrafficLimitReached();
-            return;
-        }
         if (DemarNavigation.TryParseSupportRoute(uri, out var supportRoute))
         {
             _main?.Shell?.OpenSupport(supportRoute);

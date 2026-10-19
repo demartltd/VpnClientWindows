@@ -30,23 +30,31 @@ public static class DemarNavigation
         return false;
     }
 
-    /// <summary>demarvpn://account/buy|plans|traffic</summary>
+    /// <summary>demarvpn://account/buy|plans|traffic · demarvpn://settings/traffic</summary>
     public static bool TryParseAccountSheet(Uri uri, out AccountSheet sheet)
     {
         sheet = default;
         if (!TryPathParts(uri, out var parts) || parts.Count != 2) return false;
-        if (!parts[0].Equals("account", StringComparison.OrdinalIgnoreCase)) return false;
-        if (parts[1].Equals("buy", StringComparison.OrdinalIgnoreCase))
+        var host = parts[0];
+        var leaf = parts[1];
+        if (host.Equals("settings", StringComparison.OrdinalIgnoreCase)
+            && leaf.Equals("traffic", StringComparison.OrdinalIgnoreCase))
+        {
+            sheet = AccountSheet.Traffic;
+            return true;
+        }
+        if (!host.Equals("account", StringComparison.OrdinalIgnoreCase)) return false;
+        if (leaf.Equals("buy", StringComparison.OrdinalIgnoreCase))
         {
             sheet = AccountSheet.Buy;
             return true;
         }
-        if (parts[1].Equals("plans", StringComparison.OrdinalIgnoreCase))
+        if (leaf.Equals("plans", StringComparison.OrdinalIgnoreCase))
         {
             sheet = AccountSheet.Plans;
             return true;
         }
-        if (parts[1].Equals("traffic", StringComparison.OrdinalIgnoreCase))
+        if (leaf.Equals("traffic", StringComparison.OrdinalIgnoreCase))
         {
             sheet = AccountSheet.Traffic;
             return true;
@@ -81,17 +89,6 @@ public static class DemarNavigation
             return true;
         }
         return false;
-    }
-
-    /// <summary>
-    /// demarvpn://settings/traffic (optional open/ prefix).
-    /// </summary>
-    public static bool TryParseTrafficRoute(Uri uri)
-    {
-        if (!TryPathParts(uri, out var parts)) return false;
-        return parts.Count == 2
-            && parts[0].Equals("settings", StringComparison.OrdinalIgnoreCase)
-            && parts[1].Equals("traffic", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryPathParts(Uri uri, out List<string> parts)
