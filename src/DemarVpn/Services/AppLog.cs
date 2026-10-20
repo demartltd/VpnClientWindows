@@ -7,6 +7,7 @@ public static class AppLog
     public const int MaxLines = 512;
     private static readonly Queue<string> Lines = new(MaxLines);
     private static readonly object Gate = new();
+    private static readonly object DiskGate = new();
     private static readonly List<string> PendingDisk = new();
     private static string? _logPath;
     private static int _appendsSinceTrim;
@@ -211,18 +212,21 @@ public static class AppLog
 
     private static void WriteDisk(List<string> batch, bool trim)
     {
-        _logPath ??= Path.Combine(JournalDir, "demar_app.log");
-        try
+        lock (DiskGate)
         {
-            Directory.CreateDirectory(JournalDir);
-            File.AppendAllText(
-                _logPath,
-                string.Join(Environment.NewLine, batch) + Environment.NewLine,
-                Encoding.UTF8);
-        }
-        catch { /* keep in-memory even if disk fails */ }
+            _logPath ??= Path.Combine(JournalDir, "demar_app.log");
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(_logPath)!);
+                File.AppendAllText(
+                    _logPath,
+                    string.Join(Environment.NewLine, batch) + Environment.NewLine,
+                    Encoding.UTF8);
+            }
+            catch { /* keep in-memory even if disk fails */ }
 
-        if (trim) TrimDisk();
+            if (trim) TrimDiskUnlocked();
+        }
     }
 
     private static void ScheduleNotify()
@@ -254,6 +258,11 @@ public static class AppLog
         all.Count > MaxLines ? all[^MaxLines..] : all;
 
     private static void TrimDisk()
+    {
+        lock (DiskGate) TrimDiskUnlocked();
+    }
+
+    private static void TrimDiskUnlocked()
     {
         if (_logPath is null || !File.Exists(_logPath)) return;
         try

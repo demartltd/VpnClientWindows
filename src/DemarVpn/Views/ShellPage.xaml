@@ -26,6 +26,8 @@
     <controls:DocumentsBottomSheet x:Name="DocumentsSheet" Grid.RowSpan="2" Canvas.ZIndex="1500" />
     <controls:NotifyBottomSheet x:Name="NotifySheet" Grid.RowSpan="2" Canvas.ZIndex="1500" />
     <controls:TrafficBottomSheet x:Name="TrafficSheet" Grid.RowSpan="2" Canvas.ZIndex="1500" />
+    <controls:ServerFiltersSheet x:Name="FiltersSheet" Grid.RowSpan="2" Canvas.ZIndex="1500" />
+    <controls:ServerDetailsSheet x:Name="ServerDetailsSheet" Grid.RowSpan="2" Canvas.ZIndex="1500" />
     <controls:SubscriptionInfoSheet x:Name="InfoSheet" Grid.RowSpan="2" Canvas.ZIndex="1600" />
     <controls:SubscriptionCheckoutSheet x:Name="CheckoutSheet" Grid.RowSpan="2" Canvas.ZIndex="1600" />
     <controls:PlanCompareSheet x:Name="CompareSheet" Grid.RowSpan="2" Canvas.ZIndex="1600" />

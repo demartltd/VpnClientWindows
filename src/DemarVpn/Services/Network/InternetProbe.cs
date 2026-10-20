@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Security;
 using System.Net.Sockets;
+using DemarVpn.Domain.Vpn;
 
 namespace DemarVpn.Services.Network;
 
@@ -47,10 +48,17 @@ public static class InternetProbe
             await Coerce(https).ConfigureAwait(false));
     }
 
-    /// <summary>First success of ≤[Attempts] TCP connects. −1 if all fail. ConnectionRefused counts as RTT.</summary>
+    /// <summary>
+    /// First success of ≤[Attempts] TCP connects. −1 if all fail.
+    /// When <paramref name="countRefused"/> is true (default), ConnectionRefused counts as RTT.
+    /// Plain HY2 passes false (RST ≠ latency).
+    /// </summary>
     public static Task<int> ProbeTcpMsAsync(
-        string host, int port = 443, CancellationToken ct = default) =>
-        FirstSuccessAsync($"tcp {host}:{port}", () => MeasureTcpOnceAsync(host, port, ct), ct);
+        string host, int port = 443, CancellationToken ct = default, bool countRefused = true) =>
+        FirstSuccessAsync(
+            $"tcp {host}:{port}",
+            () => MeasureTcpOnceAsync(host, port, countRefused, ct),
+            ct);
 
     /// <summary>First success of ≤[Attempts] HTTPS GETs. −1 if all fail.</summary>
     public static Task<int> ProbeHttpsMsAsync(string host, CancellationToken ct = default) =>
@@ -61,10 +69,16 @@ public static class InternetProbe
         string host, int port = 443, CancellationToken ct = default) =>
         FirstSuccessAsync($"tls {host}:{port}", () => MeasureTlsOnceAsync(host, port, ct), ct);
 
-    /// <summary>QUIC VN RTT (RFC 9000 §6) for HY2. −1 if all fail.</summary>
+    /// <summary>
+    /// QUIC VN RTT (RFC 9000 §6) for HY2. −1 if all fail.
+    /// When <paramref name="salamanderPassword"/> is set, GREASE Initial is salamander-wrapped.
+    /// </summary>
     public static Task<int> ProbeQuicMsAsync(
-        string host, int port = 443, CancellationToken ct = default) =>
-        FirstSuccessAsync($"quic {host}:{port}", () => MeasureQuicOnceAsync(host, port, ct), ct);
+        string host, int port = 443, CancellationToken ct = default, string? salamanderPassword = null) =>
+        FirstSuccessAsync(
+            $"quic {host}:{port}",
+            () => MeasureQuicOnceAsync(host, port, salamanderPassword, ct),
+            ct);
 
     /// <summary>Long-header Initial, GREASE version 0x0a0a0a0a, padded to 1200 bytes.</summary>
     internal static byte[] QuicGreaseInitial()
@@ -100,7 +114,8 @@ public static class InternetProbe
         return -1;
     }
 
-    private static async Task<int> MeasureTcpOnceAsync(string host, int port, CancellationToken ct)
+    private static async Task<int> MeasureTcpOnceAsync(
+        string host, int port, bool countRefused, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         try
@@ -115,7 +130,7 @@ public static class InternetProbe
         {
             return -1;
         }
-        catch (SocketException ex) when (IsRefusedOrReset(ex))
+        catch (SocketException ex) when (countRefused && IsRefusedOrReset(ex))
         {
             return Elapsed(sw);
         }
@@ -173,17 +188,29 @@ public static class InternetProbe
         }
     }
 
-    private static async Task<int> MeasureQuicOnceAsync(string host, int port, CancellationToken ct)
+    private static async Task<int> MeasureQuicOnceAsync(
+        string host, int port, string? salamanderPassword, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeoutMs);
-            using var udp = new UdpClient();
-            var pkt = QuicGreaseInitial();
-            await udp.SendAsync(pkt, host, port, cts.Token).ConfigureAwait(false);
-            await udp.ReceiveAsync(cts.Token).ConfigureAwait(false);
+            // Resolve IPv4 then SendTo/ReceiveFrom — parity Apple posixQuicOnce (more reliable than UdpClient hostname).
+            var ip = await ResolveFirstIpv4Async(host, cts.Token).ConfigureAwait(false);
+            if (ip is null) return -1;
+
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using var reg = cts.Token.Register(() => { try { socket.Dispose(); } catch { /* ignore */ } });
+            var remote = new IPEndPoint(ip, port);
+            var grease = QuicGreaseInitial();
+            var pkt = !string.IsNullOrEmpty(salamanderPassword)
+                ? SalamanderObfs.Wrap(grease, salamanderPassword)
+                : grease;
+            await socket.SendToAsync(pkt, SocketFlags.None, remote, cts.Token).ConfigureAwait(false);
+            var buf = new byte[1500];
+            await socket.ReceiveFromAsync(buf, SocketFlags.None, new IPEndPoint(IPAddress.Any, 0), cts.Token)
+                .ConfigureAwait(false);
             return Elapsed(sw);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
@@ -194,6 +221,14 @@ public static class InternetProbe
         {
             return -1;
         }
+    }
+
+    private static async Task<IPAddress?> ResolveFirstIpv4Async(string host, CancellationToken ct)
+    {
+        if (HostUtils.IsLiteralIpv4(host) && IPAddress.TryParse(host, out var literal))
+            return literal;
+        var addrs = await Dns.GetHostAddressesAsync(host, ct).ConfigureAwait(false);
+        return addrs.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
     }
 
     private static int Elapsed(Stopwatch sw) => Math.Max(1, (int)sw.ElapsedMilliseconds);

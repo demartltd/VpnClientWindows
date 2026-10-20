@@ -140,11 +140,13 @@ public sealed class VpnController : NotifyBase
         if (cached is null) return;
         ApplyServerList(cached.Servers);
         TrafficExceeded = cached.TrafficExceeded;
-        Raise(nameof(TrafficExceeded));
+        lock (_reachLock)
+            _reachability = cached.Reachability.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
+        Raise(nameof(TrafficExceeded), nameof(ServerReachability));
         AccountStore.Hydrate(cached.Account, cached.Traffic);
         TunSettingsStore.HydrateFromCache(cached.TunRaw);
         AppLog.Append(
-            $"[session] restored cache (servers={cached.Servers.Count}, account={cached.Account is not null}, tun={cached.TunRaw is not null})");
+            $"[session] restored cache (servers={cached.Servers.Count}, ping={cached.Reachability.Count}, account={cached.Account is not null}, tun={cached.TunRaw is not null})");
     }
 
     public Task RefreshSessionDataIfStaleAsync(CancellationToken ct = default) =>
@@ -230,8 +232,9 @@ public sealed class VpnController : NotifyBase
             serversOk = true;
             AppLog.Append($"servers: loaded {result.Servers.Count} (sub={result.VpnSubscription})");
             _ = SupportStore.RefreshUnreadAsync(ct);
+            // Fire-and-forget: API refresh finishes first; ping continues in background (parity Apple/Android).
             if (probeReachability)
-                await RefreshServerReachabilityAsync(ct).ConfigureAwait(false);
+                _ = RefreshServerReachabilityAsync(ct);
         }
         catch (AuthException e) when (e.IsSessionInvalid)
         {
@@ -268,11 +271,22 @@ public sealed class VpnController : NotifyBase
         _reachCts?.Cancel();
         _reachCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var token = _reachCts.Token;
+        // Keep previous TCP/TLS ms while Checking (parity Android/Apple markServersChecking).
+        var unlocked = _servers.Where(s => !s.IsLocked).ToList();
         lock (_reachLock)
-            _reachability = _servers.ToDictionary(s => s.Id, _ => new ServerReachState(ServerReachStatus.Checking));
+        {
+            var prev = _reachability;
+            _reachability = unlocked.ToDictionary(
+                s => s.Id,
+                s =>
+                {
+                    prev.TryGetValue(s.Id, out var old);
+                    return new ServerReachState(ServerReachStatus.Checking, old?.LatencyMs, old?.TlsMs);
+                });
+        }
         Raise(nameof(ServerReachability));
 
-        await Task.WhenAll(_servers.Select(async profile =>
+        await Task.WhenAll(unlocked.Select(async profile =>
         {
             try
             {
@@ -280,11 +294,21 @@ public sealed class VpnController : NotifyBase
                 if (token.IsCancellationRequested) return;
                 lock (_reachLock)
                     _reachability[profile.Id] = state;
+                Raise(nameof(ServerReachability));
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         })).ConfigureAwait(false);
         if (!token.IsCancellationRequested)
-            Raise(nameof(ServerReachability));
+            PersistReachability();
+    }
+
+    private void PersistReachability()
+    {
+        var userId = AuthSessionStore.Current?.UserId;
+        if (string.IsNullOrWhiteSpace(userId)) return;
+        IReadOnlyDictionary<string, ServerReachState> snap;
+        lock (_reachLock) snap = new Dictionary<string, ServerReachState>(_reachability);
+        SessionCacheStore.SaveReachability(snap, userId);
     }
 
     public void Select(ServerProfile profile)

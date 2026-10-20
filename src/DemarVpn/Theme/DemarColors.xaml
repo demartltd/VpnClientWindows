@@ -8,6 +8,7 @@
   <SolidColorBrush x:Key="DemarSurfaceBrush" Color="#FF1A222C" />
   <SolidColorBrush x:Key="DemarSurfaceHighBrush" Color="#FF252E3A" />
   <SolidColorBrush x:Key="DemarPrimaryBrush" Color="#FFA5C8FF" />
+  <SolidColorBrush x:Key="DemarOnPrimaryBrush" Color="#FF00315C" />
   <SolidColorBrush x:Key="DemarPrimaryContainerBrush" Color="#FF2A4A6E" />
   <SolidColorBrush x:Key="DemarOnPrimaryContainerBrush" Color="#FFD8E8F8" />
   <SolidColorBrush x:Key="DemarSecondaryBrush" Color="#FFB8C8DA" />

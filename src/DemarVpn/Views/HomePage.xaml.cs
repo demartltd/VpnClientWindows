@@ -1,10 +1,14 @@
 using System.ComponentModel;
+using DemarVpn.Core;
+using DemarVpn.Domain.Vpn;
 using DemarVpn.Models;
 using DemarVpn.Services;
+using DemarVpn.Services.Servers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace DemarVpn.Views;
 
@@ -14,13 +18,18 @@ public sealed partial class HomePage : Page
     private bool _promptShown;
     private bool _promptInFlight;
     private Storyboard? _sizeStoryboard;
+    private string? _flagCode;
+
+    public event Action<ServerProfile>? DetailsRequested;
 
     public HomePage()
     {
         InitializeComponent();
         TitleBlock.Text = Strings.HomeTitle;
         ConnectedLabel.Text = Strings.VpnConnected;
+        ServerEmpty.Text = Strings.ServerNotSelected;
         UpdateHint.Text = Strings.UpdateDownloading;
+        FlagImage.ImageFailed += (_, _) => FlagImage.Source = new BitmapImage(CountryFlags.UnknownUri());
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         Refresh();
@@ -38,15 +47,21 @@ public sealed partial class HomePage : Page
         AppServices.Vpn.PropertyChanged += OnVpnChanged;
         AppServices.Update.PropertyChanged -= OnUpdateChanged;
         AppServices.Update.PropertyChanged += OnUpdateChanged;
+        ServersPreferencesStore.Changed -= OnPrefsChanged;
+        ServersPreferencesStore.Changed += OnPrefsChanged;
         SyncUpdateFab();
         MaybePromptUpdate();
+        Refresh();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         AppServices.Vpn.PropertyChanged -= OnVpnChanged;
         AppServices.Update.PropertyChanged -= OnUpdateChanged;
+        ServersPreferencesStore.Changed -= OnPrefsChanged;
     }
+
+    private void OnPrefsChanged() => Ui.Run(DispatcherQueue, Refresh);
 
     private void OnVpnChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -130,7 +145,6 @@ public sealed partial class HomePage : Page
             }
             else
             {
-                // Dismiss without choice — allow FAB to reopen.
                 _promptShown = false;
             }
         }
@@ -163,6 +177,12 @@ public sealed partial class HomePage : Page
         await Ui.ApiAsync(DispatcherQueue, () => vpn.ConnectAsync());
     }
 
+    private void OnServerCardClick(object sender, RoutedEventArgs e)
+    {
+        if (AppServices.Vpn.Selected is { } p)
+            DetailsRequested?.Invoke(p);
+    }
+
     private ShellPage? FindShell()
     {
         for (DependencyObject? n = this; n is not null; n = VisualTreeHelper.GetParent(n))
@@ -174,7 +194,7 @@ public sealed partial class HomePage : Page
     {
         var vpn = AppServices.Vpn;
         var state = vpn.State;
-        ServerName.Text = vpn.Selected is null ? Strings.ServerNotSelected : vpn.Selected.ListTitle;
+        SyncSelectedServer(vpn.Selected);
         Throughput.Text = FormatThroughput(vpn.Throughput);
         var connected = state.Kind == VpnStateKind.Connected;
         var compact = connected || state.Kind == VpnStateKind.Disconnecting;
@@ -193,6 +213,35 @@ public sealed partial class HomePage : Page
             ToggleIcon.FontSize = compact ? 44 : 72;
         }
         Toggle.IsEnabled = !busy;
+    }
+
+    private void SyncSelectedServer(ServerProfile? profile)
+    {
+        if (profile is null)
+        {
+            ServerEmpty.Visibility = Visibility.Visible;
+            ServerCard.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        ServerEmpty.Visibility = Visibility.Collapsed;
+        ServerCard.Visibility = Visibility.Visible;
+        ServerTitle.Text = profile.TitleName;
+        var sub = profile.ListSubtitle;
+        ServerCity.Text = sub;
+        ServerCity.Visibility = string.IsNullOrEmpty(sub) ? Visibility.Collapsed : Visibility.Visible;
+
+        if (_flagCode != profile.CountryCode)
+        {
+            _flagCode = profile.CountryCode;
+            FlagImage.Source = new BitmapImage(CountryFlags.AssetUri(profile.CountryCode));
+        }
+
+        FavBadge.Visibility = ServersPreferencesStore.IsFavorite(profile.Id)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        TierBadge.BindTier(profile.Tier, large: true);
+        ProtoBadge.BindProtocol(profile.Protocol, large: true);
     }
 
     private void AnimateToggleSize(double target)

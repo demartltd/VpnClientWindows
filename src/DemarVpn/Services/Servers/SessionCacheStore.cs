@@ -19,7 +19,8 @@ public static class SessionCacheStore
         bool TrafficExceeded,
         VpnAccount? Account,
         VpnTraffic? Traffic,
-        string? TunRaw);
+        string? TunRaw,
+        IReadOnlyDictionary<string, ServerReachState> Reachability);
 
     public static Snapshot? Load(string userId)
     {
@@ -32,12 +33,17 @@ public static class SessionCacheStore
             if (string.IsNullOrWhiteSpace(serversJson)) return null;
             if (JsonNode.Parse(serversJson) is not JsonObject serversObj) return null;
             var parsed = ServersApi.ParseServersResponse(serversObj);
+            var ids = parsed.Servers.Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
+            var reach = ServerReachState.DecodeCache(Opt(root, "reachabilityJson"))
+                .Where(kv => ids.Contains(kv.Key))
+                .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
             return new Snapshot(
                 parsed.Servers,
                 parsed.TrafficExceeded,
                 ParseAccount(Opt(root, "accountJson")),
                 ParseTraffic(Opt(root, "trafficJson")),
-                Opt(root, "tunRaw"));
+                Opt(root, "tunRaw"),
+                reach);
         }
         catch
         {
@@ -63,6 +69,9 @@ public static class SessionCacheStore
         if (trimmed.Length == 0) return;
         Mutate(userId, root => root["tunRaw"] = trimmed);
     }
+
+    public static void SaveReachability(IReadOnlyDictionary<string, ServerReachState> map, string userId) =>
+        Mutate(userId, root => root["reachabilityJson"] = ServerReachState.EncodeCache(map));
 
     public static void Clear()
     {

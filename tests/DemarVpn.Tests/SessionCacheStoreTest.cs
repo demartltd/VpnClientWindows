@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using DemarVpn.Domain.Vpn;
 using DemarVpn.Services.Account;
 using DemarVpn.Services.Servers;
 
@@ -75,5 +76,43 @@ public class SessionCacheStoreTest : IDisposable
         Assert.True(result.TrafficExceeded);
         Assert.Single(result.Servers);
         Assert.False(string.IsNullOrWhiteSpace(result.RawJson));
+    }
+
+    [Fact]
+    public void SaveLoad_reachabilityRoundTrip()
+    {
+        SessionCacheStore.SaveServers(ServersSample, "user-a");
+        SessionCacheStore.SaveReachability(
+            new Dictionary<string, ServerReachState>
+            {
+                ["s1"] = new(ServerReachStatus.Online, 42, 55),
+                ["gone"] = new(ServerReachStatus.Online, 1, 2),
+                ["checking"] = ServerReachState.Checking,
+            },
+            "user-a");
+
+        var snap = SessionCacheStore.Load("user-a");
+        Assert.NotNull(snap);
+        Assert.True(snap.Reachability.TryGetValue("s1", out var s1));
+        Assert.Equal(42, s1.LatencyMs);
+        Assert.Equal(55, s1.TlsMs);
+        Assert.False(snap.Reachability.ContainsKey("gone"));
+        Assert.False(snap.Reachability.ContainsKey("checking"));
+    }
+
+    [Fact]
+    public void ReachState_encodeSkipsBareChecking_keepsCheckingWithMs()
+    {
+        var encoded = ServerReachState.EncodeCache(new Dictionary<string, ServerReachState>
+        {
+            ["a"] = ServerReachState.Checking,
+            ["b"] = new(ServerReachStatus.Checking, 10, 12),
+            ["c"] = ServerReachState.Offline,
+        });
+        var decoded = ServerReachState.DecodeCache(encoded);
+        Assert.False(decoded.ContainsKey("a"));
+        Assert.Equal(ServerReachStatus.Online, decoded["b"].Status);
+        Assert.Equal(10, decoded["b"].LatencyMs);
+        Assert.Equal(ServerReachStatus.Offline, decoded["c"].Status);
     }
 }

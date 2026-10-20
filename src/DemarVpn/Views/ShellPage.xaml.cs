@@ -1,4 +1,5 @@
 using DemarVpn.Controls;
+using DemarVpn.Domain.Vpn;
 using DemarVpn.Services;
 using DemarVpn.Services.Account;
 using DemarVpn.Services.Auth;
@@ -35,6 +36,9 @@ public sealed partial class ShellPage : Page
         AccountTab.TrafficSheetRequested += () => OpenTrafficSheet();
         AccountTab.CheckoutRequested += OpenCheckout;
         ServersTab.NeedUpgrade += () => OpenCheckout(CheckoutIntent.Buy);
+        ServersTab.FiltersRequested += () => FiltersSheet.Show(AppServices.Vpn.Servers);
+        ServersTab.DetailsRequested += OpenServerDetails;
+        HomeTab.DetailsRequested += OpenServerDetails;
         TrafficSheet.UpgradeTrafficRequested += () => OpenCheckout(CheckoutIntent.UpgradeTraffic);
         InfoSheet.ActionRequested += kind =>
             OpenCheckout(kind == SubscriptionAlertKind.Expiry ? CheckoutIntent.Renew : CheckoutIntent.Buy);
@@ -164,6 +168,13 @@ public sealed partial class ShellPage : Page
         GoToTab(3);
         DismissAccountSheets(keepTraffic: true);
         TrafficSheet.Show();
+    }
+
+    void OpenServerDetails(ServerProfile profile)
+    {
+        AppServices.Vpn.ServerReachability.TryGetValue(profile.Id, out var reach);
+        var bytes = AccountStore.Traffic?.BytesForServer(profile.DisplayName);
+        ServerDetailsSheet.Show(profile, reach ?? ServerReachState.Checking, bytes);
     }
 
     /// <summary>Connect blocked: paid → traffic pie; free → FreeTraffic upsell.</summary>

@@ -2,6 +2,10 @@ using DemarVpn.Services;
 
 namespace DemarVpn.Tests;
 
+[CollectionDefinition("AppLog", DisableParallelization = true)]
+public class AppLogCollection;
+
+[Collection("AppLog")]
 public class AppLogTest : IDisposable
 {
     private readonly string _dir;

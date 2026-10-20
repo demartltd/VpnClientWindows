@@ -12,7 +12,7 @@ src/DemarVpn/
 │   ├── Catalog.cs
 ├── Theme/                         # DemarPalette (MaterialColorUtilities TonalSpot)
 ├── Domain/
-│   ├── Vpn/                       # IProxyProfile, Hysteria2/Trojan/VlessReality profiles, SingBoxConnectPlan, ServerProfile, ServerReachability
+│   ├── Vpn/                       # IProxyProfile, Hysteria2/Trojan/VlessReality profiles, SingBoxConnectPlan, ServerProfile (FilterServers), ServerReachability
 │   └── Content/LegalDocument.cs   # Terms / Privacy + GitHub MD URLs
 ├── Views/
 │   ├── ShellPage.xaml             # tabs + overlay frame + snackbar overlay
@@ -41,11 +41,14 @@ src/DemarVpn/
 │   ├── PlanCompareSheet.xaml      # Free/Plus/VIP compare
 │   ├── PayResultSheet.xaml        # pay/ok|fail result
 │   ├── TrafficPieChart.xaml
-│   ├── DemarSegmentBar.xaml       # protocol/tier filter (drag-scrub)
+│   ├── DemarSegmentBar.xaml       # checkout tier picker (drag-scrub)
 │   ├── SettingsActionButton.xaml
 │   ├── SupportChatPane.xaml       # support chat composer + messages
 │   ├── SupportBubble.xaml         # message bubble + media
-│   └── ServerRow.xaml             # флаг + listTitle/subtitle + reachability dot
+│   ├── ServerBadge.xaml           # tier/protocol chip (PLUS green / VIP purple; Large for home/details)
+│   ├── ServerFiltersSheet.xaml    # multi-select tier+protocol (3/row, stretch)
+│   ├── ServerDetailsSheet.xaml    # load / TCP / TLS / traffic / Direct + favorite
+│   └── ServerRow.xaml             # flag + title + badges + ~tlsMs / chevron / Premium
 ├── Services/
 │   ├── AppPackageInfo.cs
 │   ├── AppUpdateService.cs        # fastapi version+sha256, download /windows/download|beta
@@ -56,13 +59,14 @@ src/DemarVpn/
 │   ├── Account/                   # VpnAccountApi, AccountStore, PayApi, SubscriptionAlertStore
 │   ├── Support/                   # SupportApi → csauth.example.invalid ticket chat (channel=windows; album ≤10 WebP)
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
-│   ├── Servers/                   # ServersApi, SessionCacheStore (servers/account/traffic/tun), SessionRefreshPolicy
+│   ├── Servers/                   # ServersApi, SessionCacheStore (incl. ping), ServersPreferencesStore (filters+favorites), SessionRefreshPolicy
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
 │   ├── Vpn/                       # VpnController, SingBoxConfigBuilder, engines
 │   ├── Device/DeviceIdentity.cs
 │   ├── Network/
 │   │   ├── UplinkIpv4.cs
-│   │   ├── InternetProbe.cs       # TCP/TLS/HTTPS/QUIC ping (parity Android)
+│   │   ├── InternetProbe.cs       # TCP/TLS/HTTPS/QUIC ping (parity Android/Apple)
+│   │   ├── SalamanderObfs.cs      # HY2 salamander wrap for QUIC VN probe
 │   │   ├── ServerReachProbe.cs    # server list reachability via InternetProbe
 │   │   ├── PublicEgressDiagnostics.cs
 │   │   └── WindowsEgressRouteSnapshot.cs

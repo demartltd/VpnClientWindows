@@ -20,6 +20,7 @@ public static class DemarPalette
         Set(resources, "DemarSurfaceBrush", s.Surface);
         Set(resources, "DemarSurfaceHighBrush", s.SurfaceVariant);
         Set(resources, "DemarPrimaryBrush", s.Primary);
+        Set(resources, "DemarOnPrimaryBrush", s.OnPrimary);
         Set(resources, "DemarPrimaryContainerBrush", s.PrimaryContainer);
         Set(resources, "DemarOnPrimaryContainerBrush", s.OnPrimaryContainer);
         Set(resources, "DemarSecondaryBrush", s.Secondary);

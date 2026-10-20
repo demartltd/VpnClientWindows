@@ -29,7 +29,7 @@ public static class Strings
     public const string LoginEmailHint = "Email";
     public const string LoginMoreMethods = "More Login Methods";
     public const string PlatformWindows = "Windows";
-    public const string VersionName = "1.0.41";
+    public const string VersionName = "1.0.42";
 
     // Service menu — English only (no localization)
     public const string ServiceMenuTitle = "Service menu";
@@ -234,15 +234,15 @@ public static class Strings
     public static string LoginRegisterCreate => L("Create account");
     public static string LoginRegisterFix => L("Fix email");
     public static string LoginSuccess => L("Signed in");
-    public static string ServersSignInHint => L("Sign in to see available servers");
+    public static string ServersTitle => L("Servers");
     public static string ServersEmpty => L("No servers available for your subscription");
     public static string ServersRetry => L("Retry");
     public static string ServersRefreshOk => L("Servers updated");
     public static string ServersRefreshFail => L("Could not refresh servers");
-    public static string ServerStatusOnline => L("Online");
-    public static string ServerStatusOffline => L("Offline");
-    public static string ServerStatusChecking => L("Checking…");
-    public static string ServerStatusDegraded => L("Limited");
+    public static string ServersFilters => L("Server filters");
+    public static string ServersPremium => L("Premium");
+    public static string ServerLoad => L("Load");
+    public static string ServerDirect => L("Direct");
     public static string Soon => L("Coming soon");
     public static string ServerSelected => L("Server {0}");
     public static string VpnConnectFailed => L("Could not connect");

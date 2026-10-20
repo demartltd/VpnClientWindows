@@ -15,7 +15,11 @@ public sealed record VpnTraffic(
     int M,
     IReadOnlyList<VpnTrafficServer> Servers,
     long Total,
-    long LimitBytes);
+    long LimitBytes)
+{
+    public long? BytesForServer(string displayName) =>
+        Servers.FirstOrDefault(s => s.Name == displayName)?.Bytes;
+}
 
 public sealed record PromoResult(
     string Result,

@@ -60,9 +60,16 @@ public static class ServerProtocolLabels
 
     public static string Label(this ServerProtocol protocol) => protocol switch
     {
-        ServerProtocol.Trojan => "Trojan",
+        ServerProtocol.Trojan => "TRJ",
         ServerProtocol.VlessReality => "VLESS",
         _ => "HY2",
+    };
+
+    public static string FullLabel(this ServerProtocol protocol) => protocol switch
+    {
+        ServerProtocol.Trojan => "Trojan",
+        ServerProtocol.VlessReality => "VLESS Reality",
+        _ => "Hysteria2",
     };
 
     public static ServerProtocol? FromApi(string? raw)
@@ -82,12 +89,14 @@ public sealed record ServerProfile(
     string? CountryCode = null,
     string? CountryName = null,
     string? City = null,
-    IReadOnlyList<ApiBypassRuleSet>? BypassRuleSets = null)
+    IReadOnlyList<ApiBypassRuleSet>? BypassRuleSets = null,
+    int? LoadPercent = null)
 {
     public SingBoxConnectPlan ConnectPlan =>
         Profile.ToConnectPlan(BypassRuleSets ?? []);
     public int UplinkPort => Profile.Port;
     public ServerProtocol Protocol => Profile.Protocol;
+    public int EffectiveLoadPercent => Math.Clamp(LoadPercent ?? 10, 0, 100);
 
     public ServerTier Tier
     {
@@ -115,14 +124,10 @@ public sealed record ServerProfile(
         }
     }
 
-    public string ListTitle
-    {
-        get
-        {
-            if (string.IsNullOrWhiteSpace(CountryName)) return DisplayName;
-            return $"{CountryName} | {Tier.Label()}";
-        }
-    }
+    public bool IsLocked => !Profile.HasCredentials;
+
+    public string TitleName =>
+        string.IsNullOrWhiteSpace(CountryName) ? DisplayName : CountryName;
 
     public string ListSubtitle
     {
@@ -139,23 +144,26 @@ public sealed record ServerProfile(
         string? countryName = null,
         string? city = null,
         string? id = null,
-        IReadOnlyList<ApiBypassRuleSet>? bypassRuleSets = null) => new(
+        IReadOnlyList<ApiBypassRuleSet>? bypassRuleSets = null,
+        int? loadPercent = null) => new(
         id ?? $"{profile.Protocol.ApiKey()}:{profile.DisplayName}",
         profile.DisplayName,
         profile,
         countryCode,
         countryName,
         city,
-        bypassRuleSets ?? []);
+        bypassRuleSets ?? [],
+        loadPercent);
 
     public static ServerProfile FromTag(
         IProxyProfile profile,
         string? city = null,
         string? id = null,
-        IReadOnlyList<ApiBypassRuleSet>? bypassRuleSets = null)
+        IReadOnlyList<ApiBypassRuleSet>? bypassRuleSets = null,
+        int? loadPercent = null)
     {
         var code = CountryCodeFromTag(profile.DisplayName);
-        return FromProxy(profile, code, CountryNameFromCode(code), city, id, bypassRuleSets);
+        return FromProxy(profile, code, CountryNameFromCode(code), city, id, bypassRuleSets, loadPercent);
     }
 
     public static string? CountryCodeFromTag(string tag)
@@ -173,27 +181,39 @@ public sealed record ServerProfile(
         catch (ArgumentException) { return null; }
     }
 
+    /// <summary>Only tiers present in the list (Android/Apple §9).</summary>
     public static IReadOnlyList<ServerTier> VisibleTiers(IEnumerable<ServerProfile> servers)
     {
         var list = servers as IList<ServerProfile> ?? servers.ToList();
-        return Enum.GetValues<ServerTier>()
-            .Where(t => (t != ServerTier.Dev && t != ServerTier.Tester) || list.Any(p => p.Tier == t))
-            .ToList();
+        return Enum.GetValues<ServerTier>().Where(t => list.Any(p => p.Tier == t)).ToList();
     }
 
     /// <summary>Only protocols present in the list (supported enum ∩ API).</summary>
     public static IReadOnlyList<ServerProtocol> VisibleProtocols(IEnumerable<ServerProfile> servers)
     {
         var list = servers as IList<ServerProfile> ?? servers.ToList();
-        return Enum.GetValues<ServerProtocol>()
-            .Where(p => list.Any(s => s.Protocol == p))
-            .ToList();
+        return Enum.GetValues<ServerProtocol>().Where(p => list.Any(s => s.Protocol == p)).ToList();
     }
 
-    public static IReadOnlyList<ServerProfile> Filter(
-        IEnumerable<ServerProfile> servers, ServerProtocol protocol, ServerTier? tier) =>
+    public static bool MatchesFilters(
+        IEnumerable<ServerProfile> servers,
+        IReadOnlySet<ServerTier> tiers,
+        IReadOnlySet<ServerProtocol> protocols)
+    {
+        var list = servers as IList<ServerProfile> ?? servers.ToList();
+        return list.Count == 0 || list.Any(s => tiers.Contains(s.Tier) && protocols.Contains(s.Protocol));
+    }
+
+    /// <summary>Unlocked first, then favorites, then A–Z by displayName.</summary>
+    public static IReadOnlyList<ServerProfile> FilterServers(
+        IEnumerable<ServerProfile> servers,
+        IReadOnlySet<ServerTier> tiers,
+        IReadOnlySet<ServerProtocol> protocols,
+        IReadOnlySet<string>? favoriteIds = null) =>
         servers
-            .Where(s => s.Protocol == protocol && (tier is null || s.Tier == tier))
-            .OrderBy(s => s.DisplayName)
+            .Where(s => tiers.Contains(s.Tier) && protocols.Contains(s.Protocol))
+            .OrderBy(s => s.IsLocked)
+            .ThenByDescending(s => favoriteIds is not null && favoriteIds.Contains(s.Id))
+            .ThenBy(s => s.DisplayName, StringComparer.Ordinal)
             .ToList();
 }

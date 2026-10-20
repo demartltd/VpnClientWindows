@@ -1,0 +1,10 @@
+<UserControl
+    x:Class="DemarVpn.Controls.ServerFiltersSheet"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DemarVpn.Controls"
+    Visibility="Collapsed">
+  <controls:BottomSheetChrome x:Name="Chrome">
+    <StackPanel x:Name="RowsHost" Spacing="8" />
+  </controls:BottomSheetChrome>
+</UserControl>

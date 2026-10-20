@@ -285,16 +285,16 @@ public class VpnPipelineTest
     }
 
     [Fact]
-    public void ListTitle_and_ListSubtitle_fromTag()
+    public void TitleName_and_ListSubtitle_fromTag()
     {
         var profile = Fixture("FI-DEV-99", city: "Helsinki");
-        Assert.Equal("Finland | DEV", profile.ListTitle);
+        Assert.Equal("Finland", profile.TitleName);
         Assert.Equal("Helsinki #99", profile.ListSubtitle);
         Assert.Equal(99, profile.TagNumber);
     }
 
     [Fact]
-    public void Filter_byProtocolAndTier()
+    public void FilterServers_byTierAndProtocol_sets()
     {
         var servers = new[]
         {
@@ -302,23 +302,63 @@ public class VpnPipelineTest
             Fixture("FI-DEV-2"),
             Fixture("SE-PLUS-3"),
         };
-        var free = ServerProfile.Filter(servers, ServerProtocol.Hysteria2, ServerTier.Free);
+        var free = ServerProfile.FilterServers(
+            servers, new HashSet<ServerTier> { ServerTier.Free }, new HashSet<ServerProtocol> { ServerProtocol.Hysteria2 });
         Assert.Single(free);
         Assert.Equal("FI-FREE-1", free[0].DisplayName);
 
-        var all = ServerProfile.Filter(servers, ServerProtocol.Hysteria2, null);
+        var all = ServerProfile.FilterServers(
+            servers,
+            new HashSet<ServerTier> { ServerTier.Free, ServerTier.Dev, ServerTier.Plus },
+            new HashSet<ServerProtocol> { ServerProtocol.Hysteria2 });
         Assert.Equal(3, all.Count);
+        Assert.False(ServerProfile.MatchesFilters(
+            servers, new HashSet<ServerTier> { ServerTier.Vip }, new HashSet<ServerProtocol> { ServerProtocol.Hysteria2 }));
     }
 
     [Fact]
-    public void VisibleTiers_hidesDevAndTesterWhenAbsent()
+    public void FilterServers_favorites_firstWithinUnlocked()
+    {
+        var a = Fixture("FI-FREE-1");
+        var b = Fixture("SE-FREE-2");
+        var sorted = ServerProfile.FilterServers(
+            [a, b],
+            new HashSet<ServerTier> { ServerTier.Free },
+            new HashSet<ServerProtocol> { ServerProtocol.Hysteria2 },
+            new HashSet<string> { b.Id });
+        Assert.Equal(b.Id, sorted[0].Id);
+        Assert.Equal(a.Id, sorted[1].Id);
+    }
+
+    [Fact]
+    public void EffectiveLoadPercent_defaultsTo10()
+    {
+        Assert.Equal(10, Fixture().EffectiveLoadPercent);
+        Assert.Equal(42, (Fixture() with { LoadPercent = 42 }).EffectiveLoadPercent);
+        Assert.Equal(100, (Fixture() with { LoadPercent = 200 }).EffectiveLoadPercent);
+    }
+
+    [Fact]
+    public void DirectCountryCodes_fromGeoipTags()
+    {
+        var codes = ApiBypassRuleSet.DirectCountryCodes(
+        [
+            new("geoip-cn", "https://example/cn.srs"),
+            new("geosite-cn", "https://example/site.srs"),
+            new("geoip-ru", "https://example/ru.srs"),
+            new("geoip-cn", "https://example/cn2.srs"),
+        ]);
+        Assert.Equal(["CN", "RU"], codes);
+    }
+
+    [Fact]
+    public void VisibleTiers_onlyPresentInList()
     {
         var productOnly = new[] { Fixture("FI-FREE-1"), Fixture("SE-PLUS-2") };
-        Assert.DoesNotContain(ServerTier.Dev, ServerProfile.VisibleTiers(productOnly));
-        Assert.DoesNotContain(ServerTier.Tester, ServerProfile.VisibleTiers(productOnly));
         Assert.Equal(
-            new[] { ServerTier.Free, ServerTier.Plus, ServerTier.Vip },
+            new[] { ServerTier.Free, ServerTier.Plus },
             ServerProfile.VisibleTiers(productOnly));
+        Assert.DoesNotContain(ServerTier.Vip, ServerProfile.VisibleTiers(productOnly));
         Assert.Contains(ServerTier.Dev, ServerProfile.VisibleTiers([Fixture("FI-DEV-1")]));
         Assert.Contains(ServerTier.Tester, ServerProfile.VisibleTiers([Fixture("NL-TESTER-1")]));
     }
@@ -348,7 +388,7 @@ public class VpnPipelineTest
         Assert.NotNull(profile);
         Assert.Equal("s1", profile!.Id);
         Assert.Equal(443, profile.UplinkPort);
-        Assert.Equal("Finland | FREE", profile.ListTitle);
+        Assert.Equal("Finland", profile.TitleName);
         Assert.Equal("Helsinki #1", profile.ListSubtitle);
         Assert.Null(AsHy2(profile).UpMbps);
         Assert.Null(AsHy2(profile).DownMbps);
@@ -378,7 +418,8 @@ public class VpnPipelineTest
         Assert.Equal("DE-PLUS-1", profile.DisplayName);
         Assert.Equal("", AsHy2(profile).Password);
         Assert.False(profile.Profile.HasCredentials);
-        Assert.Equal("Germany | PLUS", profile.ListTitle);
+        Assert.Equal("Germany", profile.TitleName);
+        Assert.True(profile.IsLocked);
     }
 
     [Fact]
@@ -396,7 +437,7 @@ public class VpnPipelineTest
         var profile = ServersApi.ParseServerItem(item);
         Assert.NotNull(profile);
         Assert.Equal(ServerProtocol.Trojan, profile!.Protocol);
-        Assert.Equal("Trojan", profile.Protocol.Label());
+        Assert.Equal("TRJ", profile.Protocol.Label());
         Assert.True(profile.Profile.PreferResolvedDial);
         Assert.True(profile.Profile.HasCredentials);
 

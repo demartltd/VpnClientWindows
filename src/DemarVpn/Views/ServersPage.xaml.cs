@@ -1,8 +1,7 @@
 using DemarVpn.Controls;
 using DemarVpn.Domain.Vpn;
 using DemarVpn.Services;
-using DemarVpn.Services.Account;
-using DemarVpn.Services.Auth;
+using DemarVpn.Services.Servers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -12,42 +11,18 @@ namespace DemarVpn.Views;
 
 public sealed partial class ServersPage : Page
 {
-    private ServerProtocol _protocol = ServerProtocol.Hysteria2;
-    private ServerTier? _tierFilter;
     private bool _wired;
-    private int _tierBarServersHash;
     private bool _refreshing;
     private bool _listDirty;
     private Storyboard? _spin;
 
     public event Action? NeedUpgrade;
+    public event Action? FiltersRequested;
+    public event Action<ServerProfile>? DetailsRequested;
 
     public ServersPage()
     {
         InitializeComponent();
-        ProtocolBar.SelectionChanged += (_, id) =>
-        {
-            if (!TryParseProtocol(id, out var next) || next == _protocol) return;
-            _protocol = next;
-            RebuildList();
-        };
-        TierBar.SelectionChanged += (_, id) =>
-        {
-            var next = id == "ALL" ? null : ParseTier(id);
-            if (next == _tierFilter) return;
-            if (next is { } tier)
-            {
-                var sub = AccountStore.Account?.VpnSubscription ?? AuthSessionStore.Current?.VpnSubscription;
-                if (tier.RequiresUpgrade(sub))
-                {
-                    NeedUpgrade?.Invoke();
-                    TierBar.SelectedId = _tierFilter?.Label() ?? "ALL";
-                    return;
-                }
-            }
-            _tierFilter = next;
-            RebuildList();
-        };
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
@@ -58,18 +33,30 @@ public sealed partial class ServersPage : Page
         {
             _wired = true;
             RefreshShadow.Receivers.Add(ShadowCast);
+            FilterShadow.Receivers.Add(ShadowCast);
         }
         AppServices.Vpn.PropertyChanged -= OnVpnChanged;
         AppServices.Vpn.PropertyChanged += OnVpnChanged;
+        ServersPreferencesStore.Changed -= OnFiltersChanged;
+        ServersPreferencesStore.Changed += OnFiltersChanged;
         Rebuild();
     }
 
-    private void OnUnloaded(object sender, RoutedEventArgs e) =>
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
         AppServices.Vpn.PropertyChanged -= OnVpnChanged;
+        ServersPreferencesStore.Changed -= OnFiltersChanged;
+    }
+
+    private void OnFiltersChanged() =>
+        Ui.Run(DispatcherQueue, () =>
+        {
+            if (IsTabVisible()) Rebuild();
+            else _listDirty = true;
+        });
 
     private void OnVpnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        // Never touch DependencyProperties here — PropertyChanged may fire off the UI thread.
         if (e.PropertyName == nameof(Services.Vpn.VpnController.Selected))
             Ui.Run(DispatcherQueue, () => { if (IsTabVisible()) SyncSelection(); });
         else if (e.PropertyName == nameof(Services.Vpn.VpnController.ServerReachability))
@@ -104,6 +91,8 @@ public sealed partial class ServersPage : Page
             Rebuild();
         }
     }
+
+    private void OnFilterClick(object sender, RoutedEventArgs e) => FiltersRequested?.Invoke();
 
     private async void OnRefreshClick(object sender, RoutedEventArgs e)
     {
@@ -161,47 +150,36 @@ public sealed partial class ServersPage : Page
         return sb;
     }
 
-    private void RebuildFilters()
-    {
-        var servers = AppServices.Vpn.Servers;
-        var protocols = ServerProfile.VisibleProtocols(servers);
-        if (protocols.Count == 0)
-            protocols = [ServerProtocol.Hysteria2];
-        if (!protocols.Contains(_protocol))
-            _protocol = protocols[0];
-        ProtocolBar.SetOptions(
-            protocols
-                .Select(p => new SegmentOption(p.ToString().ToUpperInvariant(), p.Label()))
-                .ToList(),
-            _protocol.ToString().ToUpperInvariant());
-
-        var hash = servers.Count;
-        foreach (var s in servers) hash = HashCode.Combine(hash, s.Id, s.Tier, s.Protocol);
-        if (hash == _tierBarServersHash && TierBar.SelectedId.Length > 0) return;
-        _tierBarServersHash = hash;
-
-        var opts = new List<SegmentOption> { new("ALL", "All") };
-        foreach (var t in ServerProfile.VisibleTiers(servers))
-            opts.Add(new(t.Label(), TitleCase(t.Label())));
-        var selected = _tierFilter?.Label() ?? "ALL";
-        if (opts.All(o => o.Id != selected))
-        {
-            _tierFilter = null;
-            selected = "ALL";
-        }
-        TierBar.SetOptions(opts, selected);
-    }
-
     private void Rebuild()
     {
-        RebuildFilters();
-        RefreshFab.Visibility = AppServices.Auth.SignedIn ? Visibility.Visible : Visibility.Collapsed;
+        var signedIn = AppServices.Auth.SignedIn;
+        FilterFab.Visibility = signedIn ? Visibility.Visible : Visibility.Collapsed;
+        RefreshFab.Visibility = signedIn ? Visibility.Visible : Visibility.Collapsed;
+        SyncFilterIcon();
         RebuildList();
+    }
+
+    private void SyncFilterIcon()
+    {
+        var servers = AppServices.Vpn.Servers;
+        var active = ServersPreferencesStore.FiltersActive(
+            ServerProfile.VisibleTiers(servers),
+            ServerProfile.VisibleProtocols(servers));
+        FilterIcon.Glyph = active ? "\uE71C" : "\uE90F";
+        ToolTipService.SetToolTip(FilterButton, Strings.ServersFilters);
     }
 
     private void RebuildList()
     {
         ListHost.Children.Clear();
+        ListHost.Children.Add(new TextBlock
+        {
+            Text = Strings.ServersTitle,
+            FontSize = 32,
+            FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+            Margin = new Thickness(0, 4, 0, 8),
+        });
+
         if (!AppServices.Auth.SignedIn) return;
 
         var vpn = AppServices.Vpn;
@@ -231,7 +209,16 @@ public sealed partial class ServersPage : Page
             return;
         }
 
-        var list = ServerProfile.Filter(vpn.Servers, _protocol, _tierFilter);
+        var favorites = ServersPreferencesStore.Favorites;
+        var list = ServerProfile.FilterServers(
+            vpn.Servers, ServersPreferencesStore.Tiers, ServersPreferencesStore.Protocols, favorites);
+        if (list.Count == 0 && vpn.Servers.Count > 0)
+        {
+            ServersPreferencesStore.ResetFilters(raiseChanged: false);
+            SyncFilterIcon();
+            list = ServerProfile.FilterServers(
+                vpn.Servers, ServersPreferencesStore.Tiers, ServersPreferencesStore.Protocols, favorites);
+        }
         if (list.Count == 0)
         {
             ListHost.Children.Add(new TextBlock { Text = Strings.ServersEmpty, Opacity = 0.7 });
@@ -246,14 +233,17 @@ public sealed partial class ServersPage : Page
             var row = new ServerRow
             {
                 Profile = profile,
-                IsSelected = profile.Id == selected?.Id,
-                ReachState = reach ?? new ServerReachState(ServerReachStatus.Checking),
+                IsSelected = !profile.IsLocked && profile.Id == selected?.Id,
+                IsFavorite = favorites.Contains(profile.Id),
+                ReachState = reach ?? ServerReachState.Checking,
             };
             row.Click += (_, _) =>
             {
                 vpn.Select(profile);
-                AppServices.Snackbar.ShowSuccess(string.Format(Strings.ServerSelected, profile.ListTitle));
+                AppServices.Snackbar.ShowSuccess(string.Format(Strings.ServerSelected, profile.TitleName));
             };
+            row.Details += (_, _) => DetailsRequested?.Invoke(profile);
+            row.NeedUpgrade += (_, _) => NeedUpgrade?.Invoke();
             ListHost.Children.Add(row);
         }
     }
@@ -263,7 +253,7 @@ public sealed partial class ServersPage : Page
         var id = AppServices.Vpn.Selected?.Id;
         foreach (var child in ListHost.Children)
             if (child is ServerRow row)
-                row.IsSelected = row.Profile?.Id == id;
+                row.IsSelected = row.Profile is { IsLocked: false } p && p.Id == id;
     }
 
     private void SyncReachability()
@@ -273,31 +263,7 @@ public sealed partial class ServersPage : Page
         {
             if (child is not ServerRow row || row.Profile is not { } p) continue;
             map.TryGetValue(p.Id, out var reach);
-            row.ReachState = reach ?? new ServerReachState(ServerReachStatus.Checking);
+            row.ReachState = reach ?? ServerReachState.Checking;
         }
     }
-
-    private static bool TryParseProtocol(string id, out ServerProtocol protocol)
-    {
-        foreach (var p in Enum.GetValues<ServerProtocol>())
-        {
-            if (p.ToString().Equals(id, StringComparison.OrdinalIgnoreCase))
-            {
-                protocol = p;
-                return true;
-            }
-        }
-        protocol = default;
-        return false;
-    }
-
-    private static ServerTier? ParseTier(string id)
-    {
-        foreach (var t in Enum.GetValues<ServerTier>())
-            if (t.Label() == id) return t;
-        return null;
-    }
-
-    private static string TitleCase(string label) =>
-        label.Length == 0 ? label : char.ToUpperInvariant(label[0]) + label[1..].ToLowerInvariant();
 }
