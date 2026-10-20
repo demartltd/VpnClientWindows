@@ -166,7 +166,6 @@ static class Ja
         ["Retry"] = "再試行",
         ["Servers updated"] = "サーバーを更新しました",
         ["Could not refresh servers"] = "サーバーを更新できませんでした",
-        ["Server filters"] = "サーバーフィルター",
         ["Servers"] = "サーバー",
         ["Load"] = "負荷",
         ["Direct"] = "ダイレクト",

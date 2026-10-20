@@ -166,7 +166,6 @@ static class Ru
         ["Retry"] = "Повторить",
         ["Servers updated"] = "Серверы обновлены",
         ["Could not refresh servers"] = "Не удалось обновить серверы",
-        ["Server filters"] = "Фильтры серверов",
         ["Servers"] = "Сервера",
         ["Load"] = "Нагрузка",
         ["Direct"] = "Напрямую",

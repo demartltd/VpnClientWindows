@@ -166,7 +166,6 @@ static class En
         ["Retry"] = "Retry",
         ["Servers updated"] = "Servers updated",
         ["Could not refresh servers"] = "Could not refresh servers",
-        ["Server filters"] = "Server filters",
         ["Servers"] = "Servers",
         ["Load"] = "Load",
         ["Direct"] = "Direct",

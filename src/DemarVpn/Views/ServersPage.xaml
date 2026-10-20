@@ -12,7 +12,7 @@
       <Border x:Name="FilterFab"
               Width="32" Height="32"
               HorizontalAlignment="Right"
-              Background="{StaticResource DemarOnTertiaryBrush}"
+              Background="{StaticResource DemarSurfaceHighBrush}"
               CornerRadius="10"
               Translation="0,0,32">
         <Border.Shadow>
@@ -24,7 +24,7 @@
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 CornerRadius="10">
           <FontIcon x:Name="FilterIcon" Glyph="&#xE90F;" FontSize="12"
-                    Foreground="{StaticResource DemarTertiaryBrush}" />
+                    Foreground="{StaticResource DemarSecondaryBrush}" />
         </Button>
       </Border>
       <Border x:Name="RefreshFab"

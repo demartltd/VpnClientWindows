@@ -166,7 +166,6 @@ static class Uz
         ["Retry"] = "Qayta urinish",
         ["Servers updated"] = "Serverlar yangilandi",
         ["Could not refresh servers"] = "Serverlarni yangilab bo‘lmadi",
-        ["Server filters"] = "Server filtrlari",
         ["Servers"] = "Serverlar",
         ["Load"] = "Yuklama",
         ["Direct"] = "Toʻgʻridan-toʻgʻri",

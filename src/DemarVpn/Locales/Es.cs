@@ -166,7 +166,6 @@ static class Es
         ["Retry"] = "Reintentar",
         ["Servers updated"] = "Servidores actualizados",
         ["Could not refresh servers"] = "No se pudieron actualizar los servidores",
-        ["Server filters"] = "Filtros de servidor",
         ["Servers"] = "Servidores",
         ["Load"] = "Carga",
         ["Direct"] = "Directo",

@@ -239,7 +239,6 @@ public static class Strings
     public static string ServersRetry => L("Retry");
     public static string ServersRefreshOk => L("Servers updated");
     public static string ServersRefreshFail => L("Could not refresh servers");
-    public static string ServersFilters => L("Server filters");
     public static string ServersPremium => L("Premium");
     public static string ServerLoad => L("Load");
     public static string ServerDirect => L("Direct");

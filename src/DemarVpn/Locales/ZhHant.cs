@@ -166,7 +166,6 @@ static class ZhHant
         ["Retry"] = "重試",
         ["Servers updated"] = "伺服器已更新",
         ["Could not refresh servers"] = "無法重新整理伺服器",
-        ["Server filters"] = "伺服器篩選",
         ["Servers"] = "伺服器",
         ["Load"] = "負載",
         ["Direct"] = "直連",

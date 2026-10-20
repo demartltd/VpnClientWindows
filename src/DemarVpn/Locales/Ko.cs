@@ -166,7 +166,6 @@ static class Ko
         ["Retry"] = "다시 시도",
         ["Servers updated"] = "서버가 업데이트됨",
         ["Could not refresh servers"] = "서버를 새로고침할 수 없습니다",
-        ["Server filters"] = "서버 필터",
         ["Servers"] = "서버",
         ["Load"] = "부하",
         ["Direct"] = "다이렉트",

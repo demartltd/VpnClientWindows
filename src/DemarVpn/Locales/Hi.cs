@@ -166,7 +166,6 @@ static class Hi
         ["Retry"] = "फिर कोशिश",
         ["Servers updated"] = "सर्वर अपडेट हुए",
         ["Could not refresh servers"] = "सर्वर रीफ़्रेश नहीं हो सके",
-        ["Server filters"] = "सर्वर फ़िल्टर",
         ["Servers"] = "सर्वर",
         ["Load"] = "लोड",
         ["Direct"] = "डायरेक्ट",

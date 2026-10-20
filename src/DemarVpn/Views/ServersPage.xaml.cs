@@ -166,7 +166,6 @@ public sealed partial class ServersPage : Page
             ServerProfile.VisibleTiers(servers),
             ServerProfile.VisibleProtocols(servers));
         FilterIcon.Glyph = active ? "\uE71C" : "\uE90F";
-        ToolTipService.SetToolTip(FilterButton, Strings.ServersFilters);
     }
 
     private void RebuildList()

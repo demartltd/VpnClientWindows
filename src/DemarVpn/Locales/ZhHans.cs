@@ -166,7 +166,6 @@ static class ZhHans
         ["Retry"] = "重试",
         ["Servers updated"] = "服务器已更新",
         ["Could not refresh servers"] = "无法刷新服务器",
-        ["Server filters"] = "服务器筛选",
         ["Servers"] = "服务器",
         ["Load"] = "负载",
         ["Direct"] = "直连",

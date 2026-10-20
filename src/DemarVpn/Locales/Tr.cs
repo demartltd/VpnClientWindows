@@ -166,7 +166,6 @@ static class Tr
         ["Retry"] = "Yeniden dene",
         ["Servers updated"] = "Sunucular güncellendi",
         ["Could not refresh servers"] = "Sunucular yenilenemedi",
-        ["Server filters"] = "Sunucu filtreleri",
         ["Servers"] = "Sunucular",
         ["Load"] = "Yük",
         ["Direct"] = "Doğrudan",

@@ -166,7 +166,6 @@ static class Uk
         ["Retry"] = "Повторити",
         ["Servers updated"] = "Сервери оновлено",
         ["Could not refresh servers"] = "Не вдалося оновити сервери",
-        ["Server filters"] = "Фільтри серверів",
         ["Servers"] = "Сервери",
         ["Load"] = "Навантаження",
         ["Direct"] = "Напряму",
