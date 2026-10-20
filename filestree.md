@@ -62,7 +62,8 @@ src/DemarVpn/
 │   ├── Device/DeviceIdentity.cs
 │   ├── Network/
 │   │   ├── UplinkIpv4.cs
-│   │   ├── ServerReachProbe.cs    # DNS reachability for servers list
+│   │   ├── InternetProbe.cs       # TCP/TLS/HTTPS/QUIC ping (parity Android)
+│   │   ├── ServerReachProbe.cs    # server list reachability via InternetProbe
 │   │   ├── PublicEgressDiagnostics.cs
 │   │   └── WindowsEgressRouteSnapshot.cs
 │   ├── AppLog.cs
@@ -83,6 +84,7 @@ src/DemarVpn/
 tests/DemarVpn.Tests/
 ├── VpnPipelineTest.cs
 ├── UplinkProbeTest.cs
+├── InternetProbeTest.cs         # QUIC grease + HY2 TCP fallback + ProbeLabel
 ├── AppLogTest.cs
 ├── AppUpdateTest.cs             # version parse + SHA256 + beta channel
 ├── RunAtStartupTest.cs          # run_at_startup prefs (default ON)

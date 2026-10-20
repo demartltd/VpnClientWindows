@@ -24,6 +24,8 @@
     <Compile Include="..\..\src\DemarVpn\Services\Vpn\ClashTrafficMonitor.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Network\UplinkIpv4.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Network\UplinkProbe.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Network\InternetProbe.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Network\ServerReachProbe.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Network\PublicEgressDiagnostics.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Network\WindowsEgressRouteSnapshot.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Device\DeviceIdentity.cs" />

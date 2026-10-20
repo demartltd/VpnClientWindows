@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http;
-using System.Net.Sockets;
 using System.Text.Json;
 using DemarVpn.Domain.Vpn;
 using DemarVpn.Models;
@@ -13,14 +12,14 @@ public enum EgressRouteKind { Direct, DemarVpn, OtherVpn }
 
 public sealed record PublicEgressInfo(string Ip, string Country);
 
-public sealed record EgressHostProbe(int TcpMs, int HttpsMs);
+public sealed record EgressHostProbe(int TcpMs = 0, int TlsMs = 0, int HttpsMs = 0);
 
 public static class PublicEgressDiagnostics
 {
-    public const int ProbeTimeoutMs = 2500;
+    public const int ProbeTimeoutMs = InternetProbe.TimeoutMs;
 
     public static readonly PublicEgressInfo Fallback = new("localhost", "Unknown");
-    public static readonly EgressHostProbe ZeroProbe = new(0, 0);
+    public static readonly EgressHostProbe ZeroProbe = new();
 
     public static readonly IReadOnlyList<string> ProbeHosts =
     [
@@ -49,9 +48,8 @@ public static class PublicEgressDiagnostics
 
     public static string ProbeLabel(EgressHostProbe probe)
     {
-        var t = probe.TcpMs > 0 ? probe.TcpMs.ToString() : "0";
-        var h = probe.HttpsMs > 0 ? probe.HttpsMs.ToString() : "0";
-        return $"TCP {t} · HTTPS {h}";
+        static string Ms(int v) => v > 0 ? v.ToString() : "0";
+        return $"TCP {Ms(probe.TcpMs)} · TLS {Ms(probe.TlsMs)} · HTTPS {Ms(probe.HttpsMs)}";
     }
 
     public static string CensorPublicIpv4(string ip)
@@ -132,38 +130,26 @@ public static class PublicEgressDiagnostics
         }
     }
 
-    public static async Task<EgressHostProbe> ProbeHostAsync(
-        string host, bool useTunnel, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(ProbeTimeoutMs);
-            var probeTask = useTunnel
-                ? ProbeViaTunnelAsync(host, cts.Token)
-                : ProbeDirectAsync(host, cts.Token);
-            var completed = await Task.WhenAny(probeTask, Task.Delay(ProbeTimeoutMs, cts.Token));
-            return completed == probeTask ? await probeTask : ZeroProbe;
-        }
-        catch
-        {
-            return ZeroProbe;
-        }
-    }
+    /// <summary>Host RTT via InternetProbe (parity Android). <paramref name="useTunnel"/> ignored.</summary>
+    public static Task<EgressHostProbe> ProbeHostAsync(
+        string host, bool useTunnel = false, CancellationToken cancellationToken = default) =>
+        InternetProbe.ProbeHostAsync(host, ct: cancellationToken);
 
     public static async Task<List<EgressHostProbe>> ProbeAllHostsAsync(
-        bool useTunnel,
+        bool useTunnel = false,
         Action<int, EgressHostProbe>? onHostReady = null,
         CancellationToken cancellationToken = default)
     {
+        _ = useTunnel;
         var results = new EgressHostProbe[ProbeHosts.Count];
-        using var gate = new SemaphoreSlim(useTunnel ? 2 : 4);
+        using var gate = new SemaphoreSlim(4);
         await Task.WhenAll(Enumerable.Range(0, ProbeHosts.Count).Select(async i =>
         {
-            await gate.WaitAsync(cancellationToken);
+            await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                var probe = await ProbeHostAsync(ProbeHosts[i], useTunnel, cancellationToken);
+                var probe = await ProbeHostAsync(ProbeHosts[i], cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
                 results[i] = probe;
                 onHostReady?.Invoke(i, probe);
             }
@@ -171,56 +157,8 @@ public static class PublicEgressDiagnostics
             {
                 gate.Release();
             }
-        }));
+        })).ConfigureAwait(false);
         return [.. results];
-    }
-
-    private static async Task<EgressHostProbe> ProbeDirectAsync(string host, CancellationToken cancellationToken)
-    {
-        var tcp = Tcp443Ms(host, cancellationToken);
-        var https = HttpsMs(host, useTunnel: false, cancellationToken);
-        await Task.WhenAll(tcp, https);
-        return new(await tcp, await https);
-    }
-
-    private static async Task<EgressHostProbe> ProbeViaTunnelAsync(string host, CancellationToken cancellationToken)
-    {
-        var tcpTask = TunnelPathProbe.Tcp443ViaDiagAsync(host, cancellationToken);
-        var httpsTask = HttpsMs(host, useTunnel: true, cancellationToken);
-        await Task.WhenAll(tcpTask, httpsTask);
-        var tcp = await tcpTask;
-        return new(tcp.Ok ? tcp.ElapsedMs : 0, await httpsTask);
-    }
-
-    private static async Task<int> Tcp443Ms(string host, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            await socket.ConnectAsync(host, 443, cancellationToken);
-            return (int)sw.ElapsedMilliseconds;
-        }
-        catch
-        {
-            return 0;
-        }
-    }
-
-    private static async Task<int> HttpsMs(string host, bool useTunnel, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            var client = useTunnel ? TunnelPathProbe.DiagClient : DirectHttp;
-            using var response = await client.GetAsync($"https://{host}/", cancellationToken);
-            if ((int)response.StatusCode < 100) return 0;
-            return (int)sw.ElapsedMilliseconds;
-        }
-        catch
-        {
-            return 0;
-        }
     }
 
     private static HttpClient CreateDirectClient()

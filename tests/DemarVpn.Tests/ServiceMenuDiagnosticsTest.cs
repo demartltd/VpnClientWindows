@@ -71,8 +71,10 @@ public class ServiceMenuDiagnosticsTest
     }
 
     [Fact]
-    public void ProbeLabel_formatsTcpAndHttps()
+    public void ProbeLabel_formatsTcpTlsHttps()
     {
-        Assert.Equal("TCP 42 · HTTPS 88", PublicEgressDiagnostics.ProbeLabel(new EgressHostProbe(42, 88)));
+        Assert.Equal(
+            "TCP 42 · TLS 12 · HTTPS 88",
+            PublicEgressDiagnostics.ProbeLabel(new EgressHostProbe(42, 12, 88)));
     }
 }
