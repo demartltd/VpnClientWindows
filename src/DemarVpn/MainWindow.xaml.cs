@@ -21,6 +21,7 @@ public sealed partial class MainWindow : Window
         Title = Strings.AppName;
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+        AppTitleBar.Height = AppWindow.TitleBar.Height;
         ApplyDarkCaptionButtons();
         var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
         if (File.Exists(iconPath))

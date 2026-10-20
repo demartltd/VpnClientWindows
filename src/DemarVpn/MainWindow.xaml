@@ -7,7 +7,7 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
-    <Grid x:Name="AppTitleBar" Height="{StaticResource AppTitleBarHeight}" Background="Transparent" />
+    <Grid x:Name="AppTitleBar" Background="Transparent" />
     <Frame x:Name="Root" Grid.Row="1" />
   </Grid>
 </Window>

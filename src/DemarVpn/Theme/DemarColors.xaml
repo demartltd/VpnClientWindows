@@ -29,7 +29,6 @@
   <CornerRadius x:Key="DemarCornerLarge">16</CornerRadius>
   <x:Double x:Key="ToolbarHeight">64</x:Double>
   <x:Double x:Key="ToolbarVerticalGap">16</x:Double>
-  <x:Double x:Key="AppTitleBarHeight">28</x:Double>
   <x:Double x:Key="AppMinWidth">400</x:Double>
   <x:Double x:Key="AppMinHeight">560</x:Double>
   <x:Double x:Key="AppDefaultWidth">480</x:Double>
