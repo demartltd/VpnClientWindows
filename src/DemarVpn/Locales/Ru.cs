@@ -101,7 +101,6 @@ static class Ru
         ["Traffic"] = "Трафик",
         ["Family invites*"] = "Семейные приглашения*",
         ["Block ads via DNS"] = "Блокировка рекламы через DNS",
-        ["Routing"] = "Маршрутизация",
         ["*Not available yet."] = "*Пока недоступно.",
         ["Popular"] = "Популярный",
         ["For everyday use"] = "Для повседневного использования",

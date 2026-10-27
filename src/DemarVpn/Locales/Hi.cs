@@ -101,7 +101,6 @@ static class Hi
         ["Traffic"] = "ट्रैफ़िक",
         ["Family invites*"] = "फ़ैमिली आमंत्रण*",
         ["Block ads via DNS"] = "DNS से विज्ञापन ब्लॉक करें",
-        ["Routing"] = "रूटिंग",
         ["*Not available yet."] = "*अभी उपलब्ध नहीं।",
         ["Popular"] = "लोकप्रिय",
         ["For everyday use"] = "रोज़मर्रा के उपयोग के लिए",

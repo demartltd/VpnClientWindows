@@ -167,7 +167,7 @@ public static class Strings
     public static string PayCompareTraffic => L("Traffic");
     public static string PayCompareFamily => L("Family invites*");
     public const string PayCompareAds = "Ad Block";
-    public static string PayCompareTun => L("Routing");
+    public const string PayCompareTun = "Routing";
     public static string PayCompareFootnote => L("*Not available yet.");
     public static string PayPopular => L("Popular");
     public static string PayPlusTagline => L("For everyday use");
@@ -183,12 +183,12 @@ public static class Strings
     public static string SettingsPrivacy => L("Privacy");
     public static string SettingsPrivacySub => L("How data is handled");
     public static string AppSettingsTitle => L("App settings");
-    public static string SettingsTun => L("Routing");
+    public const string SettingsTun = PayCompareTun;
     public static string SettingsTunSub => L("Apps and sites excluded from the VPN tunnel");
-    public static string SettingsTunTitle => L("Routing");
+    public const string SettingsTunTitle = PayCompareTun;
     public const string SettingsTunAdBlockTitle = PayCompareAds;
     public static string SettingsTunAdBlockSub => L("Block ads via DNS");
-    public static string SettingsTunRulesTitle => L("Routing");
+    public const string SettingsTunRulesTitle = PayCompareTun;
     public static string SettingsTunRulesSub => L("Exclude selected apps and groups from the VPN");
     public static string SettingsTunCustomTitle => L("Custom apps");
     public static string SettingsTunCustomFreeSub => L("Available with Plus or VIP");

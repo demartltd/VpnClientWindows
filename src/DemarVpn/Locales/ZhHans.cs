@@ -101,7 +101,6 @@ static class ZhHans
         ["Traffic"] = "流量",
         ["Family invites*"] = "家庭邀请*",
         ["Block ads via DNS"] = "通过 DNS 拦截广告",
-        ["Routing"] = "路由",
         ["*Not available yet."] = "*暂未提供。",
         ["Popular"] = "热门",
         ["For everyday use"] = "适合日常使用",

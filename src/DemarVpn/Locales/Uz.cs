@@ -101,7 +101,6 @@ static class Uz
         ["Traffic"] = "Trafik",
         ["Family invites*"] = "Oilaviy takliflar*",
         ["Block ads via DNS"] = "DNS orqali reklamalarni bloklash",
-        ["Routing"] = "Marshrutlash",
         ["*Not available yet."] = "*Hali mavjud emas.",
         ["Popular"] = "Mashhur",
         ["For everyday use"] = "Kundalik foydalanish uchun",

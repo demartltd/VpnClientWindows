@@ -101,7 +101,6 @@ static class De
         ["Traffic"] = "Traffic",
         ["Family invites*"] = "Familieneinladungen*",
         ["Block ads via DNS"] = "Werbung über DNS blockieren",
-        ["Routing"] = "Routing",
         ["*Not available yet."] = "*Noch nicht verfügbar.",
         ["Popular"] = "Beliebt",
         ["For everyday use"] = "Für den Alltag",

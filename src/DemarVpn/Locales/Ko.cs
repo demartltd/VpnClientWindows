@@ -101,7 +101,6 @@ static class Ko
         ["Traffic"] = "트래픽",
         ["Family invites*"] = "패밀리 초대*",
         ["Block ads via DNS"] = "DNS로 광고 차단",
-        ["Routing"] = "라우팅",
         ["*Not available yet."] = "*아직 제공되지 않습니다.",
         ["Popular"] = "인기",
         ["For everyday use"] = "일상 사용에 적합",

@@ -101,7 +101,6 @@ static class Uk
         ["Traffic"] = "Трафік",
         ["Family invites*"] = "Сімейні запрошення*",
         ["Block ads via DNS"] = "Блокувати рекламу через DNS",
-        ["Routing"] = "Маршрутизація",
         ["*Not available yet."] = "*Поки недоступно.",
         ["Popular"] = "Популярний",
         ["For everyday use"] = "Для щоденного використання",

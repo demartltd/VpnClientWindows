@@ -101,7 +101,6 @@ static class En
         ["Traffic"] = "Traffic",
         ["Family invites*"] = "Family invites*",
         ["Block ads via DNS"] = "Block ads via DNS",
-        ["Routing"] = "Routing",
         ["*Not available yet."] = "*Not available yet.",
         ["Popular"] = "Popular",
         ["For everyday use"] = "For everyday use",

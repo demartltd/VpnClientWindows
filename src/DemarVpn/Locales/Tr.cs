@@ -101,7 +101,6 @@ static class Tr
         ["Traffic"] = "Trafik",
         ["Family invites*"] = "Aile davetleri*",
         ["Block ads via DNS"] = "DNS ile reklamları engelle",
-        ["Routing"] = "Yönlendirme",
         ["*Not available yet."] = "*Henüz kullanılamıyor.",
         ["Popular"] = "Popüler",
         ["For everyday use"] = "Günlük kullanım için",

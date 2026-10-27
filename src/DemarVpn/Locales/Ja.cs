@@ -101,7 +101,6 @@ static class Ja
         ["Traffic"] = "トラフィック",
         ["Family invites*"] = "ファミリー招待*",
         ["Block ads via DNS"] = "DNS で広告をブロック",
-        ["Routing"] = "ルーティング",
         ["*Not available yet."] = "*まだ利用できません。",
         ["Popular"] = "人気",
         ["For everyday use"] = "日常使いに",

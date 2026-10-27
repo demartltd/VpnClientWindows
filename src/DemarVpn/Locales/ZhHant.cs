@@ -101,7 +101,6 @@ static class ZhHant
         ["Traffic"] = "流量",
         ["Family invites*"] = "家庭邀請*",
         ["Block ads via DNS"] = "透過 DNS 封鎖廣告",
-        ["Routing"] = "路由",
         ["*Not available yet."] = "*尚未提供。",
         ["Popular"] = "熱門",
         ["For everyday use"] = "適合日常使用",
