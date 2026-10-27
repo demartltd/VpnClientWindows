@@ -61,7 +61,7 @@ src/DemarVpn/
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi, SessionCacheStore (incl. ping), ServersPreferencesStore (filters+favorites), SessionRefreshPolicy
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
-│   ├── Vpn/                       # VpnController, SingBoxConfigBuilder, engines
+│   ├── Vpn/                       # VpnController, SingBoxConfigBuilder, RuleSets (bundled .srs + dns cache stamp), engines
 │   ├── Device/DeviceIdentity.cs
 │   ├── Network/
 │   │   ├── UplinkIpv4.cs
@@ -77,7 +77,7 @@ src/DemarVpn/
 │   ├── KeyboardLayout.cs          # Win32 PreferUsEnglish (promo TextBox)
 │   └── SnackbarService.cs
 ├── Models/
-├── Assets/                        # AppIcon.ico, logos, BrandIcons.xaml, Flags/, singbox/, rule-sets/ (ads .srs synced on build)
+├── Assets/                        # AppIcon.ico, logos, BrandIcons.xaml, Flags/, singbox/, rule-sets/ (ads+geosite/geoip .srs synced on build)
 └── Native/
     └── bin/                       # sing-box.exe, wintun.dll, libcronet.dll (gitignore)
 ```
@@ -127,7 +127,7 @@ scripts/
 ├── journal.ps1                    # AppLog journal (parity adb/journal.sh)
 ├── for_builds/
 │   ├── singbox-build-windows.py
-│   ├── sync_ads_ruleset.ps1       # DustinWin ads.srs → Assets/rule-sets/
+│   ├── sync_rulesets.ps1          # ads + geosite/geoip RU/IR/CN → Assets/rule-sets/
 │   └── build_windows.ps1          # sync ads + publish app + Updater.exe
 ├── port_brand_icons.py
 ├── other/

@@ -186,7 +186,10 @@ public static class ServersApi
         return value > 0 ? value : null;
     }
 
-    /// <summary>Remote rule-sets from API; ignores TUN <c>route_exclude_address_set</c> (parity Android).</summary>
+    /// <summary>
+    /// Rule-set tags from API (<c>type: remote</c> binary). Tag only; URL ignored at runtime (bundled local).
+    /// Ignores TUN <c>route_exclude_address_set</c> (parity Android).
+    /// </summary>
     public static IReadOnlyList<ApiBypassRuleSet> ParseBypassRuleSets(JsonObject config)
     {
         if (config["route"] is not JsonObject route || route["rule_set"] is not JsonArray arr)
@@ -202,7 +205,7 @@ public static class ServersApi
             var type = DemarHttp.OptString(item, "type") ?? "remote";
             var format = DemarHttp.OptString(item, "format") ?? "binary";
             if (type != "remote" || format != "binary") continue;
-            byTag.TryAdd(tag, new ApiBypassRuleSet(tag, url));
+            byTag.TryAdd(tag, new ApiBypassRuleSet(tag));
         }
         return byTag.Values.ToList();
     }

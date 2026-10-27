@@ -25,6 +25,9 @@ public sealed record SingBoxConnectPlan
         return this with { ProxyOutbound = outbound };
     }
 
+    public SingBoxConnectPlan WithBypassRuleSets(IReadOnlyList<ApiBypassRuleSet> sets) =>
+        this with { BypassRuleSets = sets.DistinctBy(rs => rs.Tag).ToList() };
+
     public static SingBoxConnectPlan Hysteria2(
         Hysteria2Profile profile,
         IReadOnlyList<ApiBypassRuleSet>? bypassRuleSets = null)

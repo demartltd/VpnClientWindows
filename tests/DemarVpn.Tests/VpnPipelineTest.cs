@@ -343,10 +343,10 @@ public class VpnPipelineTest
     {
         var codes = ApiBypassRuleSet.DirectCountryCodes(
         [
-            new("geoip-cn", "https://example/cn.srs"),
-            new("geosite-cn", "https://example/site.srs"),
-            new("geoip-ru", "https://example/ru.srs"),
-            new("geoip-cn", "https://example/cn2.srs"),
+            new("geoip-cn"),
+            new("geosite-cn"),
+            new("geoip-ru"),
+            new("geoip-cn"),
         ]);
         Assert.Equal(["CN", "RU"], codes);
     }
@@ -609,7 +609,7 @@ public class VpnPipelineTest
         Assert.Equal(10, AsHy2(profile!).UpMbps);
         Assert.Equal(10, AsHy2(profile).DownMbps);
         Assert.Equal(6, profile.BypassRuleSets!.Count);
-        Assert.Contains(profile.BypassRuleSets, rs => rs.Tag == "geosite-ir" && rs.Url.Contains("Chocolate4U"));
+        Assert.Contains(profile.BypassRuleSets, rs => rs.Tag == "geosite-ir");
         Assert.Contains(profile.BypassRuleSets, rs => rs.Tag == "geosite-cn");
 
         var built = SingBoxConfigBuilder.BuildTunConfigJson(profile.ConnectPlan);
@@ -638,7 +638,13 @@ public class VpnPipelineTest
         Assert.True(sniffIdx < geositeIdx);
         Assert.All(
             cfg["route"]!["rule_set"]!.AsArray(),
-            rs => Assert.Equal(SingBoxTags.Direct, rs!["download_detour"]!.GetValue<string>()));
+            rs =>
+            {
+                Assert.Equal("local", rs!["type"]!.GetValue<string>());
+                Assert.Null(rs!["url"]);
+                Assert.Null(rs!["download_detour"]);
+                Assert.EndsWith($".srs", rs!["path"]!.GetValue<string>(), StringComparison.OrdinalIgnoreCase);
+            });
     }
 
     [Fact]
@@ -691,8 +697,7 @@ public class VpnPipelineTest
     public void AdBlock_localRuleSetDnsAndRouteReject()
     {
         var plan = Fixture().ConnectPlan;
-        const string seed = @"C:\tmp\geosite-category-ads.srs";
-        var on = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, adsPath: seed))!.AsObject();
+        var on = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, ads: true))!.AsObject();
 
         Assert.Contains(
             on["dns"]!["rules"]!.AsArray(),
@@ -714,7 +719,7 @@ public class VpnPipelineTest
             on["route"]!["rule_set"]!.AsArray(),
             rs => rs!["tag"]!.GetValue<string>() == SingBoxTags.AdsRuleSetTag &&
                   rs!["type"]!.GetValue<string>() == "local" &&
-                  rs!["path"]!.GetValue<string>() == seed &&
+                  rs!["path"]!.GetValue<string>() == RuleSets.PathFor(SingBoxTags.AdsRuleSetTag) &&
                   rs!["url"] is null);
         Assert.False(on.ContainsKey("http_clients"));
         Assert.DoesNotContain(
@@ -722,7 +727,7 @@ public class VpnPipelineTest
             r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true &&
                  r!["outbound"]?.GetValue<string>() == SingBoxTags.Direct);
 
-        var off = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan))!.AsObject();
+        var off = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, ads: false))!.AsObject();
         Assert.DoesNotContain(
             off["dns"]!["rules"]!.AsArray(),
             r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true);
@@ -730,42 +735,38 @@ public class VpnPipelineTest
     }
 
     [Fact]
-    public void AdBlock_blankAdsPath_omitsAds()
-    {
-        var plan = Fixture().ConnectPlan;
-        foreach (var blank in new[] { null, "", "  " })
-        {
-            var cfg = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, adsPath: blank))!.AsObject();
-            Assert.DoesNotContain(
-                cfg["dns"]!["rules"]!.AsArray(),
-                r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true);
-            Assert.False(cfg["route"]!.AsObject().ContainsKey("rule_set"));
-        }
-    }
-
-    [Fact]
     public void AdBlock_withGeosite_keepsAdsAndBypass()
     {
         var plan = SingBoxConnectPlan.Hysteria2(
             AsHy2(Fixture()),
-            [
-                new ApiBypassRuleSet(
-                    "geosite-category-ru",
-                    "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ru.srs"),
-            ]);
-        const string seed = @"C:\tmp\geosite-category-ads.srs";
-        var cfg = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, adsPath: seed))!.AsObject();
+            [new ApiBypassRuleSet("geosite-category-ru")]);
+        var bypass = new TunBypassOptions([], ["yandex.ru"]);
+        var cfg = JsonNode.Parse(SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass, ads: true))!.AsObject();
         var sets = cfg["route"]!["rule_set"]!.AsArray();
         Assert.Contains(sets, rs => rs!["tag"]!.GetValue<string>() == SingBoxTags.AdsRuleSetTag && rs!["type"]!.GetValue<string>() == "local");
-        Assert.Contains(sets, rs => rs!["tag"]!.GetValue<string>() == "geosite-category-ru" && rs!["type"]!.GetValue<string>() == "remote");
         Assert.Contains(
-            cfg["dns"]!["rules"]!.AsArray(),
-            r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true &&
-                 r!["action"]?.GetValue<string>() == "reject");
-        Assert.Contains(
-            cfg["dns"]!["rules"]!.AsArray(),
-            r => r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == "geosite-category-ru") == true &&
-                 r!["server"]?.GetValue<string>() == SingBoxTags.DnsDirect);
+            sets,
+            rs => rs!["tag"]!.GetValue<string>() == "geosite-category-ru" &&
+                  rs!["type"]!.GetValue<string>() == "local" &&
+                  rs!["path"]!.GetValue<string>() == RuleSets.PathFor("geosite-category-ru") &&
+                  rs!["url"] is null);
+
+        var dns = cfg["dns"]!["rules"]!.AsArray();
+        var adsDns = IndexOf(dns, r =>
+            r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true &&
+            r!["action"]?.GetValue<string>() == "reject");
+        var hostDns = IndexOf(dns, r => r!["domain_suffix"] is not null);
+        var geoDns = IndexOf(dns, r =>
+            r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == "geosite-category-ru") == true);
+        Assert.True(adsDns >= 0 && adsDns < hostDns && hostDns < geoDns);
+
+        var route = cfg["route"]!["rules"]!.AsArray();
+        var adsRoute = IndexOf(route, r =>
+            r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == SingBoxTags.AdsRuleSetTag) == true &&
+            r!["action"]?.GetValue<string>() == "reject");
+        var geoRoute = IndexOf(route, r =>
+            r!["rule_set"]?.AsArray().Any(t => t!.GetValue<string>() == "geosite-category-ru") == true);
+        Assert.True(adsRoute >= 0 && adsRoute < geoRoute);
     }
 
     [Fact]
@@ -776,5 +777,33 @@ public class VpnPipelineTest
         Assert.False(paid.IsAdBlockEnabled(true));
         Assert.False((paid with { AdBlockEnabled = false }).IsAdBlockEnabled(false));
         Assert.True((paid with { AdBlockEnabled = true }).IsAdBlockEnabled(false));
+    }
+
+    [Fact]
+    public void TunFingerprint_includesAdBlock()
+    {
+        var catalog = TunCatalog.Empty;
+        var on = new TunSettings([], new Dictionary<string, bool>(), new Dictionary<string, bool>());
+        var off = on with { AdBlockEnabled = false };
+        Assert.Contains("ads=True", on.Fingerprint(catalog, isFree: false), StringComparison.Ordinal);
+        Assert.Contains("ads=False", off.Fingerprint(catalog, isFree: false), StringComparison.Ordinal);
+        Assert.Contains("ads=False", on.Fingerprint(catalog, isFree: true), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DnsStamp_changesWithAdsAndGeo()
+    {
+        var bypass = TunBypassOptions.Empty;
+        var ru = new[] { new ApiBypassRuleSet("geoip-ru"), new ApiBypassRuleSet("geosite-category-ru") };
+        var cn = new[] { new ApiBypassRuleSet("geoip-cn"), new ApiBypassRuleSet("geosite-cn") };
+        var adsOffRu = RuleSets.DnsStamp(false, ru, bypass);
+        var adsOnRu = RuleSets.DnsStamp(true, ru, bypass);
+        var adsOffCn = RuleSets.DnsStamp(false, cn, bypass);
+        Assert.NotEqual(adsOffRu, adsOnRu);
+        Assert.NotEqual(adsOffRu, adsOffCn);
+        Assert.Contains("ads=False", adsOffRu, StringComparison.Ordinal);
+        Assert.Contains("geosite-category-ads", adsOnRu, StringComparison.Ordinal);
+        Assert.Contains("geoip-ru", adsOffRu, StringComparison.Ordinal);
+        Assert.Equal(adsOffRu, RuleSets.DnsStamp(false, ru.Reverse(), bypass));
     }
 }

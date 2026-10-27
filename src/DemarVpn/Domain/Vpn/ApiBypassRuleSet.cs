@@ -1,7 +1,10 @@
 namespace DemarVpn.Domain.Vpn;
 
-/// <summary>Remote sing-box rule-set from API <c>clientConfigJson.route.rule_set</c>.</summary>
-public sealed record ApiBypassRuleSet(string Tag, string Url)
+/// <summary>
+/// Bypass rule-set tag from API <c>clientConfigJson.route.rule_set</c>.
+/// Geosite/geoip → bundled local <c>.srs</c>; API <c>url</c> ignored at runtime.
+/// </summary>
+public sealed record ApiBypassRuleSet(string Tag)
 {
     public bool IsGeosite => Tag.StartsWith("geosite", StringComparison.Ordinal);
 

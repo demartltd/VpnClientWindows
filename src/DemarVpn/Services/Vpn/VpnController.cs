@@ -465,11 +465,12 @@ public sealed class VpnController : NotifyBase
             var isFree = IsFreeSubscription();
             var bypass = TunSettingsStore.EffectiveBypass(isFree);
             var adBlock = TunSettingsStore.Settings.IsAdBlockEnabled(isFree);
-            var adsPath = adBlock ? RuleSetPrefetch.TryEnsureAds() : null;
-            var configJson = SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass, adsPath: adsPath);
+            (plan, var ads) = RuleSets.Prepare(plan, adBlock);
+            RuleSets.AlignDnsCache(ads, plan.BypassRuleSets, bypass);
+            var configJson = SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass, ads: ads);
             AppLog.Append(
                 $"connect uplinkHost={plan.UplinkHost} uplinkPort={profile.UplinkPort} target={connectTarget} resolved={string.Join(",", resolved)} " +
-                $"tun={TunSettingsFingerprint()} adblock={adBlock} exes={bypass.BypassExes.Count} hosts={bypass.BypassHosts.Count} rs={plan.BypassRuleSets.Count}");
+                $"tun={TunSettingsFingerprint()} adblock={ads} exes={bypass.BypassExes.Count} hosts={bypass.BypassHosts.Count} rs={plan.BypassRuleSets.Count}");
 
             _watchdog = CancellationTokenSource.CreateLinkedTokenSource(token);
             _ = WatchdogAsync(_watchdog.Token);

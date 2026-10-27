@@ -147,15 +147,15 @@ Uplink host = VPS `server`, не SNI. Bootstrap DNS/route: только uplink h
 | `dns-direct` | UDP `1.1.1.1` | bootstrap, domain resolver |
 | `dns-remote` | HTTPS `1.1.1.1` | DoH через proxy |
 
-Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); TUN process bypass → `dns-direct`; bootstrap domains (uplink hostname + TLS name) → `dns-direct`; site bypass hosts → `dns-direct`; **Ad block** (Plus/VIP, default on) → DNS `reject` by local `geosite-category-ads`; geosite rule-sets from API → `dns-direct`. Глобально: `final: dns-remote`, `strategy: ipv4_only`, `reverse_mapping: true` (parity Apple; IP→domain for route without FakeIP), `optimistic: true` (sing-box 1.14). `experimental.cache_file`: всегда `enabled` + `store_dns` (path inject → `%LOCALAPPDATA%\DemarVpn\demar\cache.db`).
+Rules: PTR → reject; `localhost` → predefined; process bypass → `dns-direct`; bootstrap → `dns-direct`; **Ad block** reject (`geosite-category-ads`) **до** site-bypass / geosite (parity Apple: иначе `yandex.ru` пропускает `an.yandex.ru`); site bypass → `dns-direct`; geosite → `dns-direct`. `final: dns-remote`, `ipv4_only`, `reverse_mapping`, `optimistic`. `cache_file.store_dns` + `RuleSets` stamp (сброс при смене Ad Block / GEO / bypass).
 
 ### Ad block (DNS + route)
 
 - Free: always off. Plus/VIP: default **on** (`tun_settings.json` `AdBlockEnabled` null → on); user can disable.
-- Build: `scripts/for_builds/sync_ads_ruleset.ps1` → DustinWin `ads.srs` as `Assets/rule-sets/geosite-category-ads.srs` (gitignore; called from `build_windows.ps1`).
-- Connect: bundled path → sing-box `type: local` / `format: binary` (parity Apple/Android; offline, no network).
+- Build: `scripts/for_builds/sync_rulesets.ps1` → ads + geosite/geoip RU/IR/CN → `Assets/rule-sets/` (gitignore; called from `build_windows.ps1`).
+- Connect: bundled path → sing-box `type: local` / `format: binary` (parity Apple; offline, no runtime HTTP).
 - DNS + route: `{ "rule_set": ["geosite-category-ads"], "action": "reject" }` — DNS uses `no_drop: true` (avoid sing-box drop-after-50 → Chrome DoH fallback on rapid ad-block tests).
-- Apply on next Connect (no live reconnect). UI: Settings → App settings → TUN settings.
+- Apply on next Connect (no live reconnect). `RuleSets.Prepare` + `AlignDnsCache`: `cache.db` живёт между Connect; сброс stamp при смене Ad Block / GEO / bypass. UI: Settings → App settings → TUN settings.
 
 ---
 
@@ -172,13 +172,13 @@ Rules: PTR → reject; `localhost` → predefined (`127.0.0.1`); TUN process byp
 
 ### API geo-bypass (из `clientConfigJson`)
 
-Servermaster кладёт remote `route.rule_set` (RU/IR/CN) в `clientConfigJson`. Клиент парсит tags/URLs в `ApiBypassRuleSet` и собирает Windows-конфиг:
+Servermaster кладёт `route.rule_set` (RU/IR/CN) в `clientConfigJson`. Клиент парсит tags в `ApiBypassRuleSet` (URL ignored). Connect: `RuleSets.Prepare` → только существующие bundled `.srs`; все `type: local`:
 
 - geosite → DNS `dns-direct` + route `direct`
-- geoip → route `direct`
+- geoip → route `direct` (Windows; Apple uses TunBypass CIDR)
+- ads → DNS+route `reject` (отдельный тоггл, не в `plan.bypassRuleSets`)
 - **не** эмитить TUN `route_exclude_address_set` (parity Android)
-- `download_detour` → `direct` (bootstrap без chicken-egg через proxy)
-- `experimental.cache_file` всегда (`enabled` + `store_dns`); rule-sets тоже пишутся в тот же cache
+- `cache_file.store_dns` + `RuleSets.AlignDnsCache` (stamp Ad Block / GEO / bypass)
 ---
 
 ## Bypass
@@ -250,7 +250,8 @@ Runtime в `Native/bin/`: `sing-box.exe`, `wintun.dll`, `libcronet.dll` (NaivePr
 | `Domain/Vpn/*` | `IProxyProfile`, HY2/Trojan/VLESS profiles, `SingBoxConnectPlan`, `ApiBypassRuleSet` |
 | `Services/Auth/*` | API + session store |
 | `Services/Servers/*` | servers fetch/parse |
-| `Services/Vpn/SingBoxConfigBuilder.cs` | TUN + DNS + route JSON (`stack: system`) |
+| `Services/Vpn/SingBoxConfigBuilder.cs` | TUN + DNS + route JSON (`stack: system`; local `.srs`) |
+| `Services/Vpn/RuleSets.cs` | Bundled `.srs` paths, `Prepare` / `AlignDnsCache` |
 | `Services/Vpn/VpnController.cs` | Connect pipeline, UI bridge |
 | `Services/Network/UplinkIpv4.cs` | uplink resolve |
 | `Services/Vpn/SingBoxProcessEngine.cs` | sing-box.exe subprocess |

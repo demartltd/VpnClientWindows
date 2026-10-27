@@ -133,8 +133,9 @@ public static class TunEffective
             .Select(g => g.Id)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase);
         var on = settings.IsRulesEnabled(isFree);
+        var ads = settings.IsAdBlockEnabled(isFree);
         return $"p={string.Join(',', bypass.BypassExes)};h={string.Join(',', bypass.BypassHosts)};" +
-               $"ag={string.Join(',', appGroups)};sg={string.Join(',', siteGroups)};r={on}";
+               $"ag={string.Join(',', appGroups)};sg={string.Join(',', siteGroups)};r={on};ads={ads}";
     }
 
     private static bool ResolveEnabled(
