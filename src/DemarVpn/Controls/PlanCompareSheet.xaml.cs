@@ -45,7 +45,6 @@ public sealed partial class PlanCompareSheet : UserControl
             (Strings.PayCompareFamily, false, "2", "4"),
             (Strings.PayCompareAds, false, true, true),
             (Strings.PayCompareTun, false, true, true),
-            (Strings.PayCompareIp, false, false, true),
         };
 
         var panel = new StackPanel();
