@@ -790,20 +790,4 @@ public class VpnPipelineTest
         Assert.Contains("ads=False", on.Fingerprint(catalog, isFree: true), StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void DnsStamp_changesWithAdsAndGeo()
-    {
-        var bypass = TunBypassOptions.Empty;
-        var ru = new[] { new ApiBypassRuleSet("geoip-ru"), new ApiBypassRuleSet("geosite-category-ru") };
-        var cn = new[] { new ApiBypassRuleSet("geoip-cn"), new ApiBypassRuleSet("geosite-cn") };
-        var adsOffRu = RuleSets.DnsStamp(false, ru, bypass);
-        var adsOnRu = RuleSets.DnsStamp(true, ru, bypass);
-        var adsOffCn = RuleSets.DnsStamp(false, cn, bypass);
-        Assert.NotEqual(adsOffRu, adsOnRu);
-        Assert.NotEqual(adsOffRu, adsOffCn);
-        Assert.Contains("ads=False", adsOffRu, StringComparison.Ordinal);
-        Assert.Contains("geosite-category-ads", adsOnRu, StringComparison.Ordinal);
-        Assert.Contains("geoip-ru", adsOffRu, StringComparison.Ordinal);
-        Assert.Equal(adsOffRu, RuleSets.DnsStamp(false, ru.Reverse(), bypass));
-    }
 }

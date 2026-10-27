@@ -61,7 +61,7 @@ src/DemarVpn/
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi, SessionCacheStore (incl. ping), ServersPreferencesStore (filters+favorites), SessionRefreshPolicy
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks
-│   ├── Vpn/                       # VpnController, SingBoxConfigBuilder, RuleSets (bundled .srs + dns cache stamp), engines
+│   ├── Vpn/                       # VpnController, SingBoxConfigBuilder, RuleSets (bundled .srs), engines
 │   ├── Device/DeviceIdentity.cs
 │   ├── Network/
 │   │   ├── UplinkIpv4.cs

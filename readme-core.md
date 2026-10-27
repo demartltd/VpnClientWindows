@@ -147,7 +147,7 @@ Uplink host = VPS `server`, не SNI. Bootstrap DNS/route: только uplink h
 | `dns-direct` | UDP `1.1.1.1` | bootstrap, domain resolver |
 | `dns-remote` | HTTPS `1.1.1.1` | DoH через proxy |
 
-Rules: PTR → reject; `localhost` → predefined; process bypass → `dns-direct`; bootstrap → `dns-direct`; **Ad block** reject (`geosite-category-ads`) **до** site-bypass / geosite (parity Apple: иначе `yandex.ru` пропускает `an.yandex.ru`); site bypass → `dns-direct`; geosite → `dns-direct`. `final: dns-remote`, `ipv4_only`, `reverse_mapping`, `optimistic`. `cache_file.store_dns` + `RuleSets` stamp (сброс при смене Ad Block / GEO / bypass).
+Rules: PTR → reject; `localhost` → predefined; process bypass → `dns-direct`; bootstrap → `dns-direct`; **Ad block** reject (`geosite-category-ads`) **до** site-bypass / geosite (parity Apple: иначе `yandex.ru` пропускает `an.yandex.ru`); site bypass → `dns-direct`; geosite → `dns-direct`. `final: dns-remote`, `ipv4_only`, `reverse_mapping`, `optimistic`. `experimental.cache_file`: `enabled` + `store_dns` (живёт между Connect; без сброса при смене Ad/GEO/bypass).
 
 ### Ad block (DNS + route)
 
@@ -155,7 +155,7 @@ Rules: PTR → reject; `localhost` → predefined; process bypass → `dns-direc
 - Build: `scripts/for_builds/sync_rulesets.ps1` → ads + geosite/geoip RU/IR/CN → `Assets/rule-sets/` (gitignore; called from `build_windows.ps1`).
 - Connect: bundled path → sing-box `type: local` / `format: binary` (parity Apple; offline, no runtime HTTP).
 - DNS + route: `{ "rule_set": ["geosite-category-ads"], "action": "reject" }` — DNS uses `no_drop: true` (avoid sing-box drop-after-50 → Chrome DoH fallback on rapid ad-block tests).
-- Apply on next Connect (no live reconnect). `RuleSets.Prepare` + `AlignDnsCache`: `cache.db` живёт между Connect; сброс stamp при смене Ad Block / GEO / bypass. UI: Settings → App settings → TUN settings.
+- Apply on next Connect (no live reconnect). `RuleSets.Prepare` → bundled `.srs`; `cache.db` не сбрасывается при смене тогглов. UI: Settings → App settings → TUN settings.
 
 ---
 
@@ -178,7 +178,7 @@ Servermaster кладёт `route.rule_set` (RU/IR/CN) в `clientConfigJson`. К�
 - geoip → route `direct` (Windows; Apple uses TunBypass CIDR)
 - ads → DNS+route `reject` (отдельный тоггл, не в `plan.bypassRuleSets`)
 - **не** эмитить TUN `route_exclude_address_set` (parity Android)
-- `cache_file.store_dns` + `RuleSets.AlignDnsCache` (stamp Ad Block / GEO / bypass)
+- `cache_file.store_dns` (без сброса при смене Ad Block / GEO / bypass)
 ---
 
 ## Bypass
@@ -251,7 +251,7 @@ Runtime в `Native/bin/`: `sing-box.exe`, `wintun.dll`, `libcronet.dll` (NaivePr
 | `Services/Auth/*` | API + session store |
 | `Services/Servers/*` | servers fetch/parse |
 | `Services/Vpn/SingBoxConfigBuilder.cs` | TUN + DNS + route JSON (`stack: system`; local `.srs`) |
-| `Services/Vpn/RuleSets.cs` | Bundled `.srs` paths, `Prepare` / `AlignDnsCache` |
+| `Services/Vpn/RuleSets.cs` | Bundled `.srs` paths, `Prepare` |
 | `Services/Vpn/VpnController.cs` | Connect pipeline, UI bridge |
 | `Services/Network/UplinkIpv4.cs` | uplink resolve |
 | `Services/Vpn/SingBoxProcessEngine.cs` | sing-box.exe subprocess |

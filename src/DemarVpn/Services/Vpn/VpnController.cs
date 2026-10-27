@@ -466,7 +466,6 @@ public sealed class VpnController : NotifyBase
             var bypass = TunSettingsStore.EffectiveBypass(isFree);
             var adBlock = TunSettingsStore.Settings.IsAdBlockEnabled(isFree);
             (plan, var ads) = RuleSets.Prepare(plan, adBlock);
-            RuleSets.AlignDnsCache(ads, plan.BypassRuleSets, bypass);
             var configJson = SingBoxConfigBuilder.BuildTunConfigJson(plan, bypass, ads: ads);
             AppLog.Append(
                 $"connect uplinkHost={plan.UplinkHost} uplinkPort={profile.UplinkPort} target={connectTarget} resolved={string.Join(",", resolved)} " +
