@@ -118,6 +118,8 @@ static class ZhHans
         ["Apps and sites excluded from the VPN tunnel"] = "从 VPN 隧道排除的应用和网站",
         ["Exclude selected apps and groups from the VPN"] = "从 VPN 排除所选应用和分组",
         ["Custom apps"] = "自定义应用",
+        ["Custom sites"] = "自定义网站",
+        ["Paste links separated by commas"] = "用逗号分隔粘贴链接",
         ["Available with Plus or VIP"] = "Plus 或 VIP 可用",
         ["Add app"] = "添加应用",
         ["Add a .exe to the exclusion list"] = "将 .exe 添加到排除列表",

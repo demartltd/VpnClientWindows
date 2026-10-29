@@ -29,7 +29,7 @@ public static class Strings
     public const string LoginEmailHint = "Email";
     public const string LoginMoreMethods = "More Login Methods";
     public const string PlatformWindows = "Windows";
-    public const string VersionName = "1.0.43";
+    public const string VersionName = "1.0.44";
 
     // Service menu — English only (no localization)
     public const string ServiceMenuTitle = "Service menu";
@@ -191,9 +191,12 @@ public static class Strings
     public const string SettingsTunRulesTitle = PayCompareTun;
     public static string SettingsTunRulesSub => L("Exclude selected apps and groups from the VPN");
     public static string SettingsTunCustomTitle => L("Custom apps");
+    public static string SettingsTunCustomSitesTitle => L("Custom sites");
     public static string SettingsTunCustomFreeSub => L("Available with Plus or VIP");
     public static string SettingsTunAppsAdd => L("Add app");
     public static string SettingsTunAppsAddSub => L("Add a .exe to the exclusion list");
+    public static string SettingsTunSitesAddSub => L("Paste links separated by commas");
+    public const string SettingsTunSitesHint = "example.com";
     public static string SettingsTunAppsPickExplorer => L("Browse…");
     public static string SettingsTunAppsTypeName => L(".exe name");
     public static string SettingsTunAppsMustExe => L("Name must end with .exe");

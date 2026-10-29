@@ -118,6 +118,8 @@ static class Ko
         ["Apps and sites excluded from the VPN tunnel"] = "VPN 터널에서 제외된 앱 및 사이트",
         ["Exclude selected apps and groups from the VPN"] = "선택한 앱과 그룹을 VPN에서 제외",
         ["Custom apps"] = "사용자 지정 앱",
+        ["Custom sites"] = "사용자 지정 사이트",
+        ["Paste links separated by commas"] = "쉼표로 구분해 링크를 붙여넣으세요",
         ["Available with Plus or VIP"] = "Plus 또는 VIP에서 사용 가능",
         ["Add app"] = "앱 추가",
         ["Add a .exe to the exclusion list"] = "제외 목록에 .exe 추가",

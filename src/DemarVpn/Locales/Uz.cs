@@ -118,6 +118,8 @@ static class Uz
         ["Apps and sites excluded from the VPN tunnel"] = "VPN tunnelidan chiqarilgan ilovalar va saytlar",
         ["Exclude selected apps and groups from the VPN"] = "Tanlangan ilovalar va guruhlarni VPN’dan chiqarish",
         ["Custom apps"] = "Maxsus ilovalar",
+        ["Custom sites"] = "Shaxsiy saytlar",
+        ["Paste links separated by commas"] = "Havolalarni vergul bilan ajratib joylashtiring",
         ["Available with Plus or VIP"] = "Plus yoki VIP bilan mavjud",
         ["Add app"] = "Ilova qo‘shish",
         ["Add a .exe to the exclusion list"] = "Istisnolar ro‘yxatiga .exe qo‘shing",

@@ -772,7 +772,7 @@ public class VpnPipelineTest
     [Fact]
     public void AdBlock_effectiveGate()
     {
-        var paid = new TunSettings([], new Dictionary<string, bool>(), new Dictionary<string, bool>());
+        var paid = new TunSettings([], [], new Dictionary<string, bool>(), new Dictionary<string, bool>());
         Assert.True(paid.IsAdBlockEnabled(false));
         Assert.False(paid.IsAdBlockEnabled(true));
         Assert.False((paid with { AdBlockEnabled = false }).IsAdBlockEnabled(false));
@@ -783,7 +783,7 @@ public class VpnPipelineTest
     public void TunFingerprint_includesAdBlock()
     {
         var catalog = TunCatalog.Empty;
-        var on = new TunSettings([], new Dictionary<string, bool>(), new Dictionary<string, bool>());
+        var on = new TunSettings([], [], new Dictionary<string, bool>(), new Dictionary<string, bool>());
         var off = on with { AdBlockEnabled = false };
         Assert.Contains("ads=True", on.Fingerprint(catalog, isFree: false), StringComparison.Ordinal);
         Assert.Contains("ads=False", off.Fingerprint(catalog, isFree: false), StringComparison.Ordinal);

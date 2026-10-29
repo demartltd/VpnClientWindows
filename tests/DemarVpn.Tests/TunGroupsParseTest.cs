@@ -70,7 +70,7 @@ public class TunGroupsParseTest
     public void IsGroupEnabled_overrideWinsOverDefault()
     {
         var catalog = TunGroupsApi.Parse(SampleJson);
-        var settings = new TunSettings([], new Dictionary<string, bool> { ["ru banks"] = true }, NoOverrides);
+        var settings = new TunSettings([], [], new Dictionary<string, bool> { ["ru banks"] = true }, NoOverrides);
         Assert.True(settings.IsAppGroupEnabled(catalog.AppGroups[1], isFree: false));
     }
 
@@ -80,6 +80,7 @@ public class TunGroupsParseTest
         var catalog = TunGroupsApi.Parse(SampleJson);
         var settings = new TunSettings(
             ["custom.exe"],
+            [],
             new Dictionary<string, bool> { ["games"] = false },
             NoOverrides);
         var effective = settings.EffectiveBypassExes(catalog, isFree: true);
@@ -94,6 +95,7 @@ public class TunGroupsParseTest
         var catalog = TunGroupsApi.Parse(SampleJson);
         var settings = new TunSettings(
             ["custom.exe"],
+            [],
             new Dictionary<string, bool> { ["games"] = false },
             NoOverrides);
         var effective = settings.EffectiveBypassExes(catalog, isFree: false);
@@ -111,10 +113,25 @@ public class TunGroupsParseTest
     }
 
     [Fact]
+    public void EffectiveBypassHosts_paidUnionsCustom_freeIgnoresCustom()
+    {
+        var catalog = TunGroupsApi.Parse(SampleJson);
+        var settings = new TunSettings([], ["youtube.com", "Example.COM"], NoOverrides, NoOverrides);
+        var paid = settings.EffectiveBypassHosts(catalog, isFree: false);
+        Assert.Contains("youtube.com", paid);
+        Assert.Contains("example.com", paid);
+        Assert.Contains("store.steampowered.com", paid);
+        var free = settings.EffectiveBypassHosts(catalog, isFree: true);
+        Assert.DoesNotContain("youtube.com", free);
+        Assert.DoesNotContain("example.com", free);
+        Assert.Contains("store.steampowered.com", free);
+    }
+
+    [Fact]
     public void RulesDisabled_clearsBypass_paid()
     {
         var catalog = TunGroupsApi.Parse(SampleJson);
-        var settings = new TunSettings(["custom.exe"], NoOverrides, NoOverrides, RulesEnabled: false);
+        var settings = new TunSettings(["custom.exe"], ["youtube.com"], NoOverrides, NoOverrides, RulesEnabled: false);
         Assert.Empty(settings.EffectiveBypassExes(catalog, isFree: false));
         Assert.Empty(settings.EffectiveBypassHosts(catalog, isFree: false));
     }
@@ -124,9 +141,28 @@ public class TunGroupsParseTest
     {
         var catalog = TunGroupsApi.Parse(SampleJson);
         var on = TunSettings.Empty.Fingerprint(catalog, isFree: false);
-        var off = new TunSettings([], new Dictionary<string, bool> { ["games"] = false }, NoOverrides)
+        var off = new TunSettings([], [], new Dictionary<string, bool> { ["games"] = false }, NoOverrides)
             .Fingerprint(catalog, isFree: false);
         Assert.NotEqual(on, off);
+    }
+
+    [Theory]
+    [InlineData("https://www.youtube.com/watch?", "youtube.com")]
+    [InlineData("HTTP://Music.YouTube.com/path", "music.youtube.com")]
+    [InlineData("example.com", "example.com")]
+    [InlineData("www.Example.COM.", "example.com")]
+    [InlineData("hello", null)]
+    [InlineData("localhost", null)]
+    [InlineData("1.2.3.4", null)]
+    [InlineData("-bad.com", null)]
+    public void TunBypassHosts_Parse_normalizesOrRejects(string raw, string? expected) =>
+        Assert.Equal(expected, TunBypassHosts.Parse(raw));
+
+    [Fact]
+    public void TunBypassHosts_ParseMany_splitsCommaAndWhitespace()
+    {
+        var hosts = TunBypassHosts.ParseMany("https://www.youtube.com/a, example.com  hello  vk.com");
+        Assert.Equal(["example.com", "vk.com", "youtube.com"], hosts);
     }
 
     [Theory]

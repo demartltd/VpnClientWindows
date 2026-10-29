@@ -118,6 +118,8 @@ static class Ja
         ["Apps and sites excluded from the VPN tunnel"] = "VPNトンネルから除外するアプリとサイト",
         ["Exclude selected apps and groups from the VPN"] = "選択したアプリとグループをVPNから除外",
         ["Custom apps"] = "カスタムアプリ",
+        ["Custom sites"] = "カスタムサイト",
+        ["Paste links separated by commas"] = "カンマ区切りでリンクを貼り付け",
         ["Available with Plus or VIP"] = "PlusまたはVIPで利用可能",
         ["Add app"] = "アプリを追加",
         ["Add a .exe to the exclusion list"] = "除外リストに.exeを追加",

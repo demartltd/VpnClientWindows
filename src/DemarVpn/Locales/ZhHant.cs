@@ -118,6 +118,8 @@ static class ZhHant
         ["Apps and sites excluded from the VPN tunnel"] = "從 VPN 通道排除的應用程式和網站",
         ["Exclude selected apps and groups from the VPN"] = "從 VPN 排除所選應用程式和群組",
         ["Custom apps"] = "自訂應用程式",
+        ["Custom sites"] = "自訂網站",
+        ["Paste links separated by commas"] = "以逗號分隔貼上連結",
         ["Available with Plus or VIP"] = "Plus 或 VIP 可用",
         ["Add app"] = "新增應用程式",
         ["Add a .exe to the exclusion list"] = "將 .exe 新增至排除清單",

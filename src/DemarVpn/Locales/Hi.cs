@@ -118,6 +118,8 @@ static class Hi
         ["Apps and sites excluded from the VPN tunnel"] = "VPN टनल से बाहर ऐप और साइटें",
         ["Exclude selected apps and groups from the VPN"] = "चयनित ऐप और समूहों को VPN से बाहर रखें",
         ["Custom apps"] = "कस्टम ऐप",
+        ["Custom sites"] = "कस्टम साइटें",
+        ["Paste links separated by commas"] = "लिंक अल्पविराम से अलग करके पेस्ट करें",
         ["Available with Plus or VIP"] = "Plus या VIP के साथ उपलब्ध",
         ["Add app"] = "ऐप जोड़ें",
         ["Add a .exe to the exclusion list"] = "बहिष्करण सूची में .exe जोड़ें",

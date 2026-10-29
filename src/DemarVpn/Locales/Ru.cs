@@ -118,6 +118,8 @@ static class Ru
         ["Apps and sites excluded from the VPN tunnel"] = "Исключения приложений и сайтов из туннеля",
         ["Exclude selected apps and groups from the VPN"] = "Исключать выбранные приложения и группы из VPN",
         ["Custom apps"] = "Свои приложения",
+        ["Custom sites"] = "Свои сайты",
+        ["Paste links separated by commas"] = "Вставляйте ссылки через запятую",
         ["Available with Plus or VIP"] = "Доступно с подпиской Plus или VIP",
         ["Add app"] = "Добавить приложение",
         ["Add a .exe to the exclusion list"] = "Добавьте .exe в список исключений",

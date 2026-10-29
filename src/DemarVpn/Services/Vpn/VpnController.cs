@@ -97,6 +97,21 @@ public sealed class VpnController : NotifyBase
         AppLog.Append($"tun_apps=remove {TunExeNames.Normalize(exe)}");
     }
 
+    public void AddBypassHost(string raw)
+    {
+        if (IsFreeSubscription()) return;
+        var hosts = TunBypassHosts.ParseMany(raw);
+        if (hosts.Count == 0) return;
+        TunSettingsStore.AddBypassHosts(raw);
+        AppLog.Append($"tun_hosts=add {string.Join(',', hosts)}");
+    }
+
+    public void RemoveBypassHost(string host)
+    {
+        TunSettingsStore.RemoveBypassHost(host);
+        AppLog.Append($"tun_hosts=remove {TunBypassHosts.Parse(host) ?? host.Trim()}");
+    }
+
     public void SetAppGroupEnabled(string groupId, bool enabled)
     {
         if (IsFreeSubscription()) return;

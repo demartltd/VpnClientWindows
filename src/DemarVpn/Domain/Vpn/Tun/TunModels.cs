@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace DemarVpn.Domain.Vpn.Tun;
 
 public sealed record TunAppRef(string Id, string Name);
@@ -33,6 +35,7 @@ public sealed record TunCatalog(
 
 public sealed record TunSettings(
     IReadOnlyList<string> BypassExes,
+    IReadOnlyList<string> BypassHosts,
     IReadOnlyDictionary<string, bool> AppGroupOverrides,
     IReadOnlyDictionary<string, bool> SiteGroupOverrides,
     bool RulesEnabled = true,
@@ -40,7 +43,7 @@ public sealed record TunSettings(
 {
     private static readonly Dictionary<string, bool> EmptyOverrides = new(StringComparer.OrdinalIgnoreCase);
 
-    public static TunSettings Empty { get; } = new([], EmptyOverrides, EmptyOverrides);
+    public static TunSettings Empty { get; } = new([], [], EmptyOverrides, EmptyOverrides);
 }
 
 public sealed record TunBypassOptions(IReadOnlyList<string> BypassExes, IReadOnlyList<string> BypassHosts)
@@ -67,6 +70,56 @@ public static class TunExeNames
 
     public static bool IsSelf(string? exe) =>
         Normalize(exe) is var n && (n.Length == 0 || n is SingBox or "demar vpn.exe");
+}
+
+/// <summary>URL/host → apex host for site bypass (parity Android parseBypassHost).</summary>
+public static class TunBypassHosts
+{
+    // Label.Label… with ≥1 dot; rejects bare words.
+    private static readonly Regex DomainRe = new(
+        @"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    private static readonly Regex Ipv4Re = new(
+        @"^\d{1,3}(\.\d{1,3}){3}$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    public static string? Clean(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var s = raw.Trim().Trim('.');
+        return s.Length == 0 ? null : s;
+    }
+
+    public static string? Parse(string? raw)
+    {
+        var t = raw?.Trim();
+        if (string.IsNullOrEmpty(t)) return null;
+        var withScheme = t.Contains("://", StringComparison.Ordinal) || t.StartsWith("//", StringComparison.Ordinal)
+            ? t
+            : "https://" + t;
+        if (!Uri.TryCreate(withScheme, UriKind.Absolute, out var uri)) return null;
+        var host = uri.Host?.ToLowerInvariant();
+        if (string.IsNullOrEmpty(host)) return null;
+        if (host.StartsWith("www.", StringComparison.Ordinal)) host = host[4..];
+        var cleaned = Clean(host);
+        return cleaned is not null && IsBypassDomain(cleaned) ? cleaned : null;
+    }
+
+    public static IReadOnlyList<string> ParseMany(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return [];
+        return raw.Split([' ', '\t', '\r', '\n', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(Parse)
+            .Where(h => h is not null)
+            .Cast<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static bool IsBypassDomain(string host) =>
+        DomainRe.IsMatch(host) && !Ipv4Re.IsMatch(host);
 }
 
 public static class TunEffective
@@ -108,10 +161,20 @@ public static class TunEffective
         this TunSettings settings, TunCatalog catalog, bool isFree)
     {
         if (!settings.IsRulesEnabled(isFree)) return [];
-        return catalog.SiteGroups
+        var fromGroups = catalog.SiteGroups
             .Where(g => settings.IsSiteGroupEnabled(g, isFree))
-            .SelectMany(g => g.Sites.Select(s => s.Host.Trim()))
-            .Where(h => h.Length > 0)
+            .SelectMany(g => g.Sites.Select(s => TunBypassHosts.Clean(s.Host)))
+            .Where(h => h is not null)
+            .Cast<string>();
+        // Free: custom BypassHosts ignored (Plus feature); prefs kept for Renew.
+        var custom = isFree
+            ? Enumerable.Empty<string>()
+            : settings.BypassHosts
+                .Select(TunBypassHosts.Parse)
+                .Where(h => h is not null)
+                .Cast<string>();
+        return custom
+            .Concat(fromGroups)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();

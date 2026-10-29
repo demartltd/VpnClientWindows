@@ -65,12 +65,72 @@ public sealed partial class TunSettingsPage
         return Card(panel);
     }
 
+    private Border BuildCustomSitesCard(bool isFree)
+    {
+        var panel = new StackPanel { Spacing = 8 };
+        panel.Children.Add(new StackPanel
+        {
+            Spacing = 2,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = Strings.SettingsTunCustomSitesTitle,
+                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                new TextBlock
+                {
+                    Text = isFree ? Strings.SettingsTunCustomFreeSub : Strings.SettingsTunSitesAddSub,
+                    Opacity = 0.7,
+                    FontSize = 12,
+                    TextWrapping = TextWrapping.Wrap,
+                },
+            },
+        });
+        if (!isFree)
+        {
+            _siteInput = new TextBox
+            {
+                PlaceholderText = Strings.SettingsTunSitesHint,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+            };
+            // PreviewKeyDown (parity SupportChatPane) — never Focus/TryMoveFocus (WinUI Desktop crash).
+            _siteInput.PreviewKeyDown += (sender, e) =>
+            {
+                if (e.Key != Windows.System.VirtualKey.Enter) return;
+                e.Handled = true;
+                var box = (TextBox)sender;
+                var raw = box.Text;
+                box.Text = string.Empty;
+                // Defer store→UI refresh out of the key event (parity login Focus enqueue).
+                DispatcherQueue.TryEnqueue(() => AppServices.Vpn.AddBypassHost(raw));
+            };
+            panel.Children.Add(_siteInput);
+        }
+        else
+        {
+            _siteInput = null;
+        }
+        _customSiteChips = new ItemsControl { ItemsPanel = (ItemsPanelTemplate)Resources["TunChipWrapPanel"] };
+        panel.Children.Add(_customSiteChips);
+        return Card(panel);
+    }
+
     private void RefreshCustomChips(TunSettings settings, bool isFree)
     {
         if (_customChips is null) return;
         _customChips.Items.Clear();
         foreach (var exe in settings.BypassExes)
-            _customChips.Items.Add(BuildRemovableChip(TunExeNames.Normalize(exe), isFree));
+            _customChips.Items.Add(BuildRemovableChip(TunExeNames.Normalize(exe), isFree, AppServices.Vpn.RemoveBypassExe));
+    }
+
+    private void RefreshCustomSiteChips(TunSettings settings, bool isFree)
+    {
+        if (_customSiteChips is null) return;
+        _customSiteChips.Items.Clear();
+        foreach (var host in settings.BypassHosts)
+            _customSiteChips.Items.Add(BuildRemovableChip(host, isFree, AppServices.Vpn.RemoveBypassHost));
     }
 
     private Border BuildGroupsSection<T>(
@@ -241,12 +301,12 @@ public sealed partial class TunSettingsPage
     private static string DisplayName(string name, string sub) =>
         string.IsNullOrWhiteSpace(name) || name.Equals(sub, StringComparison.OrdinalIgnoreCase) ? sub : name;
 
-    private UIElement BuildRemovableChip(string exeName, bool isFree)
+    private UIElement BuildRemovableChip(string label, bool isFree, Action<string> onRemove)
     {
         var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
         row.Children.Add(new TextBlock
         {
-            Text = exeName,
+            Text = label,
             FontSize = 12,
             VerticalAlignment = VerticalAlignment.Center,
             Foreground = Res("DemarPrimaryBrush"),
@@ -272,7 +332,7 @@ public sealed partial class TunSettingsPage
             remove.PointerExited += (_, _) => remove.Background = new SolidColorBrush(Colors.Transparent);
             remove.PointerPressed += (_, e) =>
             {
-                AppServices.Vpn.RemoveBypassExe(exeName);
+                onRemove(label);
                 e.Handled = true;
             };
             row.Children.Add(remove);

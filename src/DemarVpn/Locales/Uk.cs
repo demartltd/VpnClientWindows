@@ -118,6 +118,8 @@ static class Uk
         ["Apps and sites excluded from the VPN tunnel"] = "Програми та сайти поза VPN-тунелем",
         ["Exclude selected apps and groups from the VPN"] = "Виключати вибрані програми та групи з VPN",
         ["Custom apps"] = "Власні програми",
+        ["Custom sites"] = "Власні сайти",
+        ["Paste links separated by commas"] = "Вставляйте посилання через кому",
         ["Available with Plus or VIP"] = "Доступно з Plus або VIP",
         ["Add app"] = "Додати програму",
         ["Add a .exe to the exclusion list"] = "Додайте .exe до списку винятків",

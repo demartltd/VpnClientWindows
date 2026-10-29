@@ -118,6 +118,8 @@ static class En
         ["Apps and sites excluded from the VPN tunnel"] = "Apps and sites excluded from the VPN tunnel",
         ["Exclude selected apps and groups from the VPN"] = "Exclude selected apps and groups from the VPN",
         ["Custom apps"] = "Custom apps",
+        ["Custom sites"] = "Custom sites",
+        ["Paste links separated by commas"] = "Paste links separated by commas",
         ["Available with Plus or VIP"] = "Available with Plus or VIP",
         ["Add app"] = "Add app",
         ["Add a .exe to the exclusion list"] = "Add a .exe to the exclusion list",

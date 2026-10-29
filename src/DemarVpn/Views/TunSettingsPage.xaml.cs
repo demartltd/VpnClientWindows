@@ -22,6 +22,8 @@ public sealed partial class TunSettingsPage : OverlayPage
     private readonly Dictionary<string, GroupUi> _appGroups = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, GroupUi> _siteGroups = new(StringComparer.OrdinalIgnoreCase);
     private ItemsControl? _customChips;
+    private ItemsControl? _customSiteChips;
+    private TextBox? _siteInput;
 
     private sealed class GroupUi
     {
@@ -74,7 +76,8 @@ public sealed partial class TunSettingsPage : OverlayPage
     private void EnsureBuilt()
     {
         var catalog = TunSettingsStore.Catalog;
-        var key = CatalogKey(catalog);
+        var isFree = VpnController.IsFreeSubscription();
+        var key = $"{(isFree ? 'F' : 'P')}|{CatalogKey(catalog)}";
         if (key == _catalogKey && RootPanel.Children.Count > 0) return;
 
         _catalogKey = key;
@@ -82,13 +85,12 @@ public sealed partial class TunSettingsPage : OverlayPage
         _siteGroups.Clear();
         _uiReady = false;
         RootPanel.Children.Clear();
-
-        var isFree = VpnController.IsFreeSubscription();
         _adBlockCard = BuildAdBlockCard(isFree);
         RootPanel.Children.Add(_adBlockCard);
         RootPanel.Children.Add(BuildRulesCard(isFree));
         if (isFree) RootPanel.Children.Add(BuildBuyButton());
         RootPanel.Children.Add(BuildCustomCard(isFree));
+        RootPanel.Children.Add(BuildCustomSitesCard(isFree));
         if (catalog.AppGroups.Count > 0)
             RootPanel.Children.Add(BuildGroupsSection(Strings.SettingsTunGroupsTitle, catalog.AppGroups, _appGroups, _expandedAppGroups, true));
         if (catalog.SiteGroups.Count > 0)
@@ -117,6 +119,7 @@ public sealed partial class TunSettingsPage : OverlayPage
         SetToggle(_adBlockToggle, settings.IsAdBlockEnabled(isFree), !isFree);
         SetToggle(_rulesToggle, rulesOn, !isFree);
         RefreshCustomChips(settings, isFree);
+        RefreshCustomSiteChips(settings, isFree);
 
         ApplyGroupStates(catalog.AppGroups, _appGroups, _expandedAppGroups, g => settings.IsAppGroupEnabled(g, isFree), !isFree && rulesOn);
         ApplyGroupStates(catalog.SiteGroups, _siteGroups, _expandedSiteGroups, g => settings.IsSiteGroupEnabled(g, isFree), !isFree && rulesOn);

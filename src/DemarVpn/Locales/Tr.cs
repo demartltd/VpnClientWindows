@@ -118,6 +118,8 @@ static class Tr
         ["Apps and sites excluded from the VPN tunnel"] = "VPN tünelinden hariç tutulan uygulamalar ve siteler",
         ["Exclude selected apps and groups from the VPN"] = "Seçili uygulamaları ve grupları VPN’den hariç tut",
         ["Custom apps"] = "Özel uygulamalar",
+        ["Custom sites"] = "Özel siteler",
+        ["Paste links separated by commas"] = "Bağlantıları virgülle ayırarak yapıştırın",
         ["Available with Plus or VIP"] = "Plus veya VIP ile kullanılabilir",
         ["Add app"] = "Uygulama ekle",
         ["Add a .exe to the exclusion list"] = "Hariç listesine bir .exe ekleyin",

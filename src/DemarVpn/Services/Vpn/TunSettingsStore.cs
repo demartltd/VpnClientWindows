@@ -123,6 +123,38 @@ public static class TunSettingsStore
         Changed?.Invoke();
     }
 
+    public static void AddBypassHosts(string raw)
+    {
+        var added = TunBypassHosts.ParseMany(raw);
+        if (added.Count == 0) return;
+        lock (Gate)
+        {
+            var next = _settings.BypassHosts
+                .Concat(added)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (next.Count == _settings.BypassHosts.Count) return;
+            _settings = _settings with { BypassHosts = next };
+            SaveToDisk();
+        }
+        Changed?.Invoke();
+    }
+
+    public static void RemoveBypassHost(string host)
+    {
+        var id = TunBypassHosts.Parse(host) ?? host.Trim().ToLowerInvariant();
+        if (id.Length == 0) return;
+        lock (Gate)
+        {
+            var next = _settings.BypassHosts.Where(x => !x.Equals(id, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (next.Count == _settings.BypassHosts.Count) return;
+            _settings = _settings with { BypassHosts = next };
+            SaveToDisk();
+        }
+        Changed?.Invoke();
+    }
+
     public static void SetAppGroupEnabled(string groupId, bool enabled)
     {
         var id = groupId.Trim().ToLowerInvariant();
@@ -164,6 +196,10 @@ public static class TunSettingsStore
             if (dto is null) return;
             _settings = new TunSettings(
                 dto.BypassExes ?? [],
+                (dto.BypassHosts ?? []).Select(TunBypassHosts.Parse).Where(h => h is not null).Cast<string>()
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                    .ToList(),
                 ToDict(dto.AppGroupOverrides),
                 ToDict(dto.SiteGroupOverrides),
                 dto.RulesEnabled ?? true,
@@ -183,6 +219,7 @@ public static class TunSettingsStore
             var dto = new PersistDto
             {
                 BypassExes = _settings.BypassExes.ToList(),
+                BypassHosts = _settings.BypassHosts.ToList(),
                 AppGroupOverrides = _settings.AppGroupOverrides.ToDictionary(x => x.Key, x => x.Value),
                 SiteGroupOverrides = _settings.SiteGroupOverrides.ToDictionary(x => x.Key, x => x.Value),
                 RulesEnabled = _settings.RulesEnabled,
@@ -203,6 +240,7 @@ public static class TunSettingsStore
     private sealed class PersistDto
     {
         public List<string>? BypassExes { get; set; }
+        public List<string>? BypassHosts { get; set; }
         public Dictionary<string, bool>? AppGroupOverrides { get; set; }
         public Dictionary<string, bool>? SiteGroupOverrides { get; set; }
         public bool? RulesEnabled { get; set; }
