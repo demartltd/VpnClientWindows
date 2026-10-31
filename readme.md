@@ -1,5 +1,7 @@
 **Demar VPN Windows** — native VPN client in C# + WinUI 3
 
+License: [GNU GPL v3](LICENSE) (copyleft / open source). Names **Demar VPN** / **Demar Proxy** and Demar product identifiers are reserved — see LICENSE additional terms.
+
 Platform: **Windows only** (x64 unpackaged EXE). Android/iOS/macOS are out of scope.
 
 **Min OS:** Windows 10 19041+ (WinUI 3 / Windows App SDK).
