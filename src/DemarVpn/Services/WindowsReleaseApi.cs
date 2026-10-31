@@ -6,7 +6,7 @@ namespace DemarVpn.Services;
 
 public sealed record WindowsRelease(string Version, string Asset, string Sha256, string DownloadUrl);
 
-/// <summary>Windows release metadata from vpn.example.invalid/windows/version (parity AndroidReleaseApi).</summary>
+/// <summary>Windows release metadata from VPN API/windows/version (parity AndroidReleaseApi).</summary>
 public static class WindowsReleaseApi
 {
     public static string DownloadUrl => $"{DemarHttp.VpnApiBaseUrl}/windows/download";

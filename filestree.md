@@ -57,7 +57,7 @@ src/DemarVpn/
 │   ├── LocaleStore.cs             # UI language 13 tags (OS if supported); ru→RUB else EUR
 │   ├── RunAtStartup.cs            # logon Task Scheduler autostart (default ON)
 │   ├── Account/                   # VpnAccountApi, AccountStore, PayApi, SubscriptionAlertStore
-│   ├── Support/                   # SupportApi → csauth.example.invalid ticket chat (channel=windows; album ≤10 WebP)
+│   ├── Support/                   # SupportApi → csauth API ticket chat (channel=windows; album ≤10 WebP)
 │   ├── Auth/                      # AuthApi, AuthRepository, AuthSessionStore, DemarHttp
 │   ├── Servers/                   # ServersApi, SessionCacheStore (incl. ping), ServersPreferencesStore (filters+favorites), SessionRefreshPolicy
 │   ├── Content/                   # LegalDocumentRepository, RawTextFetcher, MarkdownBlocks

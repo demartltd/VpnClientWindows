@@ -12,7 +12,7 @@ public sealed record ServersListResult(
     bool TrafficExceeded = false,
     string RawJson = "");
 
-/// <summary>VPN servers — parity Android ServersApi (POST vpn.example.invalid/vpn/servers).</summary>
+/// <summary>VPN servers — parity Android ServersApi (POST VPN API/vpn/servers).</summary>
 public static class ServersApi
 {
     public static async Task<ServersListResult> FetchServersAsync(

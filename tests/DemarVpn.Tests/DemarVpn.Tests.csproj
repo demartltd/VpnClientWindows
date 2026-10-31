@@ -31,6 +31,7 @@
     <Compile Include="..\..\src\DemarVpn\Services\Network\PublicEgressDiagnostics.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Network\WindowsEgressRouteSnapshot.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Device\DeviceIdentity.cs" />
+    <Compile Include="..\..\src\DemarVpn\Services\Auth\DemarEnv.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Auth\DemarHttp.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Account\VpnAccountModels.cs" />
     <Compile Include="..\..\src\DemarVpn\Services\Account\VpnAccountApi.cs" />

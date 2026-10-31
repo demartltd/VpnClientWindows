@@ -30,7 +30,7 @@ public sealed record PayCheckout(
     string Currency,
     int? DiscountPercent);
 
-/// <summary>Pay catalog / checkout — parity Android PayApi (vpn.example.invalid).</summary>
+/// <summary>Pay catalog / checkout — parity Android PayApi (VPN API).</summary>
 public static class PayApi
 {
     private static readonly object PlansGate = new();

@@ -16,7 +16,7 @@ Layout: `filestree.md` · core: `readme-core.md`
 
 Requires **Windows** + VS 2022 / .NET 10 SDK (Desktop/WPF for Installer) + Windows App SDK.
 
-Prepare locally (not in git): `sing-box.exe` + `wintun.dll` + `libcronet.dll`, rule-sets, icons/flags. Release publish → `artifacts/Updater.exe`.
+Prepare locally (not in git): copy `.env.example` → `.env`, `sing-box.exe` + `wintun.dll` + `libcronet.dll`, rule-sets, icons/flags. Release publish → `artifacts/Updater.exe`.
 
 ```powershell
 dotnet build src/DemarVpn/DemarVpn.csproj -c Debug

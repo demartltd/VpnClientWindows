@@ -11,10 +11,10 @@ using SixLabors.ImageSharp.Processing;
 
 namespace DemarVpn.Services.Support;
 
-/// <summary>Customer Support API — parity Android/Apple SupportApi (csauth.example.invalid).</summary>
+/// <summary>Customer Support API — parity Android/Apple SupportApi.</summary>
 public static class SupportApi
 {
-    public const string BaseUrl = "https://csauth.example.invalid";
+    public static string BaseUrl => DemarEnv.SupportApiBase;
     public const string VpnSourceId = "2";
     public const string Channel = "windows";
     public const long MaxMediaBytes = 25L * 1024 * 1024;

@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using DemarVpn.Services;
+using DemarVpn.Services.Auth;
 
 namespace DemarVpn.Tests;
 
@@ -43,7 +44,7 @@ public class AppUpdateTest
         Assert.Equal("1.0.12", release.Version);
         Assert.Equal("Updater.exe", release.Asset);
         Assert.Equal(WindowsReleaseApi.DownloadUrl, release.DownloadUrl);
-        Assert.StartsWith("https://vpn.example.invalid/", release.DownloadUrl);
+        Assert.StartsWith(DemarHttp.VpnApiBaseUrl.TrimEnd('/') + "/", release.DownloadUrl);
     }
 
     [Fact]

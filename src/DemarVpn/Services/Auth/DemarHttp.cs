@@ -18,11 +18,11 @@ public sealed class AuthException(string message, int statusCode = 0, int? retry
 /// <summary>Mobile API HTTP — parity with Android AuthApi (IO off UI, explicit timeouts).</summary>
 public static class DemarHttp
 {
-    public const string BaseUrl = "https://auth.example.invalid";
-    public const string VpnApiBaseUrl = "https://vpn.example.invalid";
-    public const string AccountBaseUrl = "https://account.example.invalid";
+    public static string BaseUrl => DemarEnv.AuthApiBase;
+    public static string VpnApiBaseUrl => DemarEnv.VpnApiBase;
+    public static string AccountBaseUrl => DemarEnv.AccountApiBase;
     public const string ClientId = "demar-vpn";
-    public const string AppOauthReturn = $"{AccountBaseUrl}/auth/app/complete";
+    public static string AppOauthReturn => $"{AccountBaseUrl}/auth/app/complete";
 
     private const int ConnectTimeoutMs = 15_000;
     private const int ReadTimeoutMs = 25_000;

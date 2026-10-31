@@ -12,6 +12,9 @@ Desktop.ini
 # Local tooling (not in git)
 scripts/
 
+# API endpoints (see .env.example)
+.env
+
 # Build
 **/bin/
 **/obj/

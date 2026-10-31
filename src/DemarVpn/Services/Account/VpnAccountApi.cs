@@ -5,7 +5,7 @@ using DemarVpn.Services.Auth;
 
 namespace DemarVpn.Services.Account;
 
-/// <summary>Account / traffic / notify — parity Android VpnAccountApi (vpn.example.invalid).</summary>
+/// <summary>Account / traffic / notify — parity Android VpnAccountApi (VPN API).</summary>
 public static class VpnAccountApi
 {
     public static async Task<VpnAccount> FetchAccountAsync(string userId, string loginAt, CancellationToken ct = default) =>
