@@ -37,10 +37,9 @@ dotnet build src/DemarVpn/DemarVpn.csproj -c Debug
 
 ---
 
-## UI (parity с demar_vpn Android)
+## UI
 
-
-| Экран                         | Статус                                                                                                                             |
+| Экран                         |                                                                                                                             |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Home (VPN toggle)             | Connect/disconnect через `VpnController` (HY2 / Trojan / VLESS); выбранный сервер — flag + city + large badges → details sheet   |
 | Servers                       | Title «Servers»; multi-select фильтры (sheet tier+protocol, chips stretch ≤3/ряд), badges, favorites, `ServerDetailsSheet` (Load/TCP/TLS/Traffic/Direct), `~tlsMs`+chevron / Premium; Filter FAB 32px над Refresh 64px |
@@ -51,7 +50,7 @@ dotnet build src/DemarVpn/DemarVpn.csproj -c Debug
 | Installer / Uninstall         | UI по языку ОС (en/ru/uk/tr/uz/zh-Hans/zh-Hant/ko/ja/es/de/fr/hi; иначе EN); без переключателя |
 
 
-VPN connect (HY2 / Trojan / VLESS) — **реализовано** (`SingBoxProcessEngine` + Wintun). При Connect появится **UAC для sing-box.exe** (TUN).
+VPN: `SingBoxProcessEngine` + Wintun (HY2 / Trojan / VLESS). При Connect — **UAC для sing-box.exe** (TUN).
 
 ### Auth
 
@@ -59,7 +58,7 @@ Email OTP + TOTP (если включён) и Telegram OIDC через брау�
 
 ### Servers
 
-После входа `POST https://vpn.example.invalid/vpn/servers` → список по подписке (HY2 / Trojan / VLESS Reality). Session cache (`%LOCALAPPDATA%\DemarVpn\session_cache.json`): servers + account + traffic + tun + reachability (ping) — hydrate при старте до сети (parity Apple). Один background loop раз в 10 мин: app update + session refresh if stale; connect без единого refresh в процессе — сначала `RefreshServersAsync`. Refresh списка = API only; ping (`ServerReachProbe`) стартует после и идёт в фоне (parity Apple/Android). HY2 salamander: QUIC GREASE VN оборачивается `SalamanderObfs`. UI (parity Android/iOS): заголовок Servers; multi-select фильтры tier+protocol (bottom sheet без title, chips max 3/ряд со stretch, persistence `servers_prefs.json` + favorites); строки flag + страна + badges TIER/PROTO + `City #N` + `~tlsMs`/chevron → details sheet (Load/TCP/TLS/Traffic/Direct); Home — SelectedServer с large badges; Filter FAB 32px над Refresh. Неподдерживаемые протоколы пропускаются. Без сессии — пустой список.
+После входа `POST https://vpn.example.invalid/vpn/servers` → список по подписке. Session cache: `%LOCALAPPDATA%\DemarVpn\session_cache.json` (hydrate до сети). Refresh = API; ping (`ServerReachProbe`) в фоне. Неподдерживаемые протоколы пропускаются. Без сессии — пустой список.
 
 ---
 

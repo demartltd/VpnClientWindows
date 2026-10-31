@@ -14,7 +14,7 @@
 
 Платформа: **Windows only** (WinUI 3 + sing-box.exe subprocess).
 
-**Итерация:** C# integration — **реализовано** (`VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine`). Auth — `auth.example.invalid`; servers — `vpn.example.invalid` (parity Android).
+Стек: `VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine`. Auth — `auth.example.invalid`; servers — `vpn.example.invalid`.
 
 Connect pipeline: `UplinkIpv4` (attempts=2) → DNS resolve success → config → subprocess (full stop before start) → diag `:10808` → `TunnelPathProbe` (poll CONNECT). Hysteria2 = QUIC/UDP — **без TCP preflight**; Trojan/VLESS — `preferResolvedDial` → `withResolvedUplink`.
 
