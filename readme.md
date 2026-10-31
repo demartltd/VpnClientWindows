@@ -43,8 +43,8 @@ dotnet build src/DemarVpn/DemarVpn.csproj -c Debug
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Home (VPN toggle)             | Connect/disconnect через `VpnController` (HY2 / Trojan / VLESS); выбранный сервер — flag + city + large badges → details sheet   |
 | Servers                       | Title «Servers»; multi-select фильтры (sheet tier+protocol, chips stretch ≤3/ряд), badges, favorites, `ServerDetailsSheet` (Load/TCP/TLS/Traffic/Direct), `~tlsMs`+chevron / Premium; Filter FAB 32px над Refresh 64px |
-| Settings + social links       | FA6 brand icons (`IconLinkChip`: X / Bluesky / Threads / Telegram); промокод (`POST fastapi…/vpn/promo/activate` → refresh account+servers); Documents sheet → ToS/PP с GitHub Markdown; **Support** тикет-чат (`csauth.example.invalid`, `channel=windows`, альбом до 10 фото WebP, unread badge) |
-| Account + login + notify/traffic/info sheets | Email OTP + TOTP + Telegram OAuth → `auth.example.invalid`; Account: подписка / **checkout** (narrow≈iOS / wide≈macOS) / трафик pie / **SubscriptionInfo** (expiry / freeTraffic) / семья (stub) / уведомления / выход; авто-алерты `SubscriptionAlertStore`; `AccountStore` refresh при старте и при обновлении серверов (`fastapi…/vpn/account|traffic|notify`); оплата: `GET /vpn/pay/plans` → `POST /vpn/pay/create` → браузер → `demarvpn://pay/ok|fail` |
+| Settings + social links       | FA6 brand icons (`IconLinkChip`: X / Bluesky / Threads / Telegram); промокод (`POST /vpn/promo/activate` → refresh account+servers); Documents sheet → ToS/PP с GitHub Markdown; **Support** тикет-чат (support API, `channel=windows`, альбом до 10 фото WebP, unread badge) |
+| Account + login + notify/traffic/info sheets | Email OTP + TOTP + Telegram OAuth → auth API; Account: подписка / **checkout** (narrow≈iOS / wide≈macOS) / трафик pie / **SubscriptionInfo** (expiry / freeTraffic) / семья (stub) / уведомления / выход; авто-алерты `SubscriptionAlertStore`; `AccountStore` refresh при старте и при обновлении серверов (`/vpn/account|traffic|notify`); оплата: `GET /vpn/pay/plans` → `POST /vpn/pay/create` → браузер → `demarvpn://pay/ok|fail` |
 | App settings (язык + журнал + beta + autostart) | **Language** 13 langs via `Locales/{En,Ru,…}.cs` (Apple/Android-style EN-key maps) + `Strings.L`; first launch = OS if supported, иначе EN; remount UI; checkout **ru→RUB**, else **EUR**; `AppLog` / beta / autostart / updates; **TUN / Routing**: Ad block (bundled local ads `.srs`, DNS+route reject, Free off / Plus·VIP default on) + custom apps (`.exe`) + **custom sites** (URL→host, Enter/CSV) + API app/site groups; geo bypass = bundled geosite/geoip `.srs` (no runtime download) |
 | Service menu (3× tap version) | English only — About, Route, egress probes, device identity, **Info sheets** (expiry / freeTraffic / traffic / pay result) |
 | Installer / Uninstall         | UI по языку ОС (en/ru/uk/tr/uz/zh-Hans/zh-Hant/ko/ja/es/de/fr/hi; иначе EN); без переключателя |
@@ -58,7 +58,7 @@ Email OTP + TOTP (если включён) и Telegram OIDC через брау�
 
 ### Servers
 
-После входа `POST https://vpn.example.invalid/vpn/servers` → список по подписке. Session cache: `%LOCALAPPDATA%\DemarVpn\session_cache.json` (hydrate до сети). Refresh = API; ping (`ServerReachProbe`) в фоне. Неподдерживаемые протоколы пропускаются. Без сессии — пустой список.
+После входа `POST /vpn/servers` → список по подписке. Session cache: `%LOCALAPPDATA%\DemarVpn\session_cache.json` (hydrate до сети). Refresh = API; ping (`ServerReachProbe`) в фоне. Неподдерживаемые протоколы пропускаются. Без сессии — пустой список.
 
 ---
 

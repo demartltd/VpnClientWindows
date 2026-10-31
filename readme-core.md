@@ -14,7 +14,7 @@
 
 Платформа: **Windows only** (WinUI 3 + sing-box.exe subprocess).
 
-Стек: `VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine`. Auth — `auth.example.invalid`; servers — `vpn.example.invalid`.
+Стек: `VpnController`, `SingBoxConfigBuilder`, `SingBoxProcessEngine`. Auth — auth API; servers — VPN API.
 
 Connect pipeline: `UplinkIpv4` (attempts=2) → DNS resolve success → config → subprocess (full stop before start) → diag `:10808` → `TunnelPathProbe` (poll CONNECT). Hysteria2 = QUIC/UDP — **без TCP preflight**; Trojan/VLESS — `preferResolvedDial` → `withResolvedUplink`.
 
@@ -48,7 +48,7 @@ Connect pipeline: `UplinkIpv4` (attempts=2) → DNS resolve success → config �
 ServerProfile → SingBoxConnectPlan → [resolveUplinkIpv4s] → SingBoxConfigBuilder → config.json
 ```
 
-`resolveUplinkIpv4s` — перед connect на Windows. Список: `POST https://vpn.example.invalid/vpn/servers` → `hysteria2` / `trojan` / `vless_reality` (остальное skip). Расширяемость: новый `IProxyProfile` + `ToConnectPlan` + `ServerProtocol` + parse ветка.
+`resolveUplinkIpv4s` — перед connect на Windows. Список: `POST /vpn/servers` → `hysteria2` / `trojan` / `vless_reality` (остальное skip). Расширяемость: новый `IProxyProfile` + `ToConnectPlan` + `ServerProtocol` + parse ветка.
 
 ### Добавление протокола
 
@@ -223,8 +223,8 @@ Mixed `127.0.0.1:10808` (`SingBoxTags.diagInbound`):
 | `POST /auth/mobile/email/send\|confirm` | Email OTP |
 | `POST /auth/mobile/totp/verify` | TOTP |
 | `POST /auth/mobile/session/exchange\|check` | сессия |
-| `POST vpn.example.invalid/vpn/servers` | список HY2/Trojan/VLESS по подписке; UI: SegmentBar + listTitle/`City #N` + DNS reachability |
-| `GET account.example.invalid/api/auth/client/me` | Telegram OAuth token |
+| `POST /vpn/servers` | список HY2/Trojan/VLESS по подписке; UI: SegmentBar + listTitle/`City #N` + DNS reachability |
+| `GET /api/auth/client/me` | Telegram OAuth token |
 
 Headers: `X-Demar-Client: demar-vpn`, `User-Agent: DemarVPN/{ver} (windows)`. Protocol: `demarvpn://auth/callback`.
 
