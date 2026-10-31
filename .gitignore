@@ -9,6 +9,9 @@ Desktop.ini
 *.user
 *.suo
 
+# Local tooling (not in git)
+scripts/
+
 # Build
 **/bin/
 **/obj/
@@ -27,7 +30,6 @@ src/DemarVpn.Installer/Resources/*
 *.pem
 *.key
 *.p12
-scripts/build/
 
 # Native (singbox-build-windows.py)
 src/DemarVpn/Native/bin/
