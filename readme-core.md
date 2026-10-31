@@ -1,6 +1,6 @@
 # Ядро VPN: Sing-box (Hysteria2 + Trojan + VLESS Reality) — Demar VPN Windows
 
-Целевая версия core: **sing-box latest**. Фактическая — в `src/DemarVpn/Assets/singbox/bundled_version.txt` после `scripts/for_builds/singbox-build-windows.py`.
+Целевая версия core: **sing-box latest**. Фактическая — в `src/DemarVpn/Assets/singbox/bundled_version.txt` после локальной сборки native assets.
 
 Документация: https://sing-box.sagernet.org/
 
@@ -152,7 +152,7 @@ Rules: PTR → reject; `localhost` → predefined; process bypass → `dns-direc
 ### Ad block (DNS + route)
 
 - Free: always off. Plus/VIP: default **on** (`tun_settings.json` `AdBlockEnabled` null → on); user can disable.
-- Build: `scripts/for_builds/sync_rulesets.ps1` → ads + geosite/geoip RU/IR/CN → `Assets/rule-sets/` (gitignore; called from `build_windows.ps1`).
+- Build: ads + geosite/geoip RU/IR/CN → `Assets/rule-sets/` (gitignore; готовить локально перед релизом).
 - Connect: bundled path → sing-box `type: local` / `format: binary` (parity Apple; offline, no runtime HTTP).
 - DNS + route: `{ "rule_set": ["geosite-category-ads"], "action": "reject" }` — DNS uses `no_drop: true` (avoid sing-box drop-after-50 → Chrome DoH fallback on rapid ad-block tests).
 - Apply on next Connect (no live reconnect). `RuleSets.Prepare` → bundled `.srs`; `cache.db` не сбрасывается при смене тогглов. UI: Settings → App settings → TUN settings.
@@ -232,15 +232,15 @@ Headers: `X-Demar-Client: demar-vpn`, `User-Agent: DemarVPN/{ver} (windows)`. Pr
 
 ## Сборка ядра (Windows)
 
+Native `sing-box` / wintun / cronet и release publish готовить локально (не в git).
+
 ```powershell
-py -3 scripts/for_builds/singbox-build-windows.py
-# перекачать:  py -3 scripts/for_builds/singbox-build-windows.py --force
-pwsh scripts/for_builds/build_windows.ps1
+dotnet build src/DemarVpn/DemarVpn.csproj -c Release
 ```
 
 Runtime в `Native/bin/`: `sing-box.exe`, `wintun.dll`, `libcronet.dll` (NaiveProxy). Official release zip уже включает HY2 + Trojan + VLESS/Reality/uTLS.
 
-Очистка: `python3 scripts/singbox-cleaner.py -y`
+Очистка старых sing-box артефактов — локально.
 
 ---
 

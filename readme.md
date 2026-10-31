@@ -16,22 +16,13 @@
 
 Требуется **Windows** + VS 2022 / .NET 10 SDK (Desktop/WPF для Installer) + Windows App SDK.
 
-```powershell
-py -3 scripts/for_builds/singbox-build-windows.py   # sing-box.exe + wintun.dll + libcronet.dll
-python3 scripts/port_brand_icons.py       # при изменении Android brand icons
-python3 scripts/other/port_country_flags.py  # Twemoji флаги → Assets/Flags/
-python3 scripts/generate_icons.py         # Assets из scripts/logo_clear.png
-pwsh scripts/for_builds/build_windows.ps1            # Updater.exe → artifacts/
-pwsh scripts/install_release.ps1          # silent install в Program Files
-```
-
-**Быстрая разработка** (без publish / Updater):
+Локально (не в git): `sing-box.exe` + `wintun.dll` + `libcronet.dll`, rule-sets, иконки/флаги. Release publish → `artifacts/Updater.exe`.
 
 ```powershell
-pwsh scripts/for_builds/build_windows.ps1 -Fast
+dotnet build src/DemarVpn/DemarVpn.csproj -c Debug
 ```
 
-Версия: `version.properties`. Bump: `pwsh scripts/increment_version_auto.ps1`
+Версия: `version.properties`.
 
 Артефакты:
 
@@ -74,20 +65,7 @@ Email OTP + TOTP (если включён) и Telegram OIDC через брау�
 
 ## Отладка
 
-```powershell
-# Весь журнал в терминал (до 512 строк)
-pwsh scripts/journal.ps1
-
-# Сохранить в файл
-pwsh scripts/journal.ps1 -OutFile journal.txt
-
-# Последние 80 строк
-pwsh scripts/journal.ps1 -Tail 80
-```
-
-Журнал: `%LOCALAPPDATA%\DemarVpn\demar\demar_app.log` (tail-trim 512 строк, parity с Android `AppLog`).
-
-UI-журнал: «Настройки → Настройки приложения».
+Журнал: `%LOCALAPPDATA%\DemarVpn\demar\demar_app.log` (tail-trim 512 строк, parity с Android `AppLog`). UI: «Настройки → Настройки приложения».
 
 Unit-тесты pipeline (без WinUI): `dotnet test tests/DemarVpn.Tests`
 
